@@ -31,6 +31,7 @@ app.use(
         config.frontendUrl,
         'http://localhost:5173',
         'http://localhost:4173',
+        'https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app',
       ];
       if (!origin || allowed.includes(origin)) {
         callback(null, true);
