@@ -12,13 +12,24 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.ts",
+      "methods": ["OPTIONS"],
       "headers": {
-        "Access-Control-Allow-Origin": "https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "86400"
+      },
+      "continue": true,
+      "dest": "api/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials": "true"
-      }
+      },
+      "dest": "api/index.ts"
     }
   ]
 }
