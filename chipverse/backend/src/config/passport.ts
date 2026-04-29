@@ -5,7 +5,7 @@ import { config } from './env';
 import { findOrCreateOAuthUser } from '../services/auth.service';
 import logger from '../utils/logger';
 
-// ─── Google OAuth Strategy (only if credentials are set) ─────────────────────
+// ─── Google OAuth Strategy ────────────────────────────────────────────────────
 if (config.google.clientId && config.google.clientSecret) {
   passport.use(
     new GoogleStrategy(
@@ -24,7 +24,11 @@ if (config.google.clientId && config.google.clientSecret) {
             name: profile.displayName,
             avatarUrl: profile.photos?.[0]?.value,
           });
-          return done(null, user);
+          return done(null, {
+            userId: user.id,
+            email: user.email ?? undefined,
+            role: user.role,
+          });
         } catch (err) {
           logger.error('Google OAuth error', err);
           return done(err as Error);
@@ -37,7 +41,7 @@ if (config.google.clientId && config.google.clientSecret) {
   logger.warn('⚠️  Google OAuth skipped — GOOGLE_CLIENT_ID not set');
 }
 
-// ─── LinkedIn OAuth Strategy (only if credentials are set) ───────────────────
+// ─── LinkedIn OAuth Strategy ──────────────────────────────────────────────────
 if (config.linkedin.clientId && config.linkedin.clientSecret) {
   passport.use(
     new LinkedInStrategy(
@@ -56,7 +60,11 @@ if (config.linkedin.clientId && config.linkedin.clientSecret) {
             name: profile.displayName,
             avatarUrl: profile.photos?.[0]?.value,
           });
-          return done(null, user);
+          return done(null, {
+            userId: user.id,
+            email: user.email ?? undefined,
+            role: user.role,
+          });
         } catch (err) {
           logger.error('LinkedIn OAuth error', err);
           return done(err as Error);
@@ -69,9 +77,9 @@ if (config.linkedin.clientId && config.linkedin.clientSecret) {
   logger.warn('⚠️  LinkedIn OAuth skipped — LINKEDIN_CLIENT_ID not set');
 }
 
-passport.serializeUser((user: any, done) => done(null, user.id));
-passport.deserializeUser(async (id: string, done) => {
-  done(null, { id });
+passport.serializeUser((user: any, done) => done(null, user.userId));
+passport.deserializeUser(async (userId: string, done) => {
+  done(null, { userId });
 });
 
 export default passport;
