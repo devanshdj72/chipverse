@@ -17,7 +17,16 @@ const app = express();
 // ─── CORS — must be FIRST before everything ───────────────────────────────────
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  const allowed = [
+    'https://chipverse-q341.vercel.app',
+    'https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:4173',
+  ];
+
+  if (!origin || allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
