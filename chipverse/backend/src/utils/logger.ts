@@ -16,18 +16,11 @@ const devFormat = combine(
 
 const prodFormat = combine(timestamp(), errors({ stack: true }), winston.format.json());
 
+// Only Console transport — no file system (Vercel serverless can't create folders)
 const logger = winston.createLogger({
   level: config.isDev ? 'debug' : 'info',
   format: config.isDev ? devFormat : prodFormat,
-  transports: [
-    new winston.transports.Console(),
-    ...(config.isProd
-      ? [
-          new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-          new winston.transports.File({ filename: 'logs/combined.log' }),
-        ]
-      : []),
-  ],
+  transports: [new winston.transports.Console()],
 });
 
 export default logger;
