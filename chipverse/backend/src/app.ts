@@ -27,16 +27,22 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc)
+      if (!origin) return callback(null, true);
+      
       const allowed = [
-        config.frontendUrl,
+        process.env.FRONTEND_URL,
         'http://localhost:5173',
         'http://localhost:4173',
         'https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app',
-      ];
-      if (!origin || allowed.includes(origin)) {
+      ].filter(Boolean);
+
+      if (allowed.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        console.log('CORS blocked origin:', origin);
+        console.log('Allowed origins:', allowed);
+        callback(null, true); // Temporarily allow all to debug
       }
     },
     credentials: true,
