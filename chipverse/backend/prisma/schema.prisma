@@ -1,0 +1,141 @@
+// This is your Prisma schema file for ChipVerse
+// Run: npx prisma generate && npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth Provider Enum ─────────────────────────────────────────────────────
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  LINKEDIN
+  PHONE
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+// ─── User ───────────────────────────────────────────────────────────────────
+model User {
+  id              String    @id @default(uuid())
+  email           String?   @unique
+  phone           String?   @unique
+  name            String
+  avatarUrl       String?
+  role            UserRole  @default(USER)
+  isEmailVerified Boolean   @default(false)
+  isPhoneVerified Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+
+  // Relations
+  authProviders   UserAuthProvider[]
+  profile         UserProfile?
+  progress        DomainProgress[]
+  sessions        Session[]
+  refreshTokens   RefreshToken[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+// ─── Auth Provider (SSO accounts linked to a user) ──────────────────────────
+model UserAuthProvider {
+  id           String       @id @default(uuid())
+  userId       String
+  provider     AuthProvider
+  providerId   String       // external ID from Google/LinkedIn
+  accessToken  String?      @db.Text
+  refreshToken String?      @db.Text
+  expiresAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// ─── User Profile (learning stats) ──────────────────────────────────────────
+model UserProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  xp            Int      @default(0)
+  streak        Int      @default(0)
+  rank          String   @default("RTL Beginner")
+  currentDomain String   @default("rtl")
+  lastActiveAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Domain Progress ─────────────────────────────────────────────────────────
+model DomainProgress {
+  id            String   @id @default(uuid())
+  userId        String
+  domainId      String   // e.g. "rtl", "verification"
+  completedLevels Int[]  @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domainId])
+  @@index([userId])
+}
+
+// ─── Session (for tracking active sessions) ──────────────────────────────────
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  userAgent  String?
+  ipAddress  String?
+  isValid    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─── Refresh Token ───────────────────────────────────────────────────────────
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique @db.Text
+  isRevoked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ─── OTP (Phone verification) ────────────────────────────────────────────────
+model OtpRecord {
+  id         String   @id @default(uuid())
+  phone      String
+  purpose    String   // "login" | "register" | "verify"
+  expiresAt  DateTime
+  isUsed     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([phone])
+}
