@@ -1,7 +1,11 @@
 import { useUserContext } from "@/lib/user";
+import DailyMissions from "@/components/DailyMissions";
+import XPMultiplierBanner from "@/components/XPMultiplierBanner";
+import AchievementToast from "@/components/AchievementToast";
+import { useGamification } from "@/lib/useGamification";
 import DashboardCard from "@/components/DashboardCard";
 import CircuitBackground from "@/components/CircuitBackground";
-import { Flame, Trophy, Target, BookOpen, Briefcase, Zap } from "lucide-react";
+import { Flame, Trophy, Target, BookOpen, Briefcase } from "lucide-react";
 import { Link } from "wouter";
 import ProgressBar from "@/components/ProgressBar";
 import { DOMAIN_THEMES } from "@/lib/themes";
@@ -9,24 +13,43 @@ import { DOMAIN_LIST, ROADMAPS } from "@/lib/data";
 
 export default function Dashboard() {
   const { user, profile } = useUserContext();
-  
+
   const currentDomainInfo = DOMAIN_LIST.find(d => d.id === profile.currentDomain) || DOMAIN_LIST[0];
   const theme = DOMAIN_THEMES[currentDomainInfo.id];
   const levels = ROADMAPS[currentDomainInfo.id as keyof typeof ROADMAPS] || [];
   const completed = profile.completedLevels[currentDomainInfo.id] || [];
   const nextLevel = levels.find(l => !completed.includes(l.id)) || levels[levels.length - 1];
 
-  const totalCompleted = Object.values(profile.completedLevels).reduce((acc, curr) => acc + curr.length, 0);
+  const totalCompleted = Object.values(profile.completedLevels).reduce((s, a) => s + a.length, 0);
+  const domainsStarted = Object.keys(profile.completedLevels).filter(d => (profile.completedLevels[d]?.length ?? 0) > 0).length;
+  const domainsCompleted = DOMAIN_LIST.filter(d => {
+    const ls = ROADMAPS[d.id as keyof typeof ROADMAPS] || [];
+    const comp = profile.completedLevels[d.id] || [];
+    return comp.length === ls.length && ls.length > 0;
+  }).length;
+
+  const { newAchievement, clearNewAchievement } = useGamification({
+    totalCompleted,
+    totalXp: profile.xp,
+    streak: profile.streak,
+    domainsStarted,
+    domainsCompleted,
+  });
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 relative bg-black">
       <CircuitBackground />
-      
+
       <div className="max-w-7xl mx-auto relative z-10 pt-8">
-        <div className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-white font-['Orbitron'] mb-3">Welcome back, {user.name}</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-white font-['Orbitron'] mb-3">
+            Welcome back, {user.name}
+          </h1>
           <p className="text-gray-400 text-lg">Ready to design some silicon today?</p>
         </div>
+
+        {/* XP Multiplier Banner */}
+        <XPMultiplierBanner />
 
         {/* Top Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
@@ -62,25 +85,31 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-3 font-['Orbitron']">
                 <BookOpen className="w-6 h-6 text-blue-400" /> Continue Learning
               </h2>
-              
+
               <div className="mb-8 relative z-10">
                 <div className="flex justify-between text-base mb-3">
                   <span className="text-white font-bold">{currentDomainInfo.name} Path</span>
-                  <span className="text-gray-400 font-mono">{Math.round((completed.length / levels.length) * 100)}%</span>
+                  <span className="text-gray-400 font-mono">
+                    {Math.round((completed.length / levels.length) * 100)}%
+                  </span>
                 </div>
                 <ProgressBar value={completed.length} max={levels.length} color={theme.primary} className="h-3" />
               </div>
 
               <div className="bg-black/60 rounded-2xl p-6 border border-white/10 relative z-10 backdrop-blur-md">
-                <div className="text-sm font-mono tracking-wider mb-2" style={{ color: theme.primary }}>UP NEXT: LEVEL {nextLevel?.level}</div>
+                <div className="text-sm font-mono tracking-wider mb-2" style={{ color: theme.primary }}>
+                  UP NEXT: LEVEL {nextLevel?.level}
+                </div>
                 <h3 className="text-xl font-bold text-white mb-3">{nextLevel?.title}</h3>
                 <p className="text-gray-400 mb-5">{nextLevel?.difficulty} • {nextLevel?.hours} hours</p>
                 <div className="flex flex-wrap gap-2 mb-6">
                   {nextLevel?.topics.slice(0, 3).map((t: string) => (
-                    <span key={t} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300">{t}</span>
+                    <span key={t} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300">
+                      {t}
+                    </span>
                   ))}
                 </div>
-                <Link 
+                <Link
                   href={`/path/${currentDomainInfo.id}`}
                   className="inline-flex px-8 py-3 rounded-xl font-bold text-black transition-all hover:opacity-90"
                   style={{ background: theme.gradient }}
@@ -98,7 +127,7 @@ export default function Dashboard() {
                 {[
                   { title: "Junior RTL Engineer", company: "Qualcomm", loc: "Bengaluru", match: "85%" },
                   { title: "Verification Intern", company: "NVIDIA", loc: "Pune", match: "72%" },
-                  { title: "ASIC Design Engineer", company: "Intel", loc: "Hyderabad", match: "64%" }
+                  { title: "ASIC Design Engineer", company: "Intel", loc: "Hyderabad", match: "64%" },
                 ].map((job, i) => (
                   <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center hover:bg-white/10 transition-colors cursor-pointer">
                     <div>
@@ -107,7 +136,9 @@ export default function Dashboard() {
                     </div>
                     <div className="text-right">
                       <div className="text-green-400 font-bold mb-2">{job.match} Match</div>
-                      <span className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors">Apply ↗</span>
+                      <span className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors">
+                        Apply ↗
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -116,23 +147,11 @@ export default function Dashboard() {
           </div>
 
           {/* Side Area */}
-          <div className="space-y-8">
-            <DashboardCard className="p-6">
-              <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 font-['Orbitron']">
-                <Zap className="w-5 h-5 text-yellow-400" /> Daily Challenge
-              </h2>
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
-                <div className="inline-flex justify-center p-4 rounded-full bg-blue-500/20 text-blue-400 mb-4 border border-blue-500/30">
-                  <Flame className="w-8 h-8" />
-                </div>
-                <h4 className="font-bold text-white text-lg mb-2">Complete 1 Lab</h4>
-                <p className="text-gray-400 mb-6">Earn bonus 50 XP today</p>
-                <button className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-900/20">
-                  Accept Challenge
-                </button>
-              </div>
-            </DashboardCard>
+          <div className="space-y-6">
+            {/* Daily Missions */}
+            <DailyMissions />
 
+            {/* Skills Graph */}
             <DashboardCard className="p-6">
               <h2 className="text-lg font-bold text-white mb-6 font-['Orbitron']">Skills Graph</h2>
               <div className="space-y-5">
@@ -140,7 +159,7 @@ export default function Dashboard() {
                   { name: "Digital Logic", val: 80, color: "#38bdf8" },
                   { name: "Verilog", val: 65, color: "#a855f7" },
                   { name: "Scripting", val: 40, color: "#facc15" },
-                  { name: "Architecture", val: 20, color: "#fb923c" }
+                  { name: "Architecture", val: 20, color: "#fb923c" },
                 ].map((s, i) => (
                   <div key={i}>
                     <div className="flex justify-between text-sm text-gray-300 mb-2 font-medium">
@@ -155,6 +174,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <AchievementToast achievement={newAchievement} onClose={clearNewAchievement} />
     </div>
   );
 }

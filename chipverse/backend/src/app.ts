@@ -26,8 +26,19 @@ app.use(
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: [config.frontendUrl, 'http://localhost:5173', 'http://localhost:4173'],
-    credentials: true, // Allow cookies to be sent
+    origin: (origin, callback) => {
+      const allowed = [
+        config.frontendUrl,
+        'http://localhost:5173',
+        'http://localhost:4173',
+      ];
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })

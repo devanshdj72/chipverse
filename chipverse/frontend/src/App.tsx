@@ -1,7 +1,11 @@
+import Leaderboard from "@/pages/Leaderboard";
+import Analytics from "@/pages/Analytics";
+import Profile from "@/pages/Profile";
 import { Switch, Route } from "wouter";
 import { Redirect } from "wouter";
 import Landing from "@/pages/Landing";
 import Domains from "@/pages/Domains";
+import Achievements from "@/pages/Achievements";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
@@ -37,14 +41,18 @@ export default function App() {
           <Route path="/" component={Landing} />
           <Route path="/login" component={Login} />
           <Route path="/auth/callback" component={AuthCallback} />
+          <Route path="/leaderboard">{() => <ProtectedRoute component={Leaderboard} />}</Route>
+          <Route path="/analytics">{() => <ProtectedRoute component={Analytics} />}</Route>
           <Route path="/domains">{() => <ProtectedRoute component={Domains} />}</Route>
           <Route path="/dashboard">{() => <ProtectedRoute component={Dashboard} />}</Route>
           <Route path="/path/rtl">{() => <ProtectedRoute component={RTLPath} />}</Route>
           <Route path="/path/verification">{() => <ProtectedRoute component={VerificationPath} />}</Route>
           <Route path="/path/physical-design">{() => <ProtectedRoute component={PhysicalDesignPath} />}</Route>
           <Route path="/path/analog">{() => <ProtectedRoute component={AnalogPath} />}</Route>
+          <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
           <Route path="/path/fpga">{() => <ProtectedRoute component={FPGAPath} />}</Route>
           <Route path="/path/embedded">{() => <ProtectedRoute component={EmbeddedPath} />}</Route>
+          <Route path="/achievements">{() => <ProtectedRoute component={Achievements} />}</Route>
           <Route path="/path/dft">{() => <ProtectedRoute component={DFTPath} />}</Route>
           <Route path="/path/research">{() => <ProtectedRoute component={ResearchPath} />}</Route>
           <Route component={NotFound} />

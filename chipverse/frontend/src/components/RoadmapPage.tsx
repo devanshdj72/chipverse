@@ -1,3 +1,4 @@
+import LabModal from "./LabModal";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useUserContext } from "@/lib/user";
@@ -122,87 +123,18 @@ export default function RoadmapPage({ domainId }: { domainId: DomainId }) {
       </div>
 
       {/* Level Modal */}
+      
       <AnimatePresence>
-        {selectedLevel && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-lg bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
-              style={{ borderColor: theme.border }}
-            >
-              <div className="p-6 border-b border-white/10 relative" style={{ background: theme.card }}>
-                <button
-                  onClick={() => setSelectedLevel(null)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                <div className="text-sm font-mono mb-2 tracking-wider" style={{ color: theme.primary }}>LEVEL {selectedLevel.level}</div>
-                <h2 className="text-2xl font-bold text-white mb-3">{selectedLevel.title}</h2>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                  <span>{selectedLevel.difficulty}</span>
-                  <span>•</span>
-                  <span>{selectedLevel.hours} Hours</span>
-                  <span>•</span>
-                  <span className="text-white font-mono bg-white/10 px-2 py-0.5 rounded">+{selectedLevel.xp} XP</span>
-                </div>
-              </div>
-              
-              <div className="p-6 space-y-8 bg-black/40">
-                <div>
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-gray-400" /> Topics Covered
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedLevel.topics.map(t => (
-                      <span key={t} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                    <PlayCircle className="w-4 h-4 text-gray-400" /> Lab Mission
-                  </h3>
-                  <div className="p-5 rounded-xl bg-black border border-white/10 flex items-start gap-4">
-                    <PlayCircle className="w-6 h-6 mt-0.5" style={{ color: theme.primary }} />
-                    <div>
-                      <div className="text-white font-medium mb-1 text-lg">{selectedLevel.lab}</div>
-                      <div className="text-gray-400 text-sm capitalize">{selectedLevel.labType} task</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex justify-end gap-3 border-t border-white/10">
-                  <button
-                    onClick={() => setSelectedLevel(null)}
-                    className="px-6 py-3 rounded-xl font-medium text-white hover:bg-white/5 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleComplete}
-                    disabled={completedIds.includes(selectedLevel.id)}
-                    className="px-6 py-3 rounded-xl font-bold text-black transition-all flex items-center gap-2 hover:opacity-90"
-                    style={{ 
-                      background: completedIds.includes(selectedLevel.id) ? '#333' : theme.gradient,
-                      color: completedIds.includes(selectedLevel.id) ? '#888' : '#000',
-                      cursor: completedIds.includes(selectedLevel.id) ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {completedIds.includes(selectedLevel.id) ? "Completed" : "Mark Complete"} 
-                    {!completedIds.includes(selectedLevel.id) && <Award className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+  {selectedLevel && (
+    <LabModal
+      level={selectedLevel}
+      theme={theme}
+      isCompleted={completedIds.includes(selectedLevel.id)}
+      onClose={() => setSelectedLevel(null)}
+      onComplete={handleComplete}
+    />
+  )}
+</AnimatePresence>
     </div>
   );
 }

@@ -73,9 +73,12 @@ export const api = {
 
     completeLevel: (domainId: string, levelId: number, xpGained: number) =>
       request<any>('POST', '/user/progress', { domainId, levelId, xpGained }),
-
+    updateProfile: (data: { name?: string; avatarUrl?: string }) =>
+      request<any>('PATCH', '/user/profile', data),
     setDomain: (domainId: string) =>
       request<any>('PATCH', '/user/domain', { domainId }),
+    getLeaderboard: () => request<any[]>('GET', '/user/leaderboard'),
+    getSiteStats: () => request<any>('GET', '/user/stats'),
   },
 };
 

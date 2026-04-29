@@ -13,6 +13,8 @@ export default function Navbar() {
   ? [
       { href: "/domains", label: "Domains" },
       { href: "/dashboard", label: "Dashboard" },
+      { href: "/leaderboard", label: "Leaderboard" },
+      { href: "/achievements", label: "Achievements" },
     ]
   : [];
 
@@ -56,16 +58,21 @@ const handleLogout = async () => {
           </div>
 
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-300 font-medium">{user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 text-sm font-semibold rounded-lg px-3 py-1.5 border transition-all bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-400/50"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
+  <div className="flex items-center gap-3">
+    <Link href="/profile" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
+      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+        {user.name.charAt(0).toUpperCase()}
+      </div>
+      {user.name}
+    </Link>
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-1.5 text-sm font-semibold rounded-lg px-3 py-1.5 border transition-all bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+    >
+      <LogOut className="w-4 h-4" />
+      Logout
+    </button>
+  </div>
           ) : (
             <Link
               href="/login"

@@ -50,3 +50,40 @@ export const changeDomain = async (req: Request, res: Response, next: NextFuncti
     return next(err);
   }
 };
+const updateProfileSchema = z.object({
+  name: z.string().min(2).optional(),
+  avatarUrl: z.string().url().optional(),
+});
+
+/** PATCH /api/user/profile */
+export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    const { updateUserProfile } = await import('../services/user.service');
+    const user = await updateUserProfile(req.user!.userId, data);
+    return sendSuccess(res, user, 'Profile updated');
+  } catch (err) {
+    return next(err);
+  }
+};
+import { getLeaderboard, getSiteStats } from '../services/user.service';
+
+/** GET /api/user/leaderboard */
+export const leaderboard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await getLeaderboard(20);
+    return sendSuccess(res, data, 'Leaderboard fetched');
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/** GET /api/user/stats */
+export const siteStats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await getSiteStats();
+    return sendSuccess(res, data, 'Stats fetched');
+  } catch (err) {
+    return next(err);
+  }
+};
