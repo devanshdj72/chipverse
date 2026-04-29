@@ -3,7 +3,6 @@ import prisma from '../config/prisma';
 export const getUserProfile = async (userId: string) => {
   const profile = await prisma.userProfile.findUnique({ where: { userId } });
   const progress = await prisma.domainProgress.findMany({ where: { userId } });
-
   return { profile, progress };
 };
 
@@ -13,7 +12,6 @@ export const updateProgress = async (
   levelId: number,
   xpGained: number
 ) => {
-  // Upsert domain progress
   const existing = await prisma.domainProgress.findUnique({
     where: { userId_domainId: { userId, domainId } },
   });
@@ -29,7 +27,6 @@ export const updateProgress = async (
       create: { userId, domainId, completedLevels },
     });
 
-    // Add XP to profile
     await prisma.userProfile.updateMany({
       where: { userId },
       data: { xp: { increment: xpGained }, lastActiveAt: new Date() },
@@ -58,7 +55,7 @@ export const updateStreak = async (userId: string) => {
   if (diffDays === 1) {
     newStreak += 1;
   } else if (diffDays > 1) {
-    newStreak = 1; // reset
+    newStreak = 1;
   }
 
   return prisma.userProfile.update({
@@ -66,6 +63,7 @@ export const updateStreak = async (userId: string) => {
     data: { streak: newStreak, lastActiveAt: now },
   });
 };
+
 export const updateUserProfile = async (
   userId: string,
   data: { name?: string; bio?: string; avatarUrl?: string }
@@ -87,6 +85,7 @@ export const updateUserProfile = async (
 
   return user;
 };
+
 export const getLeaderboard = async (limit = 20) => {
   const profiles = await prisma.userProfile.findMany({
     orderBy: { xp: "desc" },
@@ -103,12 +102,14 @@ export const getLeaderboard = async (limit = 20) => {
   });
 
   const progress = await prisma.domainProgress.findMany({
-    where: { userId: { in: profiles.map(p => p.userId) } },
+    where: { userId: { in: profiles.map((p: any) => p.userId) } },
   });
 
-  return profiles.map((profile, index) => {
-    const userProgress = progress.filter(p => p.userId === profile.userId);
-    const topDomain = userProgress.sort((a, b) => b.completedLevels.length - a.completedLevels.length)[0];
+  return profiles.map((profile: any, index: number) => {
+    const userProgress = progress.filter((p: any) => p.userId === profile.userId);
+    const topDomain = [...userProgress].sort(
+      (a: any, b: any) => b.completedLevels.length - a.completedLevels.length
+    )[0];
 
     return {
       rank: index + 1,
@@ -120,19 +121,23 @@ export const getLeaderboard = async (limit = 20) => {
       rank_title: profile.rank,
       currentDomain: profile.currentDomain,
       topDomain: topDomain?.domainId ?? profile.currentDomain,
-      totalLevelsCompleted: userProgress.reduce((s, p) => s + p.completedLevels.length, 0),
+      totalLevelsCompleted: userProgress.reduce(
+        (s: number, p: any) => s + p.completedLevels.length, 0
+      ),
     };
   });
 };
 
 export const getSiteStats = async () => {
   const totalUsers = await prisma.user.count();
-  const totalLevelsCompleted = await prisma.domainProgress.findMany();
+  const allProgress = await prisma.domainProgress.findMany();
   const totalXp = await prisma.userProfile.aggregate({ _sum: { xp: true } });
 
   return {
     totalUsers,
-    totalLevelsCompleted: totalLevelsCompleted.reduce((s, p) => s + p.completedLevels.length, 0),
+    totalLevelsCompleted: allProgress.reduce(
+      (s: number, p: any) => s + p.completedLevels.length, 0
+    ),
     totalXp: totalXp._sum.xp ?? 0,
   };
 };
