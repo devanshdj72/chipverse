@@ -1,5 +1,4 @@
 import { io, Socket } from 'socket.io-client';
-import { getAccessToken } from './api';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api', '')
@@ -41,3 +40,21 @@ export const disconnectSocket = () => {
 };
 
 export const getSocket = () => socket;
+
+// ── Chat helpers ──────────────────────────────────────────────────────────────
+
+export const joinConversation = (conversationId: string) => {
+  socket?.emit('join_conversation', conversationId);
+};
+
+export const sendSocketMessage = (conversationId: string, content: string) => {
+  socket?.emit('send_message', { conversationId, content });
+};
+
+export const emitTyping = (conversationId: string) => {
+  socket?.emit('typing', conversationId);
+};
+
+export const emitStopTyping = (conversationId: string) => {
+  socket?.emit('stop_typing', conversationId);
+};

@@ -65,6 +65,8 @@ model User {
   battlesAsChallenger Battle[]           @relation("Challenger")
   battlesAsOpponent   Battle[]           @relation("Opponent")
   notifications       Notification[]
+  conversationMembers ConversationMember[]
+  messages            Message[]
 
   @@index([email])
   @@index([phone])
@@ -161,8 +163,8 @@ model FriendRequest {
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
 
-  sender     User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender   User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
   @@index([senderId])
@@ -175,8 +177,8 @@ model Friendship {
   userBId   String
   createdAt DateTime @default(now())
 
-  userA     User @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
-  userB     User @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+  userA User @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
 
   @@unique([userAId, userBId])
   @@index([userAId])
@@ -186,27 +188,27 @@ model Friendship {
 // ─── Battle System ────────────────────────────────────────────────────────────
 
 model Battle {
-  id              String       @id @default(uuid())
-  challengerId    String
-  opponentId      String
-  domainId        String
-  betXp           Int
-  mode            BattleMode   @default(OFFLINE)
-  status          BattleStatus @default(PENDING)
-  challengerXp    Int          @default(-1)
-  opponentXp      Int          @default(-1)
-  challengerTime  Int          @default(0)
-  opponentTime    Int          @default(0)
-  winnerId        String?
-  questions       Json
-  startedAt       DateTime?
-  completedAt     DateTime?
-  expiresAt       DateTime
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  challengerId   String
+  opponentId     String
+  domainId       String
+  betXp          Int
+  mode           BattleMode   @default(OFFLINE)
+  status         BattleStatus @default(PENDING)
+  challengerXp   Int          @default(-1)
+  opponentXp     Int          @default(-1)
+  challengerTime Int          @default(0)
+  opponentTime   Int          @default(0)
+  winnerId       String?
+  questions      Json
+  startedAt      DateTime?
+  completedAt    DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  challenger    User @relation("Challenger", fields: [challengerId], references: [id], onDelete: Cascade)
-  opponent      User @relation("Opponent", fields: [opponentId], references: [id], onDelete: Cascade)
+  challenger User @relation("Challenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent   User @relation("Opponent", fields: [opponentId], references: [id], onDelete: Cascade)
 
   @@index([challengerId])
   @@index([opponentId])
@@ -218,15 +220,51 @@ model Battle {
 model Notification {
   id        String   @id @default(uuid())
   userId    String
-  type      String   // "friend_request" | "battle_challenge" | "battle_result" | "friend_accepted"
+  type      String
   title     String
   message   String
   data      Json?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
+}
+
+// ─── Chat System ──────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  isGroup   Boolean  @default(false)
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }

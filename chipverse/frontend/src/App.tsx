@@ -1,5 +1,4 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
-// Add this import at the top with the others
 import Profile from "@/pages/Profile";
 import Landing from "@/pages/Landing";
 import Domains from "@/pages/Domains";
@@ -21,6 +20,7 @@ import NotFound from "@/pages/not-found";
 import Navbar from "@/components/Navbar";
 import Achievements from "@/pages/Achievements";
 import Placement from "@/pages/Placement";
+import Messages from "@/pages/Messages";
 
 export default function App() {
   return (
@@ -46,7 +46,8 @@ export default function App() {
           <Route path="/path/research" component={ResearchPath} />
           <Route path="/achievements" component={Achievements} />
           <Route path="/placement" component={Placement} />
-          <Route path="/profile" component={Profile} />  
+          <Route path="/profile" component={Profile} />
+          <Route path="/messages" component={Messages} />
           <Route component={NotFound} />
         </Switch>
       </main>

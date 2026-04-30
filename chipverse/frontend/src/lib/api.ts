@@ -35,11 +35,9 @@ export const api = {
     verifyOtp: (phone: string, code: string, name?: string) =>
       request<{ user: any; accessToken: string; refreshToken: string }>('POST', '/auth/otp/verify', { phone, code, name }),
 
-    // Pass refreshToken in body as fallback when cookie doesn't work cross-domain
     logout: (refreshToken?: string) =>
       request<null>('POST', '/auth/logout', refreshToken ? { refreshToken } : undefined),
 
-    // Pass refreshToken in body as fallback when cookie doesn't work cross-domain
     refreshToken: (refreshToken?: string) =>
       request<{ accessToken: string; refreshToken: string }>('POST', '/auth/refresh', refreshToken ? { refreshToken } : undefined),
 
@@ -79,12 +77,24 @@ export const api = {
     submitScore: (battleId: string, score: number, timeTakenMs: number = 0) =>
       request<any>('POST', `/battles/${battleId}/score`, { score, timeTakenMs }),
   },
+
   notifications: {
-  getAll: () => request<any[]>('GET', '/notifications'),
-  getUnreadCount: () => request<{ count: number }>('GET', '/notifications/unread-count'),
-  markAllRead: () => request<null>('PATCH', '/notifications/read'),
-  markRead: (id: string) => request<null>('PATCH', `/notifications/${id}/read`),
-},
+    getAll: () => request<any[]>('GET', '/notifications'),
+    getUnreadCount: () => request<{ count: number }>('GET', '/notifications/unread-count'),
+    markAllRead: () => request<null>('PATCH', '/notifications/read'),
+    markRead: (id: string) => request<null>('PATCH', `/notifications/${id}/read`),
+  },
+
+  chat: {
+    getConversations: () => request<any[]>('GET', '/chat/conversations'),
+    openDM: (friendId: string) => request<any>('POST', '/chat/dm', { friendId }),
+    createGroup: (name: string, memberIds: string[]) =>
+      request<any>('POST', '/chat/group', { name, memberIds }),
+    getMessages: (conversationId: string) =>
+      request<any[]>('GET', `/chat/conversations/${conversationId}/messages`),
+    addMember: (conversationId: string, newUserId: string) =>
+      request<any>('POST', `/chat/conversations/${conversationId}/members`, { newUserId }),
+  },
 };
 
 export default api;
