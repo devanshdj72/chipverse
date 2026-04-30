@@ -24,14 +24,25 @@ const request = async <T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   auth: {
     register: (data: { name: string; email: string; phone?: string; password: string }) =>
-      request<{ user: any; accessToken: string }>('POST', '/auth/register', data),
+      request<{ user: any; accessToken: string; refreshToken: string }>('POST', '/auth/register', data),
+
     login: (data: { email: string; password: string }) =>
-      request<{ user: any; accessToken: string }>('POST', '/auth/login', data),
-    sendOtp: (phone: string) => request<{ phone: string }>('POST', '/auth/otp/send', { phone }),
+      request<{ user: any; accessToken: string; refreshToken: string }>('POST', '/auth/login', data),
+
+    sendOtp: (phone: string) =>
+      request<{ phone: string }>('POST', '/auth/otp/send', { phone }),
+
     verifyOtp: (phone: string, code: string, name?: string) =>
-      request<{ user: any; accessToken: string }>('POST', '/auth/otp/verify', { phone, code, name }),
-    logout: () => request<null>('POST', '/auth/logout'),
-    refreshToken: () => request<{ accessToken: string }>('POST', '/auth/refresh'),
+      request<{ user: any; accessToken: string; refreshToken: string }>('POST', '/auth/otp/verify', { phone, code, name }),
+
+    // Pass refreshToken in body as fallback when cookie doesn't work cross-domain
+    logout: (refreshToken?: string) =>
+      request<null>('POST', '/auth/logout', refreshToken ? { refreshToken } : undefined),
+
+    // Pass refreshToken in body as fallback when cookie doesn't work cross-domain
+    refreshToken: (refreshToken?: string) =>
+      request<{ accessToken: string; refreshToken: string }>('POST', '/auth/refresh', refreshToken ? { refreshToken } : undefined),
+
     me: () => request<any>('GET', '/auth/me'),
     googleLoginUrl: () => `${API_BASE}/auth/google`,
     linkedinLoginUrl: () => `${API_BASE}/auth/linkedin`,
@@ -57,9 +68,6 @@ export const api = {
       request<any>('PATCH', `/friends/request/${requestId}`, { action }),
     unfriend: (friendId: string) => request<any>('DELETE', `/friends/${friendId}`),
   },
-
-  // In frontend/src/lib/api.ts
-// Replace the battles section with this:
 
   battles: {
     getAll: () => request<any[]>('GET', '/battles'),

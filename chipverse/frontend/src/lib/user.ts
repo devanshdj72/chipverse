@@ -36,6 +36,37 @@ const DEFAULT_PROFILE: ProfileState = {
   completedLevels: {},
 };
 
+// ─── localStorage helpers for refresh token persistence ───────────────────────
+const REFRESH_TOKEN_KEY = "chipverse_refresh_token";
+
+const saveRefreshToken = (token: string) => {
+  try { localStorage.setItem(REFRESH_TOKEN_KEY, token); } catch { }
+};
+
+const loadRefreshToken = (): string | null => {
+  try { return localStorage.getItem(REFRESH_TOKEN_KEY); } catch { return null; }
+};
+
+const clearRefreshToken = () => {
+  try { localStorage.removeItem(REFRESH_TOKEN_KEY); } catch { }
+};
+
+// ─── Profile loader helper ────────────────────────────────────────────────────
+const loadProfile = async () => {
+  const profileRes = await api.user.getProfile();
+  const completedLevels: Record<string, number[]> = {};
+  for (const p of profileRes.data.progress ?? []) {
+    completedLevels[p.domainId] = p.completedLevels;
+  }
+  return {
+    xp: profileRes.data.profile?.xp ?? 0,
+    streak: profileRes.data.profile?.streak ?? 0,
+    rank: profileRes.data.profile?.rank ?? "RTL Beginner",
+    currentDomain: profileRes.data.profile?.currentDomain ?? "rtl",
+    completedLevels,
+  };
+};
+
 type UserContextType = ReturnType<typeof useUserInternal>;
 const UserContext = createContext<UserContextType | null>(null);
 
@@ -47,32 +78,35 @@ function useUserInternal() {
     isAuthenticated: false,
   });
 
+  // ── Restore session on page load / reload ──────────────────────────────────
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const refreshRes = await api.auth.refreshToken();
-        setAccessToken(refreshRes.data.accessToken);
-        const [meRes, profileRes] = await Promise.all([
-          api.auth.me(),
-          api.user.getProfile(),
-        ]);
-        const completedLevels: Record<string, number[]> = {};
-        for (const p of profileRes.data.progress ?? []) {
-          completedLevels[p.domainId] = p.completedLevels;
+        // Try cookie first, fallback to localStorage refresh token
+        const storedRefreshToken = loadRefreshToken();
+
+        const refreshRes = await api.auth.refreshToken(storedRefreshToken ?? undefined);
+
+        // Save new refresh token to localStorage
+        if (refreshRes.data.refreshToken) {
+          saveRefreshToken(refreshRes.data.refreshToken);
         }
+
+        setAccessToken(refreshRes.data.accessToken);
+
+        const [meRes, profile] = await Promise.all([
+          api.auth.me(),
+          loadProfile(),
+        ]);
+
         setState({
           user: meRes.data,
-          profile: {
-            xp: profileRes.data.profile?.xp ?? 0,
-            streak: profileRes.data.profile?.streak ?? 0,
-            rank: profileRes.data.profile?.rank ?? "RTL Beginner",
-            currentDomain: profileRes.data.profile?.currentDomain ?? "rtl",
-            completedLevels,
-          },
+          profile,
           isLoading: false,
           isAuthenticated: true,
         });
       } catch {
+        clearRefreshToken();
         setState((s) => ({ ...s, isLoading: false }));
       }
     };
@@ -82,20 +116,14 @@ function useUserInternal() {
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.auth.login({ email, password });
     setAccessToken(res.data.accessToken);
-    const profileRes = await api.user.getProfile();
-    const completedLevels: Record<string, number[]> = {};
-    for (const p of profileRes.data.progress ?? []) {
-      completedLevels[p.domainId] = p.completedLevels;
-    }
+
+    // Save refresh token to localStorage for persistence across reloads
+    if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
+
+    const profile = await loadProfile();
     setState({
       user: res.data.user,
-      profile: {
-        xp: profileRes.data.profile?.xp ?? 0,
-        streak: profileRes.data.profile?.streak ?? 0,
-        rank: profileRes.data.profile?.rank ?? "RTL Beginner",
-        currentDomain: profileRes.data.profile?.currentDomain ?? "rtl",
-        completedLevels,
-      },
+      profile,
       isLoading: false,
       isAuthenticated: true,
     });
@@ -105,6 +133,7 @@ function useUserInternal() {
   const register = useCallback(async (name: string, email: string, password: string, phone?: string) => {
     const res = await api.auth.register({ name, email, password, phone });
     setAccessToken(res.data.accessToken);
+    if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
     setState({ user: res.data.user, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: true });
     return res.data.user;
   }, []);
@@ -112,13 +141,18 @@ function useUserInternal() {
   const verifyOtp = useCallback(async (phone: string, code: string, name?: string) => {
     const res = await api.auth.verifyOtp(phone, code, name);
     setAccessToken(res.data.accessToken);
+    if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
     setState({ user: res.data.user, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: true });
     return res.data.user;
   }, []);
 
   const logout = useCallback(async () => {
-    try { await api.auth.logout(); } finally {
+    try {
+      const refreshToken = loadRefreshToken();
+      await api.auth.logout(refreshToken ?? undefined);
+    } finally {
       setAccessToken("");
+      clearRefreshToken();
       setState({ user: null, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: false });
     }
   }, []);
@@ -163,5 +197,4 @@ export function useUserContext() {
   return ctx;
 }
 
-// Keep old useUser as alias for backwards compatibility
 export const useUser = useUserContext;
