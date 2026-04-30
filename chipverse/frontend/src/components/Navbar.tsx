@@ -13,6 +13,7 @@ export default function Navbar() {
   const [pendingCount, setPendingCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [, setLocation] = useLocation();
 
   const { notifications, unreadCount, markAllRead, markOneRead } =
     useNotifications(isAuthenticated);
@@ -53,8 +54,6 @@ export default function Navbar() {
       ]
     : [];
 
-  const [, setLocation] = useLocation();
-
   const handleLogout = async () => {
     await logout();
     setIsOpen(false);
@@ -62,11 +61,32 @@ export default function Navbar() {
   };
 
   const notifIcons: Record<string, string> = {
-    friend_request: "👥",
+    friend_request:  "👥",
     friend_accepted: "✅",
-    battle_challenge: "⚔️",
+    battle_challenge:"⚔️",
     battle_accepted: "🟢",
-    battle_result: "🏆",
+    battle_result:   "🏆",
+  };
+
+  // ── Navigate based on notification type ──────────────────────────────────
+  const getNotifRoute = (type: string): string => {
+    switch (type) {
+      case "friend_request":
+      case "friend_accepted":
+        return "/profile";
+      case "battle_challenge":
+      case "battle_accepted":
+      case "battle_result":
+        return "/battlefield";
+      default:
+        return "/";
+    }
+  };
+
+  const handleNotifClick = async (n: { id: string; type: string; isRead: boolean }) => {
+    if (!n.isRead) await markOneRead(n.id);
+    setNotifOpen(false);
+    setLocation(getNotifRoute(n.type));
   };
 
   return (
@@ -148,7 +168,7 @@ export default function Navbar() {
                         notifications.map((n) => (
                           <div
                             key={n.id}
-                            onClick={() => !n.isRead && markOneRead(n.id)}
+                            onClick={() => handleNotifClick(n)}
                             className={cn(
                               "flex gap-3 px-4 py-3 border-b border-white/5 cursor-pointer transition-colors hover:bg-white/5",
                               !n.isRead && "bg-blue-500/5"
@@ -171,9 +191,16 @@ export default function Navbar() {
                                 })}
                               </div>
                             </div>
-                            {!n.isRead && (
-                              <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0 mt-1.5" />
-                            )}
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                              {!n.isRead && (
+                                <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5" />
+                              )}
+                              <span className="text-[9px] text-gray-600 mt-auto">
+                                {n.type === "friend_request" || n.type === "friend_accepted"
+                                  ? "→ Profile"
+                                  : "→ Battle"}
+                              </span>
+                            </div>
                           </div>
                         ))
                       )}
@@ -266,7 +293,11 @@ export default function Navbar() {
           {/* Mobile notification summary */}
           {isAuthenticated && unreadCount > 0 && (
             <button
-              onClick={() => { markAllRead(); }}
+              onClick={() => {
+                markAllRead();
+                setIsOpen(false);
+                setLocation("/battlefield");
+              }}
               className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 w-fit"
             >
               <Bell className="w-4 h-4" />
