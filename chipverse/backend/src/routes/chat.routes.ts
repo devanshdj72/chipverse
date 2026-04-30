@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { requireAuth } from '../middleware/auth.middleware';
 import * as chatController from '../controllers/chat.controller';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(requireAuth);
 
 router.get('/conversations', chatController.getConversations);
 router.post('/dm', chatController.openDM);
