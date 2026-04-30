@@ -26,23 +26,23 @@ export const sendFriendRequest = async (senderId: string, receiverId: string) =>
   });
   if (pending) throw new Error('Friend request already pending');
 
-// Clean up any old ACCEPTED or REJECTED requests before creating new one
-await prisma.friendRequest.deleteMany({
-  where: {
-    OR: [
-      { senderId, receiverId, status: { in: ['ACCEPTED', 'REJECTED'] } },
-      { senderId: receiverId, receiverId: senderId, status: { in: ['ACCEPTED', 'REJECTED'] } },
-    ],
-  },
-});
+  // Clean up any old ACCEPTED or REJECTED requests before creating new one
+  await prisma.friendRequest.deleteMany({
+    where: {
+      OR: [
+        { senderId, receiverId, status: { in: ['ACCEPTED', 'REJECTED'] } },
+        { senderId: receiverId, receiverId: senderId, status: { in: ['ACCEPTED', 'REJECTED'] } },
+      ],
+    },
+  });
 
-return prisma.friendRequest.create({
+  const request = await prisma.friendRequest.create({
     data: { senderId, receiverId },
     include: {
       sender:   { select: { id: true, name: true, avatarUrl: true } },
       receiver: { select: { id: true, name: true, avatarUrl: true } },
     },
-  });
+  }) as any;
 
   // 🔔 Notify receiver of incoming friend request
   await createNotification({
