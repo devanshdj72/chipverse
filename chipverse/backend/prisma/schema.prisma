@@ -53,17 +53,18 @@ model User {
   updatedAt       DateTime  @updatedAt
   lastLoginAt     DateTime?
 
-  authProviders     UserAuthProvider[]
-  profile           UserProfile?
-  progress          DomainProgress[]
-  sessions          Session[]
-  refreshTokens     RefreshToken[]
-  sentRequests      FriendRequest[]    @relation("SentRequests")
-  receivedRequests  FriendRequest[]    @relation("ReceivedRequests")
-  friendshipsA      Friendship[]       @relation("FriendshipA")
-  friendshipsB      Friendship[]       @relation("FriendshipB")
-  battlesAsChallenger Battle[]         @relation("Challenger")
-  battlesAsOpponent   Battle[]         @relation("Opponent")
+  authProviders       UserAuthProvider[]
+  profile             UserProfile?
+  progress            DomainProgress[]
+  sessions            Session[]
+  refreshTokens       RefreshToken[]
+  sentRequests        FriendRequest[]    @relation("SentRequests")
+  receivedRequests    FriendRequest[]    @relation("ReceivedRequests")
+  friendshipsA        Friendship[]       @relation("FriendshipA")
+  friendshipsB        Friendship[]       @relation("FriendshipB")
+  battlesAsChallenger Battle[]           @relation("Challenger")
+  battlesAsOpponent   Battle[]           @relation("Opponent")
+  notifications       Notification[]
 
   @@index([email])
   @@index([phone])
@@ -192,10 +193,10 @@ model Battle {
   betXp           Int
   mode            BattleMode   @default(OFFLINE)
   status          BattleStatus @default(PENDING)
-  challengerXp    Int          @default(-1)  // -1 = not yet submitted, 0+ = correct answer count
-  opponentXp      Int          @default(-1)  // -1 = not yet submitted, 0+ = correct answer count
-  challengerTime  Int          @default(0)   // total ms taken (LIVE mode)
-  opponentTime    Int          @default(0)   // total ms taken (LIVE mode)
+  challengerXp    Int          @default(-1)
+  opponentXp      Int          @default(-1)
+  challengerTime  Int          @default(0)
+  opponentTime    Int          @default(0)
   winnerId        String?
   questions       Json
   startedAt       DateTime?
@@ -210,4 +211,22 @@ model Battle {
   @@index([challengerId])
   @@index([opponentId])
   @@index([status])
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // "friend_request" | "battle_challenge" | "battle_result" | "friend_accepted"
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
 }

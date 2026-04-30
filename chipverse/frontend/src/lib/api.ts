@@ -79,6 +79,12 @@ export const api = {
     submitScore: (battleId: string, score: number, timeTakenMs: number = 0) =>
       request<any>('POST', `/battles/${battleId}/score`, { score, timeTakenMs }),
   },
+  notifications: {
+  getAll: () => request<any[]>('GET', '/notifications'),
+  getUnreadCount: () => request<{ count: number }>('GET', '/notifications/unread-count'),
+  markAllRead: () => request<null>('PATCH', '/notifications/read'),
+  markRead: (id: string) => request<null>('PATCH', `/notifications/${id}/read`),
+},
 };
 
 export default api;

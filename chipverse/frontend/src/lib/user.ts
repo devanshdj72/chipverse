@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 import { createElement } from "react";
 import api, { setAccessToken } from "./api";
+import { connectSocket, disconnectSocket } from "./socket";
 
 export type UserState = {
   id: string;
@@ -36,22 +37,19 @@ const DEFAULT_PROFILE: ProfileState = {
   completedLevels: {},
 };
 
-// ─── localStorage helpers for refresh token persistence ───────────────────────
+// ─── localStorage helpers ─────────────────────────────────────────────────────
 const REFRESH_TOKEN_KEY = "chipverse_refresh_token";
-
 const saveRefreshToken = (token: string) => {
   try { localStorage.setItem(REFRESH_TOKEN_KEY, token); } catch { }
 };
-
 const loadRefreshToken = (): string | null => {
   try { return localStorage.getItem(REFRESH_TOKEN_KEY); } catch { return null; }
 };
-
 const clearRefreshToken = () => {
   try { localStorage.removeItem(REFRESH_TOKEN_KEY); } catch { }
 };
 
-// ─── Profile loader helper ────────────────────────────────────────────────────
+// ─── Profile loader ───────────────────────────────────────────────────────────
 const loadProfile = async () => {
   const profileRes = await api.user.getProfile();
   const completedLevels: Record<string, number[]> = {};
@@ -78,21 +76,20 @@ function useUserInternal() {
     isAuthenticated: false,
   });
 
-  // ── Restore session on page load / reload ──────────────────────────────────
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        // Try cookie first, fallback to localStorage refresh token
         const storedRefreshToken = loadRefreshToken();
-
         const refreshRes = await api.auth.refreshToken(storedRefreshToken ?? undefined);
 
-        // Save new refresh token to localStorage
         if (refreshRes.data.refreshToken) {
           saveRefreshToken(refreshRes.data.refreshToken);
         }
 
         setAccessToken(refreshRes.data.accessToken);
+
+        // Connect socket after restoring session
+        connectSocket(refreshRes.data.accessToken);
 
         const [meRes, profile] = await Promise.all([
           api.auth.me(),
@@ -116,9 +113,10 @@ function useUserInternal() {
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.auth.login({ email, password });
     setAccessToken(res.data.accessToken);
-
-    // Save refresh token to localStorage for persistence across reloads
     if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
+
+    // Connect socket on login
+    connectSocket(res.data.accessToken);
 
     const profile = await loadProfile();
     setState({
@@ -134,6 +132,7 @@ function useUserInternal() {
     const res = await api.auth.register({ name, email, password, phone });
     setAccessToken(res.data.accessToken);
     if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
+    connectSocket(res.data.accessToken);
     setState({ user: res.data.user, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: true });
     return res.data.user;
   }, []);
@@ -142,6 +141,7 @@ function useUserInternal() {
     const res = await api.auth.verifyOtp(phone, code, name);
     setAccessToken(res.data.accessToken);
     if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
+    connectSocket(res.data.accessToken);
     setState({ user: res.data.user, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: true });
     return res.data.user;
   }, []);
@@ -153,6 +153,7 @@ function useUserInternal() {
     } finally {
       setAccessToken("");
       clearRefreshToken();
+      disconnectSocket(); // Disconnect socket on logout
       setState({ user: null, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: false });
     }
   }, []);

@@ -1,10 +1,10 @@
 import prisma from '../config/prisma';
+import { createNotification } from './notification.service';
 
 // ─── Send Friend Request ──────────────────────────────────────────────────────
 export const sendFriendRequest = async (senderId: string, receiverId: string) => {
   if (senderId === receiverId) throw new Error('Cannot add yourself as a friend');
 
-  // Check already friends
   const existing = await prisma.friendship.findFirst({
     where: {
       OR: [
@@ -15,7 +15,6 @@ export const sendFriendRequest = async (senderId: string, receiverId: string) =>
   });
   if (existing) throw new Error('Already friends');
 
-  // Check pending request
   const pending = await prisma.friendRequest.findFirst({
     where: {
       OR: [
@@ -27,12 +26,24 @@ export const sendFriendRequest = async (senderId: string, receiverId: string) =>
   });
   if (pending) throw new Error('Friend request already pending');
 
-  return prisma.friendRequest.create({
+  const request = await prisma.friendRequest.create({
     data: { senderId, receiverId },
     include: {
+      sender:   { select: { id: true, name: true, avatarUrl: true } },
       receiver: { select: { id: true, name: true, avatarUrl: true } },
     },
   });
+
+  // 🔔 Notify receiver of incoming friend request
+  await createNotification({
+    userId:  receiverId,
+    type:    'friend_request',
+    title:   'New Friend Request',
+    message: `${request.sender.name} sent you a friend request`,
+    data:    { requestId: request.id, senderId, senderName: request.sender.name },
+  });
+
+  return request;
 };
 
 // ─── Respond to Friend Request ────────────────────────────────────────────────
@@ -41,7 +52,13 @@ export const respondToFriendRequest = async (
   userId: string,
   action: 'accept' | 'reject'
 ) => {
-  const request = await prisma.friendRequest.findUnique({ where: { id: requestId } });
+  const request = await prisma.friendRequest.findUnique({
+    where: { id: requestId },
+    include: {
+      sender:   { select: { id: true, name: true } },
+      receiver: { select: { id: true, name: true } },
+    },
+  });
   if (!request) throw new Error('Request not found');
   if (request.receiverId !== userId) throw new Error('Not authorized');
   if (request.status !== 'PENDING') throw new Error('Request already handled');
@@ -56,6 +73,16 @@ export const respondToFriendRequest = async (
         data: { userAId: request.senderId, userBId: request.receiverId },
       }),
     ]);
+
+    // 🔔 Notify original sender that their request was accepted
+    await createNotification({
+      userId:  request.senderId,
+      type:    'friend_accepted',
+      title:   'Friend Request Accepted',
+      message: `${request.receiver.name} accepted your friend request`,
+      data:    { friendId: request.receiverId, friendName: request.receiver.name },
+    });
+
     return { accepted: true };
   } else {
     await prisma.friendRequest.update({
@@ -147,14 +174,15 @@ export const searchUsers = async (query: string, currentUserId: string) => {
     take: 10,
   });
 
-  // Get friendship statuses
   const friendships = await prisma.friendship.findMany({
     where: {
       OR: [{ userAId: currentUserId }, { userBId: currentUserId }],
     },
   });
   const friendIds = new Set(
-    friendships.map((f: any) => (f.userAId === currentUserId ? f.userBId : f.userAId))
+    friendships.map((f: any) =>
+      f.userAId === currentUserId ? f.userBId : f.userAId
+    )
   );
 
   const pendingRequests = await prisma.friendRequest.findMany({
@@ -187,7 +215,6 @@ export const getFriendsLeaderboard = async (userId: string) => {
     f.userAId === userId ? f.userBId : f.userAId
   );
 
-  // ✅ Always include self — even if no friends yet
   const allIds = [...new Set([userId, ...friendIds])];
 
   const profiles = await prisma.userProfile.findMany({
@@ -198,7 +225,6 @@ export const getFriendsLeaderboard = async (userId: string) => {
     },
   });
 
-  // ✅ If your profile doesn't exist yet in userProfile, still show you
   const profileUserIds = profiles.map((p: any) => p.userId);
   const missingIds = allIds.filter(id => !profileUserIds.includes(id));
 
@@ -218,7 +244,6 @@ export const getFriendsLeaderboard = async (userId: string) => {
         user: u,
       } as any);
     }
-    // Re-sort after adding missing
     profiles.sort((a: any, b: any) => b.xp - a.xp);
   }
 
@@ -232,10 +257,11 @@ export const getFriendsLeaderboard = async (userId: string) => {
     rank_title: p.rank,
     battlesWon: p.battlesWon,
     battlesLost: p.battlesLost,
-    isMe: p.userId === userId,   // ✅ flags YOUR row so frontend can highlight it
+    isMe: p.userId === userId,
   }));
 };
-// ─── Get Sent Requests (I am the sender) ─────────────────────────────────────
+
+// ─── Get Sent Requests ────────────────────────────────────────────────────────
 export const getSentRequests = async (userId: string) => {
   return prisma.friendRequest.findMany({
     where: { senderId: userId, status: 'PENDING' },
