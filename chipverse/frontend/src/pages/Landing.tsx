@@ -1,3 +1,4 @@
+// AFTER
 import HeroBanner from "@/components/HeroBanner";
 import CircuitBackground from "@/components/CircuitBackground";
 import ParticleCanvas from "@/components/ParticleCanvas";
@@ -7,13 +8,21 @@ import { useUserContext } from "@/lib/user";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
-  const { user } = useUserContext();
+  const { isAuthenticated } = useUserContext();
 
   const handleStart = () => {
+    if (!isAuthenticated) {
+      setLocation("/login");
+      return;
+    }
     setLocation("/dashboard");
   };
 
   const handleExplore = () => {
+    if (!isAuthenticated) {
+      setLocation("/login");
+      return;
+    }
     setLocation("/domains");
   };
 

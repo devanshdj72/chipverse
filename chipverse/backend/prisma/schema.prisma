@@ -1,6 +1,3 @@
-// This is your Prisma schema file for ChipVerse
-// Run: npx prisma generate && npx prisma migrate dev
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Auth Provider Enum ─────────────────────────────────────────────────────
 enum AuthProvider {
   EMAIL
   GOOGLE
@@ -24,7 +20,25 @@ enum UserRole {
   MODERATOR
 }
 
-// ─── User ───────────────────────────────────────────────────────────────────
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum BattleStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  DECLINED
+  EXPIRED
+}
+
+enum BattleMode {
+  LIVE
+  OFFLINE
+}
+
 model User {
   id              String    @id @default(uuid())
   email           String?   @unique
@@ -39,36 +53,38 @@ model User {
   updatedAt       DateTime  @updatedAt
   lastLoginAt     DateTime?
 
-  // Relations
-  authProviders   UserAuthProvider[]
-  profile         UserProfile?
-  progress        DomainProgress[]
-  sessions        Session[]
-  refreshTokens   RefreshToken[]
+  authProviders     UserAuthProvider[]
+  profile           UserProfile?
+  progress          DomainProgress[]
+  sessions          Session[]
+  refreshTokens     RefreshToken[]
+  sentRequests      FriendRequest[]    @relation("SentRequests")
+  receivedRequests  FriendRequest[]    @relation("ReceivedRequests")
+  friendshipsA      Friendship[]       @relation("FriendshipA")
+  friendshipsB      Friendship[]       @relation("FriendshipB")
+  battlesAsChallenger Battle[]         @relation("Challenger")
+  battlesAsOpponent   Battle[]         @relation("Opponent")
 
   @@index([email])
   @@index([phone])
 }
 
-// ─── Auth Provider (SSO accounts linked to a user) ──────────────────────────
 model UserAuthProvider {
   id           String       @id @default(uuid())
   userId       String
   provider     AuthProvider
-  providerId   String       // external ID from Google/LinkedIn
+  providerId   String
   accessToken  String?      @db.Text
   refreshToken String?      @db.Text
   expiresAt    DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
   @@index([userId])
 }
 
-// ─── User Profile (learning stats) ──────────────────────────────────────────
 model UserProfile {
   id            String   @id @default(uuid())
   userId        String   @unique
@@ -77,28 +93,26 @@ model UserProfile {
   rank          String   @default("RTL Beginner")
   currentDomain String   @default("rtl")
   lastActiveAt  DateTime @default(now())
+  battlesWon    Int      @default(0)
+  battlesLost   Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ─── Domain Progress ─────────────────────────────────────────────────────────
 model DomainProgress {
-  id            String   @id @default(uuid())
-  userId        String
-  domainId      String   // e.g. "rtl", "verification"
-  completedLevels Int[]  @default([])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  userId          String
+  domainId        String
+  completedLevels Int[]    @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, domainId])
   @@index([userId])
 }
 
-// ─── Session (for tracking active sessions) ──────────────────────────────────
 model Session {
   id         String   @id @default(uuid())
   userId     String
@@ -107,13 +121,11 @@ model Session {
   isValid    Boolean  @default(true)
   createdAt  DateTime @default(now())
   expiresAt  DateTime
-
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-// ─── Refresh Token ───────────────────────────────────────────────────────────
 model RefreshToken {
   id         String   @id @default(uuid())
   userId     String
@@ -121,21 +133,81 @@ model RefreshToken {
   isRevoked  Boolean  @default(false)
   createdAt  DateTime @default(now())
   expiresAt  DateTime
-
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
 }
 
-// ─── OTP (Phone verification) ────────────────────────────────────────────────
 model OtpRecord {
   id         String   @id @default(uuid())
   phone      String
-  purpose    String   // "login" | "register" | "verify"
+  purpose    String
   expiresAt  DateTime
   isUsed     Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   @@index([phone])
+}
+
+// ─── Friends System ───────────────────────────────────────────────────────────
+
+model FriendRequest {
+  id         String              @id @default(uuid())
+  senderId   String
+  receiverId String
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  sender     User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA     User @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+// ─── Battle System ────────────────────────────────────────────────────────────
+
+model Battle {
+  id              String       @id @default(uuid())
+  challengerId    String
+  opponentId      String
+  domainId        String
+  betXp           Int
+  mode            BattleMode   @default(OFFLINE)
+  status          BattleStatus @default(PENDING)
+  challengerXp    Int          @default(-1)  // -1 = not yet submitted, 0+ = correct answer count
+  opponentXp      Int          @default(-1)  // -1 = not yet submitted, 0+ = correct answer count
+  challengerTime  Int          @default(0)   // total ms taken (LIVE mode)
+  opponentTime    Int          @default(0)   // total ms taken (LIVE mode)
+  winnerId        String?
+  questions       Json
+  startedAt       DateTime?
+  completedAt     DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  challenger    User @relation("Challenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent      User @relation("Opponent", fields: [opponentId], references: [id], onDelete: Cascade)
+
+  @@index([challengerId])
+  @@index([opponentId])
+  @@index([status])
 }

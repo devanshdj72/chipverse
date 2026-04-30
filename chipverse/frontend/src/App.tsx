@@ -1,14 +1,14 @@
-import Leaderboard from "@/pages/Leaderboard";
-import Analytics from "@/pages/Analytics";
+import { Switch, Route, Router as WouterRouter } from "wouter";
+// Add this import at the top with the others
 import Profile from "@/pages/Profile";
-import { Switch, Route } from "wouter";
-import { Redirect } from "wouter";
 import Landing from "@/pages/Landing";
 import Domains from "@/pages/Domains";
-import Achievements from "@/pages/Achievements";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
+import Leaderboard from "@/pages/Leaderboard";
+import BattleField from "@/pages/BattleField";
+import BattleRoom from "@/pages/BattleRoom";
 import RTLPath from "@/pages/paths/RTLPath";
 import VerificationPath from "@/pages/paths/VerificationPath";
 import PhysicalDesignPath from "@/pages/paths/PhysicalDesignPath";
@@ -19,45 +19,37 @@ import DFTPath from "@/pages/paths/DFTPath";
 import ResearchPath from "@/pages/paths/ResearchPath";
 import NotFound from "@/pages/not-found";
 import Navbar from "@/components/Navbar";
-import { useUserContext } from "@/lib/user";
-
-function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
-  const { isAuthenticated, isLoading } = useUserContext();
-  if (isLoading) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-white animate-pulse font-mono">Loading...</div>
-    </div>
-  );
-  if (!isAuthenticated) return <Redirect to="/login" />;
-  return <Component />;
-}
+import Achievements from "@/pages/Achievements";
+import Placement from "@/pages/Placement";
 
 export default function App() {
   return (
-    <>
+    <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Navbar />
       <main className="min-h-screen bg-black">
         <Switch>
           <Route path="/" component={Landing} />
+          <Route path="/domains" component={Domains} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/login" component={Login} />
           <Route path="/auth/callback" component={AuthCallback} />
-          <Route path="/leaderboard">{() => <ProtectedRoute component={Leaderboard} />}</Route>
-          <Route path="/analytics">{() => <ProtectedRoute component={Analytics} />}</Route>
-          <Route path="/domains">{() => <ProtectedRoute component={Domains} />}</Route>
-          <Route path="/dashboard">{() => <ProtectedRoute component={Dashboard} />}</Route>
-          <Route path="/path/rtl">{() => <ProtectedRoute component={RTLPath} />}</Route>
-          <Route path="/path/verification">{() => <ProtectedRoute component={VerificationPath} />}</Route>
-          <Route path="/path/physical-design">{() => <ProtectedRoute component={PhysicalDesignPath} />}</Route>
-          <Route path="/path/analog">{() => <ProtectedRoute component={AnalogPath} />}</Route>
-          <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
-          <Route path="/path/fpga">{() => <ProtectedRoute component={FPGAPath} />}</Route>
-          <Route path="/path/embedded">{() => <ProtectedRoute component={EmbeddedPath} />}</Route>
-          <Route path="/achievements">{() => <ProtectedRoute component={Achievements} />}</Route>
-          <Route path="/path/dft">{() => <ProtectedRoute component={DFTPath} />}</Route>
-          <Route path="/path/research">{() => <ProtectedRoute component={ResearchPath} />}</Route>
+          <Route path="/leaderboard" component={Leaderboard} />
+          <Route path="/battlefield" component={BattleField} />
+          <Route path="/battle/:battleId" component={BattleRoom} />
+          <Route path="/path/rtl" component={RTLPath} />
+          <Route path="/path/verification" component={VerificationPath} />
+          <Route path="/path/physical-design" component={PhysicalDesignPath} />
+          <Route path="/path/analog" component={AnalogPath} />
+          <Route path="/path/fpga" component={FPGAPath} />
+          <Route path="/path/embedded" component={EmbeddedPath} />
+          <Route path="/path/dft" component={DFTPath} />
+          <Route path="/path/research" component={ResearchPath} />
+          <Route path="/achievements" component={Achievements} />
+          <Route path="/placement" component={Placement} />
+          <Route path="/profile" component={Profile} />  
           <Route component={NotFound} />
         </Switch>
       </main>
-    </>
+    </WouterRouter>
   );
 }

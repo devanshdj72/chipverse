@@ -8,13 +8,14 @@ import './config/passport';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import friendsRoutes from './routes/friends.routes';
+import battleRoutes from './routes/battle.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
 
 const app = express();
 
-// ─── CORS — must be FIRST before everything ───────────────────────────────────
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowed = [
@@ -23,16 +24,13 @@ app.use((req, res, next) => {
     'http://localhost:5173',
     'http://localhost:4173',
   ];
-
   if (!origin || allowed.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin || '*');
   }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
   return next();
 });
 
@@ -52,6 +50,8 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/friends', friendsRoutes);
+app.use('/api/battles', battleRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
