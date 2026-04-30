@@ -21,6 +21,7 @@ app.use((req, res, next) => {
   const allowed = [
     'https://chipverse-q341.vercel.app',
     'https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app',
+    'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
     'http://localhost:5173',
     'http://localhost:4173',
   ];
