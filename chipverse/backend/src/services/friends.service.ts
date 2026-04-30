@@ -68,7 +68,8 @@ export const respondToFriendRequest = async (
       sender:   { select: { id: true, name: true } },
       receiver: { select: { id: true, name: true } },
     },
-  });
+  }) as any;
+
   if (!request) throw new Error('Request not found');
   if (request.receiverId !== userId) throw new Error('Not authorized');
   if (request.status !== 'PENDING') throw new Error('Request already handled');
