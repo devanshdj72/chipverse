@@ -21,16 +21,17 @@ const app = express();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowed = [
-    'https://chipverse-q341.vercel.app',
-    'https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app',
-    'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
-    'https://chipverse-q341-git-v3-realtime-chat-devanshdj72s-projects.vercel.app',
-    'https://chipverse-q341-pvhtnpzoh-devanshdj72s-projects.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:4173',
-  ];
-  if (!origin || allowed.includes(origin)) {
+
+  // Allow any Vercel preview deployment for this project + localhost
+  const isAllowed =
+    !origin ||
+    origin === 'https://chipverse-q341.vercel.app' ||
+    /^https:\/\/chipverse-q341-.*\.vercel\.app$/.test(origin) ||
+    /^https:\/\/chipverse-q341-.*-devanshdj72s-projects\.vercel\.app$/.test(origin) ||
+    origin === 'http://localhost:5173' ||
+    origin === 'http://localhost:4173';
+
+  if (isAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin || '*');
   }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
