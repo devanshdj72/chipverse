@@ -21,6 +21,7 @@ import Navbar from "@/components/Navbar";
 import Achievements from "@/pages/Achievements";
 import Placement from "@/pages/Placement";
 import Messages from "@/pages/Messages";
+import AIAssistant from "@/components/AIAssistant";
 
 export default function App() {
   return (
@@ -51,6 +52,8 @@ export default function App() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      {/* AIAssistant handles its own auth check internally */}
+      <AIAssistant />
     </WouterRouter>
   );
 }
