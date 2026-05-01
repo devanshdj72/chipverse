@@ -138,6 +138,9 @@ export default function Messages() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // ── Unread counts — key: conversationId, value: unread count ──────────────
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -173,29 +176,8 @@ export default function Messages() {
       const socket = getSocket();
       if (!socket) return false;
 
-      // ── receive_message: fired when SOMEONE ELSE sends a message to me ──
-      // The sender is NOT included here (server skips them).
+      // receive_message: fired when SOMEONE ELSE sends a message to me
       const onMessage = (msg: Message) => {
-        // Update sidebar preview regardless
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === msg.conversationId ? { ...c, messages: [msg] } : c
-          )
-        );
-
-        // Only add to chat window if this conversation is open
-        if (activeRef.current?.id !== msg.conversationId) return;
-
-        setMessages((prev) => {
-          // Avoid exact duplicate real ids
-          if (prev.find((m) => m.id === msg.id)) return prev;
-          return [...prev, msg];
-        });
-      };
-
-      // ── message_sent: fired back to the SENDER ONLY ───────────────────
-      // Used to replace the optimistic temp message with the real saved one.
-      const onMessageSent = (msg: Message) => {
         // Update sidebar preview
         setConversations((prev) =>
           prev.map((c) =>
@@ -203,10 +185,34 @@ export default function Messages() {
           )
         );
 
+        // ── Unread badge logic ──────────────────────────────────────────
+        // If this conversation is NOT currently open → increment unread count
+        if (activeRef.current?.id !== msg.conversationId) {
+          setUnreadCounts((prev) => ({
+            ...prev,
+            [msg.conversationId]: (prev[msg.conversationId] ?? 0) + 1,
+          }));
+          return;
+        }
+
+        // Conversation IS open → add message to chat window, no badge needed
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      };
+
+      // message_sent: confirmation back to sender — replace temp message
+      const onMessageSent = (msg: Message) => {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === msg.conversationId ? { ...c, messages: [msg] } : c
+          )
+        );
+
         if (activeRef.current?.id !== msg.conversationId) return;
 
         setMessages((prev) => {
-          // Find and replace the matching temp message
           const tempIdx = prev.findIndex(
             (m) =>
               m.id.startsWith("temp-") &&
@@ -218,7 +224,6 @@ export default function Messages() {
             updated[tempIdx] = msg;
             return updated;
           }
-          // No temp found (edge case) — avoid duplicate, just add
           if (prev.find((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
@@ -236,7 +241,6 @@ export default function Messages() {
         });
       };
 
-      // conversation_created: join new conv room for typing indicators
       const onConversationCreated = ({ conversationId }: { conversationId: string }) => {
         socket.emit('join_conversation', conversationId);
       };
@@ -277,6 +281,15 @@ export default function Messages() {
     setMobileShowChat(true);
     setTypingUsers(new Set());
     joinConversation(conv.id);
+
+    // ── Clear unread badge when opening conversation ──────────────────────
+    setUnreadCounts((prev) => {
+      if (!prev[conv.id]) return prev;
+      const updated = { ...prev };
+      delete updated[conv.id];
+      return updated;
+    });
+
     try {
       const res = await api.chat.getMessages(conv.id);
       setMessages(res.data ?? []);
@@ -309,8 +322,6 @@ export default function Messages() {
     if (typingTimer.current) clearTimeout(typingTimer.current);
     emitStopTyping(active.id);
 
-    // Optimistic message — shown immediately on sender's side (RIGHT, blue)
-    // Will be replaced by real message via message_sent event
     const tempMsg: Message = {
       id: `temp-${Date.now()}`,
       conversationId: active.id,
@@ -320,9 +331,6 @@ export default function Messages() {
       sender: { id: user.id, name: user.name },
     };
     setMessages((prev) => [...prev, tempMsg]);
-
-    // Send via socket — server saves + broadcasts to others via receive_message
-    // and confirms back to sender via message_sent
     sendSocketMessage(active.id, content);
   };
 
@@ -352,6 +360,9 @@ export default function Messages() {
     return acc;
   }, []);
 
+  // Total unread count for all conversations
+  const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+
   if (!isAuthenticated) return null;
 
   return (
@@ -364,7 +375,15 @@ export default function Messages() {
         )}>
           <div className="px-4 pt-4 pb-3 border-b border-white/8">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-lg font-bold text-white">Messages</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-white">Messages</h1>
+                {/* Total unread badge on header */}
+                {totalUnread > 0 && (
+                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {totalUnread > 99 ? "99+" : totalUnread}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button onClick={() => setShowCreateGroup(true)} title="Create group"
                   className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all">
@@ -428,11 +447,17 @@ export default function Messages() {
                 const name = getConvName(conv, user?.id ?? "");
                 const lastMsg = conv.messages?.[0];
                 const isActive = active?.id === conv.id;
+                const unread = unreadCounts[conv.id] ?? 0;
+
                 return (
                   <div key={conv.id} onClick={() => openConversation(conv)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all border-b border-white/4",
-                      isActive ? "bg-blue-500/10 border-l-2 border-l-blue-500" : "hover:bg-white/4"
+                      isActive
+                        ? "bg-blue-500/10 border-l-2 border-l-blue-500"
+                        : unread > 0
+                        ? "bg-blue-500/5 hover:bg-blue-500/8"
+                        : "hover:bg-white/4"
                     )}>
                     <div className="relative">
                       <Avatar name={name} size="md" />
@@ -444,19 +469,38 @@ export default function Messages() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-white truncate">{name}</span>
+                        <span className={cn(
+                          "text-sm truncate",
+                          unread > 0 ? "font-bold text-white" : "font-semibold text-white"
+                        )}>
+                          {name}
+                        </span>
                         {lastMsg && (
-                          <span className="text-[10px] text-gray-600 flex-shrink-0 ml-2">
+                          <span className={cn(
+                            "text-[10px] flex-shrink-0 ml-2",
+                            unread > 0 ? "text-blue-400 font-semibold" : "text-gray-600"
+                          )}>
                             {formatTime(lastMsg.createdAt)}
                           </span>
                         )}
                       </div>
-                      {lastMsg && (
-                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                          {lastMsg.sender?.id === user?.id ? "You: " : `${lastMsg.sender?.name}: `}
-                          {lastMsg.content}
-                        </p>
-                      )}
+                      <div className="flex items-center justify-between mt-0.5">
+                        {lastMsg && (
+                          <p className={cn(
+                            "text-xs truncate flex-1",
+                            unread > 0 ? "text-gray-300 font-medium" : "text-gray-500"
+                          )}>
+                            {lastMsg.sender?.id === user?.id ? "You: " : `${lastMsg.sender?.name}: `}
+                            {lastMsg.content}
+                          </p>
+                        )}
+                        {/* ── Unread badge ── */}
+                        {unread > 0 && (
+                          <span className="ml-2 min-w-5 h-5 px-1.5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                            {unread > 99 ? "99+" : unread}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -528,7 +572,6 @@ export default function Messages() {
                               isMe
                                 ? "bg-blue-600 text-white rounded-br-sm"
                                 : "bg-white/8 text-gray-100 rounded-bl-sm border border-white/6",
-                              // Slightly dimmed while temp (not yet confirmed by server)
                               msg.id.startsWith("temp-") ? "opacity-70" : "opacity-100"
                             )}>
                               {msg.content}
