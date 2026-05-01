@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useUserContext } from "@/lib/user";
-import { Microchip, Menu, X, Flame, LogIn, LogOut, Bell } from "lucide-react";
+import { Microchip, Menu, X, Flame, LogIn, LogOut, Bell, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { useNotifications } from "@/lib/useNotifications";
+import { getSocket } from "@/lib/socket";
 
 export default function Navbar() {
   const [location] = useLocation();
@@ -12,6 +13,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
 
@@ -19,7 +21,7 @@ export default function Navbar() {
     useNotifications(isAuthenticated);
 
   // Close notif dropdown when clicking outside
-  useEffect(() => {
+   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
@@ -42,6 +44,26 @@ export default function Navbar() {
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !isAuthenticated) return;
+
+    const onMessage = () => {
+      // Only increment badge if not already on /messages
+      if (!window.location.pathname.includes("/messages")) {
+        setUnreadMessages((n) => n + 1);
+      }
+    };
+
+    socket.on("receive_message", onMessage);
+    return () => { socket.off("receive_message", onMessage); };
+  }, [isAuthenticated]);
+
+  // Clear badge when visiting messages
+  useEffect(() => {
+    if (location.startsWith("/messages")) setUnreadMessages(0);
+  }, [location]);
 
   const links = isAuthenticated
     ? [
@@ -124,6 +146,19 @@ export default function Navbar() {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
+
+               {/* ── Messages Icon ── */}
+              <Link
+                href="/messages"
+                className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+              >
+                <MessageSquare className="w-5 h-5" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadMessages > 9 ? "9+" : unreadMessages}
+                  </span>
+                )}
+              </Link>
 
               {/* ── Notification Bell ── */}
               <div className="relative" ref={notifRef}>
@@ -279,6 +314,22 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          {/* Mobile Messages link */}
+          {isAuthenticated && (
+            <Link
+              href="/messages"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2 text-lg font-medium text-gray-400 hover:text-white"
+            >
+              <MessageSquare className="w-5 h-5" />
+              Messages
+              {unreadMessages > 0 && (
+                <span className="w-5 h-5 bg-green-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadMessages > 9 ? "9+" : unreadMessages}
+                </span>
+              )}
+            </Link>
+          )}
 
           {isAuthenticated && (
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-2 w-fit">

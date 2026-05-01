@@ -11,6 +11,7 @@ import userRoutes from './routes/user.routes';
 import friendsRoutes from './routes/friends.routes';
 import battleRoutes from './routes/battle.routes';
 import notificationRoutes from './routes/notification.routes';
+import chatRoutes from './routes/chat.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
@@ -55,6 +56,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/battles', battleRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
