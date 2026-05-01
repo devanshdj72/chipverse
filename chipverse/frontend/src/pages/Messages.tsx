@@ -173,19 +173,40 @@ export default function Messages() {
       const socket = getSocket();
       if (!socket) return false;
 
+      // ── receive_message: fired when SOMEONE ELSE sends a message to me ──
+      // The sender is NOT included here (server skips them).
       const onMessage = (msg: Message) => {
-        if (activeRef.current?.id !== msg.conversationId) {
-          // conversation not open — just update sidebar preview
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === msg.conversationId ? { ...c, messages: [msg] } : c
-            )
-          );
-          return;
-        }
+        // Update sidebar preview regardless
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === msg.conversationId ? { ...c, messages: [msg] } : c
+          )
+        );
+
+        // Only add to chat window if this conversation is open
+        if (activeRef.current?.id !== msg.conversationId) return;
 
         setMessages((prev) => {
-          // Replace matching temp message (same sender + content)
+          // Avoid exact duplicate real ids
+          if (prev.find((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      };
+
+      // ── message_sent: fired back to the SENDER ONLY ───────────────────
+      // Used to replace the optimistic temp message with the real saved one.
+      const onMessageSent = (msg: Message) => {
+        // Update sidebar preview
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === msg.conversationId ? { ...c, messages: [msg] } : c
+          )
+        );
+
+        if (activeRef.current?.id !== msg.conversationId) return;
+
+        setMessages((prev) => {
+          // Find and replace the matching temp message
           const tempIdx = prev.findIndex(
             (m) =>
               m.id.startsWith("temp-") &&
@@ -197,16 +218,10 @@ export default function Messages() {
             updated[tempIdx] = msg;
             return updated;
           }
-          // Avoid exact duplicate real ids
+          // No temp found (edge case) — avoid duplicate, just add
           if (prev.find((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
-
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === msg.conversationId ? { ...c, messages: [msg] } : c
-          )
-        );
       };
 
       const onTyping = ({ userId }: { userId: string }) => {
@@ -221,14 +236,23 @@ export default function Messages() {
         });
       };
 
+      // conversation_created: join new conv room for typing indicators
+      const onConversationCreated = ({ conversationId }: { conversationId: string }) => {
+        socket.emit('join_conversation', conversationId);
+      };
+
       socket.on("receive_message", onMessage);
+      socket.on("message_sent", onMessageSent);
       socket.on("user_typing", onTyping);
       socket.on("user_stop_typing", onStopTyping);
+      socket.on("conversation_created", onConversationCreated);
 
       cleanup = () => {
         socket.off("receive_message", onMessage);
+        socket.off("message_sent", onMessageSent);
         socket.off("user_typing", onTyping);
         socket.off("user_stop_typing", onStopTyping);
+        socket.off("conversation_created", onConversationCreated);
       };
       return true;
     };
@@ -285,7 +309,8 @@ export default function Messages() {
     if (typingTimer.current) clearTimeout(typingTimer.current);
     emitStopTyping(active.id);
 
-    // Optimistic message — will be replaced by real one from socket broadcast
+    // Optimistic message — shown immediately on sender's side (RIGHT, blue)
+    // Will be replaced by real message via message_sent event
     const tempMsg: Message = {
       id: `temp-${Date.now()}`,
       conversationId: active.id,
@@ -296,7 +321,8 @@ export default function Messages() {
     };
     setMessages((prev) => [...prev, tempMsg]);
 
-    // Send via socket — server saves + broadcasts back to room including sender
+    // Send via socket — server saves + broadcasts to others via receive_message
+    // and confirms back to sender via message_sent
     sendSocketMessage(active.id, content);
   };
 
@@ -501,12 +527,14 @@ export default function Messages() {
                               "px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words",
                               isMe
                                 ? "bg-blue-600 text-white rounded-br-sm"
-                                : "bg-white/8 text-gray-100 rounded-bl-sm border border-white/6"
+                                : "bg-white/8 text-gray-100 rounded-bl-sm border border-white/6",
+                              // Slightly dimmed while temp (not yet confirmed by server)
+                              msg.id.startsWith("temp-") ? "opacity-70" : "opacity-100"
                             )}>
                               {msg.content}
                             </div>
                             <span className="text-[9px] text-gray-700 mt-0.5 px-1">
-                              {formatTime(msg.createdAt)}
+                              {msg.id.startsWith("temp-") ? "Sending..." : formatTime(msg.createdAt)}
                             </span>
                           </div>
                         </div>

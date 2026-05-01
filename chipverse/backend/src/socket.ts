@@ -11,16 +11,14 @@ const userSocketMap = new Map<string, string>();
 export const initSocket = (httpServer: HttpServer) => {
   io = new SocketServer(httpServer, {
     cors: {
-  origin: [
-    'https://chipverse-q341.vercel.app',
-    'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
-    'https://chipverse-q341-git-v3-realtime-chat-devanshdj72s-projects.vercel.app',  // ← ADD THIS
-    'https://chipverse-q341-pvhtnpzoh-devanshdj72s-projects.vercel.app',              // ← ADD THIS
-    'http://localhost:5173',
-    'http://localhost:4173',
-  ],
-  credentials: true,
-},
+      origin: [
+        'https://chipverse-q341.vercel.app',
+        'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:4173',
+      ],
+      credentials: true,
+    },
     transports: ['websocket', 'polling'],
   });
 
@@ -44,7 +42,7 @@ export const initSocket = (httpServer: HttpServer) => {
     // Join personal notification room — always reliable
     socket.join(`user:${userId}`);
 
-    // Also join all existing conversation rooms at connect time
+    // Auto-join all existing conversation rooms at connect time
     (async () => {
       try {
         const memberships = await prisma.conversationMember.findMany({
@@ -58,7 +56,6 @@ export const initSocket = (httpServer: HttpServer) => {
     })();
 
     // ── Chat: explicitly join a conversation room ─────────────────────────
-    // Called by frontend when user opens a conversation
     socket.on('join_conversation', (conversationId: string) => {
       socket.join(`conv:${conversationId}`);
     });
@@ -81,19 +78,24 @@ export const initSocket = (httpServer: HttpServer) => {
         // Save message to DB
         const message = await saveMessage(conversationId, userId, content.trim());
 
-        // ── KEY FIX ──────────────────────────────────────────────────────
-        // Do NOT rely on conv room membership — emit directly to every
-        // member's personal user:${userId} room instead.
-        // This guarantees delivery even if the other user connected before
-        // this conversation existed and never joined the conv room.
+        // Fetch all members of this conversation
         const members = await prisma.conversationMember.findMany({
           where: { conversationId },
           select: { userId: true },
         });
 
+        // ── KEY FIX ──────────────────────────────────────────────────────
+        // Emit receive_message ONLY to OTHER members (not the sender).
+        // The sender already has their message shown optimistically.
+        // Emitting back to sender caused it to appear on BOTH sides.
         members.forEach(({ userId: memberId }) => {
+          if (memberId === userId) return; // skip sender
           io.to(`user:${memberId}`).emit('receive_message', message);
         });
+
+        // Send confirmation back to sender ONLY — used to replace the
+        // optimistic temp message with the real saved message (correct id etc.)
+        socket.emit('message_sent', message);
         // ─────────────────────────────────────────────────────────────────
 
       } catch (e) {
@@ -102,7 +104,6 @@ export const initSocket = (httpServer: HttpServer) => {
     });
 
     // ── Chat: typing indicators ───────────────────────────────────────────
-    // Emit to conv room for typing (minor feature, conv room miss is OK here)
     socket.on('typing', (conversationId: string) => {
       socket.to(`conv:${conversationId}`).emit('user_typing', { userId, conversationId });
     });
@@ -123,15 +124,12 @@ export const initSocket = (httpServer: HttpServer) => {
 };
 
 // ─── Emit to a specific user's personal room ──────────────────────────────────
-// Used by notification service and chat service
 export const emitToUser = (userId: string, event: string, data: any) => {
   if (!io) return;
   io.to(`user:${userId}`).emit(event, data);
 };
 
-// ─── Notify all members of a conversation to join its room ───────────────────
-// Call this after creating a new DM or group so all members' sockets join
-// the conv room immediately — fixes typing indicators for new conversations
+// ─── Notify all members of a new conversation to join its room ───────────────
 export const notifyConversationCreated = async (conversationId: string) => {
   if (!io) return;
   try {
