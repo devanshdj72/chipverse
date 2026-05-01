@@ -29,6 +29,12 @@ export const connectSocket = (accessToken: string): Socket => {
     console.error('Socket error:', err.message);
   });
 
+  // ── When server tells us a new conversation was created ───────────────
+  // Join the conv room immediately so typing indicators work
+  socket.on('conversation_created', ({ conversationId }: { conversationId: string }) => {
+    socket?.emit('join_conversation', conversationId);
+  });
+
   return socket;
 };
 
