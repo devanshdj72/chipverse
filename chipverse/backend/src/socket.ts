@@ -12,14 +12,16 @@ const userSocketMap = new Map<string, string>();
 export const initSocket = (httpServer: HttpServer) => {
   io = new SocketServer(httpServer, {
     cors: {
-      origin: [
-        'https://chipverse-q341.vercel.app',
-        'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
-        'http://localhost:5173',
-        'http://localhost:4173',
-      ],
-      credentials: true,
-    },
+  origin: [
+    'https://chipverse-q341.vercel.app',
+    'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
+    'https://chipverse-q341-git-v3-realtime-chat-devanshdj72s-projects.vercel.app',  // ← ADD THIS
+    'https://chipverse-q341-pvhtnpzoh-devanshdj72s-projects.vercel.app',              // ← ADD THIS
+    'http://localhost:5173',
+    'http://localhost:4173',
+  ],
+  credentials: true,
+},
     transports: ['websocket', 'polling'],
   });
 
