@@ -12,6 +12,7 @@ import friendsRoutes from './routes/friends.routes';
 import battleRoutes from './routes/battle.routes';
 import notificationRoutes from './routes/notification.routes';
 import chatRoutes from './routes/chat.routes';
+import placementRoutes from './routes/placement.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
@@ -24,6 +25,8 @@ app.use((req, res, next) => {
     'https://chipverse-q341.vercel.app',
     'https://chipverse-q341-kq8rakc7z-devanshdj72s-projects.vercel.app',
     'https://chipverse-q341-git-v2-social-battle-devanshdj72s-projects.vercel.app',
+    'https://chipverse-q341-git-v3-realtime-chat-devanshdj72s-projects.vercel.app',
+    'https://chipverse-q341-pvhtnpzoh-devanshdj72s-projects.vercel.app',
     'http://localhost:5173',
     'http://localhost:4173',
   ];
@@ -57,6 +60,7 @@ app.use('/api/friends', friendsRoutes);
 app.use('/api/battles', battleRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/placement', placementRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
