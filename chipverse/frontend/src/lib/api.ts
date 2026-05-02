@@ -45,6 +45,9 @@ export const api = {
     googleLoginUrl: () => `${API_BASE}/auth/google`,
     linkedinLoginUrl: () => `${API_BASE}/auth/linkedin`,
   },
+  lab: {
+  evaluate: (data: any) => request<any>('POST', '/lab/evaluate', data),
+  },
 
   user: {
     getProfile: () => request<any>('GET', '/user/profile'),
@@ -95,6 +98,7 @@ export const api = {
     addMember: (conversationId: string, newUserId: string) =>
       request<any>('POST', `/chat/conversations/${conversationId}/members`, { newUserId }),
   },
+  
 };
 
 export default api;

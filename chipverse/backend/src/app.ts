@@ -13,6 +13,7 @@ import battleRoutes from './routes/battle.routes';
 import notificationRoutes from './routes/notification.routes';
 import chatRoutes from './routes/chat.routes';
 import placementRoutes from './routes/placement.routes';
+import labRoutes from './routes/lab.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
@@ -21,8 +22,6 @@ const app = express();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-
-  // Allow any Vercel preview deployment for this project + localhost
   const isAllowed =
     !origin ||
     origin === 'https://chipverse-q341.vercel.app' ||
@@ -30,10 +29,7 @@ app.use((req, res, next) => {
     /^https:\/\/chipverse-q341-.*-devanshdj72s-projects\.vercel\.app$/.test(origin) ||
     origin === 'http://localhost:5173' ||
     origin === 'http://localhost:4173';
-
-  if (isAllowed) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  }
+  if (isAllowed) res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
@@ -62,6 +58,7 @@ app.use('/api/battles', battleRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/placement', placementRoutes);
+app.use('/api/lab', labRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
