@@ -1,0 +1,1408 @@
+[
+  {
+    "levelId": 0,
+    "bonusXp": 80,
+    "badge": "Verification Initiate",
+    "subLevels": [
+      {
+        "id": "ver-0-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What verification is, why it matters, and how it fits in the chip design flow.",
+        "keyPoints": [
+          "Verification confirms RTL behaves exactly as specified — before fabrication",
+          "A single bug in silicon can cost $1M+ to re-spin — verification prevents this",
+          "Verification engineers write testbenches that stimulate and check the DUT",
+          "DUT = Device Under Test — the RTL module being verified",
+          "Functional verification finds logical bugs; formal verification proves correctness",
+          "Coverage measures how thoroughly the design has been tested",
+          "Industry rule: verification takes 60-70% of total chip design effort"
+        ],
+        "content": "Verification is the process of proving that an RTL design does what the specification says. Unlike software testing, hardware bugs cannot be patched after manufacturing — a chip with a bug must be completely re-taped-out, costing months and millions. The verification engineer's job is to find bugs before the design goes to silicon. A testbench is a Verilog/SystemVerilog module that has no ports — it instantiates the DUT, generates stimulus, and checks outputs. Modern verification uses constrained-random stimulus (automatically generated inputs), functional coverage (tracking what scenarios were tested), and assertions (properties that must always hold).",
+        "xp": 20
+      },
+      {
+        "id": "ver-0-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Basic SystemVerilog testbench structure, DUT instantiation, and stimulus generation.",
+        "keyPoints": [
+          "module tb; — testbench has NO ports",
+          "DUT dut (.port(signal)); — instantiate the design",
+          "initial begin ... end — sequential stimulus generation",
+          "#10 — delay 10 time units (non-synthesizable)",
+          "$display(\"msg\") — print to console",
+          "$finish — end simulation",
+          "logic clk = 0; always #5 clk = ~clk; — clock generation"
+        ],
+        "content": "// Basic SystemVerilog testbench structure\nmodule tb_counter;\n  // Declare signals\n  logic clk = 0;\n  logic rst_n;\n  logic [3:0] count;\n\n  // Instantiate DUT\n  counter dut (\n    .clk   (clk),\n    .rst_n (rst_n),\n    .count (count)\n  );\n\n  // Clock: 10ns period\n  always #5 clk = ~clk;\n\n  initial begin\n    // Reset sequence\n    rst_n = 0;\n    repeat(3) @(posedge clk);\n    rst_n = 1;\n\n    // Apply stimulus\n    repeat(10) @(posedge clk);\n\n    $display(\"Final count = %0d\", count);\n    $finish;\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "ver-0-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through a complete testbench for a simple AND gate.",
+        "keyPoints": [
+          "Testbench has no ports — it is self-contained",
+          "DUT is instantiated with named port connections",
+          "All combinations of inputs tested (exhaustive for small designs)",
+          "assert checks expected vs actual output",
+          "$display shows pass/fail message",
+          "$finish ends simulation cleanly"
+        ],
+        "content": "// DUT: simple AND gate\n// module and_gate(input a, b, output out);\n// assign out = a & b;\n\n// TESTBENCH:\nmodule tb_and_gate;\n  logic a, b, out;\n\n  // Instantiate DUT\n  and_gate dut (.a(a), .b(b), .out(out));\n\n  initial begin\n    // Test all 4 input combinations\n    a=0; b=0; #10;\n    assert(out==0) else $error(\"FAIL: 0&0=%b\",out);\n\n    a=0; b=1; #10;\n    assert(out==0) else $error(\"FAIL: 0&1=%b\",out);\n\n    a=1; b=0; #10;\n    assert(out==0) else $error(\"FAIL: 1&0=%b\",out);\n\n    a=1; b=1; #10;\n    assert(out==1) else $error(\"FAIL: 1&1=%b\",out);\n\n    $display(\"All AND gate tests PASSED\");\n    $finish;\n  end\nendmodule\n// Key insight: for small designs, exhaustive testing is possible.\n// For large designs, we need constrained-random testing.",
+        "xp": 20
+      },
+      {
+        "id": "ver-0-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a complete testbench for a D flip-flop.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 0: Testbench for D Flip-Flop\n\nWrite a SystemVerilog testbench for a D flip-flop:\n```\nmodule dff (input clk, rst_n, d, output logic q);\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) q <= 0; else q <= d;\nendmodule\n```\n\nYour testbench must:\n1. Generate a 10ns clock\n2. Apply reset for 2 cycles\n3. Test d=1 → check q becomes 1 after clock edge\n4. Test d=0 → check q becomes 0 after clock edge\n5. Use `assert` to check outputs\n6. End with `$finish`\n\nModule name: `tb_dff`",
+          "starterCode": "// Lab 0: Testbench for D Flip-Flop\nmodule tb_dff;\n\n  // Declare signals\n  logic clk, rst_n, d, q;\n\n  // Instantiate DUT\n  dff dut (.clk(clk), .rst_n(rst_n), .d(d), .q(q));\n\n  // Clock generation\n  // Add your clock here\n\n  initial begin\n    // Initialize\n    rst_n = 0; d = 0;\n\n    // Apply reset for 2 cycles\n    // your code here\n\n    // Release reset\n    rst_n = 1;\n\n    // Test d=1\n    d = 1;\n    @(posedge clk); #1;\n    // assert q==1 here\n\n    // Test d=0\n    d = 0;\n    @(posedge clk); #1;\n    // assert q==0 here\n\n    $display(\"DFF tests passed!\");\n    $finish;\n  end\n\nendmodule",
+          "hints": [
+            "Clock: initial clk=0; always #5 clk = ~clk; gives 10ns period",
+            "Reset for 2 cycles: repeat(2) @(posedge clk);",
+            "Check after clock: @(posedge clk); #1; assert(q==1);",
+            "assert (q == 1) else $error(\"FAIL: q=%b\", q);"
+          ],
+          "requiredPatterns": [
+            "module tb_dff",
+            "dff dut",
+            "always #5",
+            "rst_n",
+            "assert",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A DFF testbench generates a clock, applies reset, then checks that Q follows D on each rising clock edge. The #1 delay after posedge clk gives time for the DFF output to settle before checking."
+        }
+      },
+      {
+        "id": "ver-0-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your verification fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A testbench module has:", "options": ["Input ports only", "Output ports only", "No ports", "Same ports as DUT"], "answer": 2 },
+          { "q": "Why is verification so important?", "options": ["It makes code run faster", "Silicon bugs cannot be patched after manufacturing", "It reduces power consumption", "It improves timing"], "answer": 1 },
+          { "q": "DUT stands for:", "options": ["Design Under Test", "Device Under Test", "Debug Utility Tool", "Digital Unit Test"], "answer": 1 },
+          { "q": "Coverage in verification measures:", "options": ["Code execution speed", "How thoroughly the design has been tested", "Power consumption", "Area of the chip"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 1,
+    "bonusXp": 90,
+    "badge": "Logic Verifier",
+    "subLevels": [
+      {
+        "id": "ver-1-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Digital logic concepts critical for verification — FSMs, protocols, and timing.",
+        "keyPoints": [
+          "FSM verification: check all states, transitions, and outputs",
+          "Combinational logic: output depends only on current inputs — easier to verify",
+          "Sequential logic: output depends on history — requires reset and clock sequences",
+          "Protocol handshake: valid/ready — verify both sides behave correctly",
+          "Timing: setup/hold violations cause X propagation in simulation",
+          "X propagation: unknown values spread through logic — signals bug",
+          "Observability: can you see the bug? Controllability: can you trigger it?"
+        ],
+        "content": "Verification thinking starts with controllability and observability. Controllability: can you drive the DUT into a specific state to trigger a bug? Observability: can you see the effect of that bug at the outputs? FSMs are verified by covering every state and every transition. Protocol verification requires checking that both the master and slave follow the handshake rules — valid never deasserts once asserted, ready can toggle freely. X values in simulation mean a signal is uninitialized or driven by a conflict — always reset your design before applying stimulus.",
+        "xp": 20
+      },
+      {
+        "id": "ver-1-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "SystemVerilog patterns for FSM verification and protocol checking.",
+        "keyPoints": [
+          "@(posedge clk) — wait for rising clock edge",
+          "@(negedge clk) — wait for falling clock edge",
+          "repeat(N) @(posedge clk) — wait N clock cycles",
+          "@(posedge valid) — wait until valid goes high",
+          "wait(signal == 1'b1) — wait until condition true",
+          "fork ... join — parallel threads in testbench",
+          "#0 — delta cycle delay (forces scheduling)"
+        ],
+        "content": "// FSM state verification pattern\n// Drive inputs, wait for state change, check output\n\ntask send_input(input logic [1:0] cmd);\n  @(posedge clk);\n  cmd_in <= cmd;\n  @(posedge clk);\n  cmd_in <= 2'b00;\nendtask\n\n// Protocol handshake verification\ntask wait_for_ready;\n  // Wait until slave is ready\n  wait(ready == 1'b1);\n  @(posedge clk);\nendtask\n\n// Check output after N cycles\ntask check_after(input int cycles, input logic exp_out);\n  repeat(cycles) @(posedge clk);\n  #1; // settle time\n  assert(out == exp_out)\n    else $error(\"Expected %b got %b\", exp_out, out);\nendtask",
+        "xp": 20
+      },
+      {
+        "id": "ver-1-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through verifying a traffic light FSM step by step.",
+        "keyPoints": [
+          "Reset → verify initial state is RED",
+          "Wait N cycles → verify transition to GREEN",
+          "Wait N cycles → verify transition to YELLOW",
+          "Wait N cycles → verify return to RED",
+          "Check only one output active at a time",
+          "Check no X values on outputs after reset"
+        ],
+        "content": "// Verifying a 3-state traffic light FSM\n// States: RED(0) → GREEN(1) → YELLOW(2) → RED\n// Each state lasts 30 clock cycles\n\nmodule tb_traffic;\n  logic clk=0, rst_n;\n  logic red, green, yellow;\n\n  traffic_light dut(.clk,.rst_n,.red,.green,.yellow);\n  always #5 clk = ~clk;\n\n  initial begin\n    // Step 1: Reset\n    rst_n = 0;\n    repeat(2) @(posedge clk);\n    rst_n = 1;\n    @(posedge clk); #1;\n\n    // Step 2: Check RED state\n    assert(red==1 && green==0 && yellow==0)\n      else $error(\"Not in RED after reset\");\n\n    // Step 3: Wait for GREEN (30 cycles)\n    repeat(30) @(posedge clk); #1;\n    assert(red==0 && green==1 && yellow==0)\n      else $error(\"Not in GREEN\");\n\n    // Step 4: Wait for YELLOW\n    repeat(30) @(posedge clk); #1;\n    assert(red==0 && green==0 && yellow==1)\n      else $error(\"Not in YELLOW\");\n\n    $display(\"Traffic light FSM PASSED\");\n    $finish;\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "ver-1-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Verify a sequence detector FSM for pattern 101.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 1: Verify Sequence Detector FSM\n\nWrite a testbench for a sequence detector that detects **101**:\n```\nmodule seq_det_101 (\n  input  logic clk, rst_n, bit_in,\n  output logic detected\n);\n```\n\nYour testbench must:\n1. Apply reset\n2. Send sequence: `1 0 1` → assert `detected` goes HIGH\n3. Send sequence: `1 1 1` → assert `detected` stays LOW\n4. Send sequence: `0 1 0 1` → assert `detected` goes HIGH on last 1\n5. Use tasks for sending bits\n\nModule name: `tb_seq_101`",
+          "starterCode": "// Lab 1: Sequence Detector 101 Verification\nmodule tb_seq_101;\n  logic clk=0, rst_n, bit_in, detected;\n\n  seq_det_101 dut(.clk,.rst_n,.bit_in,.detected);\n  always #5 clk = ~clk;\n\n  // Task: send one bit\n  task send_bit(input logic b);\n    @(posedge clk);\n    bit_in <= b;\n  endtask\n\n  initial begin\n    rst_n = 0; bit_in = 0;\n    repeat(2) @(posedge clk);\n    rst_n = 1;\n\n    // Test 1: send 1,0,1 → detected should go HIGH\n    send_bit(1);\n    send_bit(0);\n    send_bit(1);\n    @(posedge clk); #1;\n    // assert detected here\n\n    // Reset between tests\n    rst_n = 0; @(posedge clk); rst_n = 1;\n\n    // Test 2: send 1,1,1 → detected should stay LOW\n    send_bit(1);\n    send_bit(1);\n    send_bit(1);\n    @(posedge clk); #1;\n    // assert NOT detected here\n\n    $display(\"Sequence detector tests PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "assert(detected == 1) else $error(\"Test1 FAIL: 101 not detected\");",
+            "assert(detected == 0) else $error(\"Test2 FAIL: 111 should not detect\");",
+            "After send_bit tasks complete, do @(posedge clk); #1; before checking",
+            "Use rst_n=0 then rst_n=1 between test sequences to reset FSM"
+          ],
+          "requiredPatterns": [
+            "module tb_seq_101",
+            "seq_det_101 dut",
+            "task send_bit",
+            "rst_n",
+            "assert",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FSM verification requires testing each defined sequence. A send_bit task encapsulates the clock-synchronous bit delivery. Reset between tests ensures FSM starts from known state. The #1 after posedge clk gives output time to settle before assertion."
+        }
+      },
+      {
+        "id": "ver-1-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your digital logic verification knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "X in simulation means:", "options": ["Don't care", "Uninitialized or conflicting signal", "High impedance", "Logic 1"], "answer": 1 },
+          { "q": "To verify an FSM you must:", "options": ["Test only the reset state", "Cover all states and transitions", "Test only the final state", "Only check outputs"], "answer": 1 },
+          { "q": "repeat(5) @(posedge clk) does:", "options": ["Waits 5 ns", "Waits 5 rising clock edges", "Repeats stimulus 5 times", "Delays by 5 cycles indefinitely"], "answer": 1 },
+          { "q": "Controllability in verification means:", "options": ["Seeing the bug at output", "Being able to drive DUT into a specific state", "Controlling clock frequency", "Managing test runtime"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 2,
+    "bonusXp": 100,
+    "badge": "SystemVerilog Tester",
+    "subLevels": [
+      {
+        "id": "ver-2-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "SystemVerilog for verification — classes, randomization, and interfaces.",
+        "keyPoints": [
+          "SystemVerilog adds OOP to Verilog — classes, inheritance, polymorphism",
+          "rand and randc keywords make class variables randomizable",
+          "randomize() method generates random values respecting constraints",
+          "interface bundles signals into a reusable port group",
+          "clocking block synchronizes testbench signals to clock edge",
+          "program block — testbench code runs in reactive region (avoids race conditions)",
+          "logic type replaces wire/reg — works in both TB and RTL"
+        ],
+        "content": "SystemVerilog was designed with verification in mind. Classes allow you to model transactions (packets, bus transfers) as objects — create, randomize, send. The rand keyword marks fields for randomization. The constraint block limits random values to legal ranges. Interfaces clean up the testbench by grouping DUT signals — instead of passing 20 separate signals, pass one interface handle. The clocking block ensures testbench drives signals after the clock edge and samples before — eliminating race conditions between TB and DUT.",
+        "xp": 20
+      },
+      {
+        "id": "ver-2-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "SystemVerilog class syntax, rand, constraints, and interface usage.",
+        "keyPoints": [
+          "class MyTx; rand logic [7:0] data; endclass",
+          "MyTx tx = new(); tx.randomize();",
+          "constraint c_range { data inside {[0:127]}; }",
+          "interface my_if(input logic clk); logic data; endinterface",
+          "clocking cb @(posedge clk); input data; endclocking",
+          "virtual interface — pass interface to class methods",
+          "assert (tx.randomize()) else $fatal(\"Rand failed\");"
+        ],
+        "content": "// SystemVerilog transaction class\nclass Packet;\n  rand logic [7:0]  data;\n  rand logic [3:0]  addr;\n  rand logic        valid;\n\n  // Constraint: addr must be 0-7\n  constraint c_addr { addr inside {[0:7]}; }\n\n  // Constraint: valid is mostly 1\n  constraint c_valid { valid dist {1:=80, 0:=20}; }\n\n  function void display();\n    $display(\"Pkt: addr=%0d data=%0h valid=%b\", addr, data, valid);\n  endfunction\nendclass\n\n// Usage:\nPacket pkt = new();\nrepeat(10) begin\n  assert(pkt.randomize()) else $fatal(\"Randomize failed\");\n  pkt.display();\nend",
+        "xp": 20
+      },
+      {
+        "id": "ver-2-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete SystemVerilog testbench with interface and class-based stimulus.",
+        "keyPoints": [
+          "Interface groups DUT signals cleanly",
+          "Transaction class holds one stimulus item",
+          "randomize() generates constrained-random values",
+          "Drive interface signals from transaction fields",
+          "Check outputs after each transaction",
+          "Repeat for N random transactions"
+        ],
+        "content": "// Interface for an 8-bit adder\ninterface adder_if(input logic clk);\n  logic [7:0] a, b;\n  logic [8:0] result;\nendinterface\n\n// Transaction class\nclass AddTx;\n  rand logic [7:0] a, b;\n  logic [8:0] expected;\n  function void compute(); expected = a + b; endfunction\nendclass\n\n// Testbench\nmodule tb_adder;\n  logic clk = 0;\n  always #5 clk = ~clk;\n\n  adder_if aif(.clk(clk));\n  adder8 dut(.a(aif.a), .b(aif.b), .result(aif.result));\n\n  AddTx tx = new();\n\n  initial begin\n    repeat(20) begin\n      // Generate random transaction\n      assert(tx.randomize());\n      tx.compute();\n\n      // Drive DUT\n      aif.a = tx.a;\n      aif.b = tx.b;\n      #1;\n\n      // Check result\n      assert(aif.result == tx.expected)\n        else $error(\"FAIL: %0d+%0d=%0d exp=%0d\",\n                    tx.a, tx.b, aif.result, tx.expected);\n    end\n    $display(\"20 random adder tests PASSED\");\n    $finish;\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "ver-2-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a class-based randomized testbench for an 8-bit ALU.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 2: Class-Based ALU Testbench\n\nWrite a class-based randomized testbench for:\n```\nmodule alu8 (\n  input  logic [7:0] a, b,\n  input  logic [1:0] op,   // 0=ADD, 1=SUB, 2=AND, 3=OR\n  output logic [7:0] result\n);\n```\n\nRequirements:\n1. Create class `AluTx` with `rand` fields: `a[7:0]`, `b[7:0]`, `op[1:0]`\n2. Add constraint: `op inside {0,1,2,3}`\n3. Add `compute()` function that calculates expected result\n4. Run 50 randomized transactions\n5. Assert result matches expected for each\n\nModule name: `tb_alu8`",
+          "starterCode": "// Lab 2: Class-Based Randomized ALU Testbench\nmodule tb_alu8;\n  logic [7:0] a, b, result;\n  logic [1:0] op;\n\n  alu8 dut(.a,.b,.op,.result);\n\n  // Transaction class\n  class AluTx;\n    rand logic [7:0] a, b;\n    rand logic [1:0] op;\n    logic [7:0] expected;\n\n    // Constraint: valid op codes\n    constraint c_op { /* your constraint here */ }\n\n    // Compute expected result\n    function void compute();\n      case (op)\n        // fill in cases\n      endcase\n    endfunction\n  endclass\n\n  AluTx tx = new();\n\n  initial begin\n    repeat(50) begin\n      // Randomize\n      assert(tx.randomize()) else $fatal(\"Rand failed\");\n      tx.compute();\n\n      // Drive\n      a = tx.a; b = tx.b; op = tx.op;\n      #5;\n\n      // Check\n      assert(result == tx.expected)\n        else $error(\"FAIL op=%0d: %0d op %0d = %0d exp=%0d\",\n                    tx.op, tx.a, tx.b, result, tx.expected);\n    end\n    $display(\"50 random ALU tests PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Constraint: constraint c_op { op inside {[0:3]}; }",
+            "Compute ADD: 2'b00: expected = a + b;",
+            "Compute SUB: 2'b01: expected = a - b;",
+            "Compute AND: 2'b10: expected = a & b;",
+            "Compute OR:  2'b11: expected = a | b;"
+          ],
+          "requiredPatterns": [
+            "module tb_alu8",
+            "class AluTx",
+            "rand logic",
+            "constraint",
+            "function void compute",
+            "assert(tx.randomize())",
+            "assert(result",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A class-based testbench separates transaction modeling (AluTx) from driving logic. randomize() generates legal random values per constraints. compute() calculates the expected golden output. The assert compares DUT result to golden — any mismatch is a bug."
+        }
+      },
+      {
+        "id": "ver-2-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your SystemVerilog verification knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "rand in a class makes a variable:", "options": ["A constant", "Randomizable by randomize()", "A global signal", "An output port"], "answer": 1 },
+          { "q": "constraint c { x inside {[0:15]}; } means:", "options": ["x is always 0", "x is randomized between 0 and 15", "x must be exactly 15", "x is invalid"], "answer": 1 },
+          { "q": "An interface in SV is used to:", "options": ["Replace always blocks", "Bundle DUT signals into a reusable group", "Create clocks", "Define data types"], "answer": 1 },
+          { "q": "assert(pkt.randomize()) else $fatal means:", "options": ["Always passes", "Fails simulation if randomize fails", "Ignores randomize failure", "Prints a warning only"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 3,
+    "bonusXp": 110,
+    "badge": "OOP Verification Expert",
+    "subLevels": [
+      {
+        "id": "ver-3-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "OOP in SystemVerilog — inheritance, polymorphism, mailboxes, and semaphores.",
+        "keyPoints": [
+          "Inheritance: class ChildTx extends ParentTx — reuse and extend",
+          "Polymorphism: parent handle can hold child object — factory pattern",
+          "Mailbox: thread-safe queue for passing objects between threads",
+          "Semaphore: controls access to shared resources (like a mutex)",
+          "fork...join: launch parallel threads in testbench",
+          "fork...join_none: launch background thread, continue immediately",
+          "virtual methods: overridden by child class at runtime"
+        ],
+        "content": "Advanced SystemVerilog verification uses OOP to build reusable, extensible testbenches. Inheritance lets you create specialized transactions (EthPacket extends BasePacket) without rewriting common logic. Mailboxes are the primary communication mechanism between producer and consumer threads — the driver puts transactions in, the monitor takes them out. Semaphores protect shared resources like a bus that multiple drivers might contend for. The fork-join constructs enable true parallel stimulus generation, modeling real-world concurrent hardware behavior.",
+        "xp": 20
+      },
+      {
+        "id": "ver-3-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Inheritance, mailbox, semaphore, and fork-join syntax patterns.",
+        "keyPoints": [
+          "class Child extends Parent; — inheritance",
+          "mailbox #(Packet) mbx = new(); — typed mailbox",
+          "mbx.put(pkt); — blocking put to mailbox",
+          "mbx.get(pkt); — blocking get from mailbox",
+          "semaphore sem = new(1); — binary semaphore",
+          "sem.get(); ... sem.put(); — acquire/release",
+          "fork begin ... end begin ... end join — parallel threads"
+        ],
+        "content": "// Mailbox-based producer-consumer\nmailbox #(Packet) gen2drv = new();\n\n// Generator thread — produces random packets\ntask generator();\n  Packet pkt;\n  repeat(20) begin\n    pkt = new();\n    assert(pkt.randomize());\n    gen2drv.put(pkt);  // send to driver\n  end\nendtask\n\n// Driver thread — consumes and drives DUT\ntask driver();\n  Packet pkt;\n  forever begin\n    gen2drv.get(pkt);  // receive from generator\n    // drive DUT with pkt\n    @(posedge clk);\n    data_in <= pkt.data;\n    valid   <= 1;\n    @(posedge clk);\n    valid <= 0;\n  end\nendtask\n\n// Run both in parallel\ninitial begin\n  fork\n    generator();\n    driver();\n  join\n  $finish;\nend",
+        "xp": 20
+      },
+      {
+        "id": "ver-3-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete generator-driver-monitor testbench with mailboxes.",
+        "keyPoints": [
+          "Generator creates random transactions and puts into mailbox",
+          "Driver gets from mailbox and drives DUT signals",
+          "Monitor watches DUT outputs and puts into scoreboard mailbox",
+          "Scoreboard compares expected vs actual",
+          "All 4 components run in parallel via fork-join",
+          "This is the foundation of the UVM architecture"
+        ],
+        "content": "// Simple packet class\nclass Pkt;\n  rand logic [7:0] data;\n  logic [7:0] exp_out; // expected output\nendclass\n\nmodule tb_fifo;\n  logic clk=0, rst_n=0;\n  logic wr_en, rd_en;\n  logic [7:0] wr_data, rd_data;\n  logic full, empty;\n\n  sync_fifo dut(.clk,.rst_n,.wr_en,.rd_en,\n                .wr_data,.rd_data,.full,.empty);\n  always #5 clk = ~clk;\n\n  mailbox #(Pkt) gen2drv  = new();\n  mailbox #(Pkt) mon2scb  = new();\n\n  // Generator\n  task generator();\n    Pkt p;\n    repeat(10) begin\n      p = new();\n      assert(p.randomize());\n      gen2drv.put(p);\n    end\n  endtask\n\n  // Driver — writes to FIFO\n  task driver();\n    Pkt p;\n    repeat(10) begin\n      gen2drv.get(p);\n      wait(!full);\n      @(posedge clk);\n      wr_en <= 1; wr_data <= p.data;\n      @(posedge clk);\n      wr_en <= 0;\n      p.exp_out = p.data; // FIFO should return same data\n      mon2scb.put(p);\n    end\n  endtask\n\n  // Scoreboard — checks FIFO output\n  task scoreboard();\n    Pkt p;\n    repeat(10) begin\n      mon2scb.get(p);\n      // Read from FIFO\n      wait(!empty);\n      @(posedge clk);\n      rd_en <= 1;\n      @(posedge clk);\n      rd_en <= 0;\n      #1;\n      assert(rd_data == p.exp_out)\n        else $error(\"SCB FAIL: got %0h exp %0h\", rd_data, p.exp_out);\n    end\n  endtask\n\n  initial begin\n    rst_n=0; repeat(2) @(posedge clk); rst_n=1;\n    fork generator(); driver(); scoreboard(); join\n    $display(\"FIFO test PASSED\"); $finish;\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "ver-3-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Build a mailbox-based generator and driver for a UART transmitter.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 3: Mailbox Generator + Driver for UART TX\n\nBuild a generator-driver pair connected by mailbox for:\n```\nmodule uart_tx (\n  input  logic clk, rst_n, tx_valid,\n  input  logic [7:0] tx_data,\n  output logic tx_ready, tx_line\n);\n```\n\nRequirements:\n1. Create class `UartPkt` with `rand logic [7:0] data`\n2. Create `mailbox #(UartPkt) gen2drv`\n3. Generator: create 15 random packets, put into mailbox\n4. Driver: get from mailbox, wait for tx_ready, drive tx_valid+tx_data\n5. Run generator and driver in parallel with fork-join\n\nModule name: `tb_uart_tx`",
+          "starterCode": "// Lab 3: UART TX Generator-Driver with Mailbox\nmodule tb_uart_tx;\n  logic clk=0, rst_n;\n  logic tx_valid, tx_ready, tx_line;\n  logic [7:0] tx_data;\n\n  uart_tx dut(.clk,.rst_n,.tx_valid,.tx_data,.tx_ready,.tx_line);\n  always #5 clk = ~clk;\n\n  // Packet class\n  class UartPkt;\n    rand logic [7:0] data;\n  endclass\n\n  // Mailbox\n  mailbox #(UartPkt) gen2drv = new();\n\n  // Generator task\n  task generator();\n    UartPkt pkt;\n    repeat(15) begin\n      pkt = new();\n      // randomize and put into mailbox\n    end\n  endtask\n\n  // Driver task\n  task driver();\n    UartPkt pkt;\n    repeat(15) begin\n      // get from mailbox\n      // wait for ready\n      // drive valid and data\n      @(posedge clk);\n      tx_valid <= 0;\n    end\n  endtask\n\n  initial begin\n    rst_n=0; tx_valid=0;\n    repeat(2) @(posedge clk);\n    rst_n=1;\n\n    fork\n      generator();\n      driver();\n    join\n\n    $display(\"UART TX test done\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Generator: assert(pkt.randomize()); gen2drv.put(pkt);",
+            "Driver: gen2drv.get(pkt); then wait(tx_ready==1);",
+            "Drive: @(posedge clk); tx_valid<=1; tx_data<=pkt.data;",
+            "fork generator(); driver(); join — runs both in parallel"
+          ],
+          "requiredPatterns": [
+            "module tb_uart_tx",
+            "class UartPkt",
+            "rand logic",
+            "mailbox #(UartPkt)",
+            "task generator",
+            "task driver",
+            "gen2drv.put",
+            "gen2drv.get",
+            "fork",
+            "join",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Mailboxes decouple the generator from the driver — the generator produces transactions at its own pace, the driver consumes them when ready. fork-join runs both concurrently, modeling real hardware parallelism. This generator-driver pattern is the backbone of UVM."
+        }
+      },
+      {
+        "id": "ver-3-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your advanced SystemVerilog OOP knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A mailbox in SV is used for:", "options": ["Storing RTL registers", "Thread-safe inter-thread communication", "Generating clocks", "Declaring ports"], "answer": 1 },
+          { "q": "mbx.get(pkt) blocks until:", "options": ["Simulation ends", "An item is available in the mailbox", "Clock edge occurs", "pkt is randomized"], "answer": 1 },
+          { "q": "fork ... join_none:", "options": ["Blocks until all threads complete", "Waits for any one thread", "Launches threads and continues immediately", "Kills all threads"], "answer": 2 },
+          { "q": "class Child extends Parent allows:", "options": ["Child to override parent methods", "Child to access Parent's private members", "Parent to call child's constructor", "Both classes to share the same handle"], "answer": 0 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 4,
+    "bonusXp": 120,
+    "badge": "Assertion Master",
+    "subLevels": [
+      {
+        "id": "ver-4-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "SystemVerilog Assertions — properties, sequences, and protocol checking.",
+        "keyPoints": [
+          "SVA: SystemVerilog Assertions — embedded design checks that fire during simulation",
+          "Immediate assertion: assert(cond) — checked at current time step",
+          "Concurrent assertion: assert property — checked every clock cycle",
+          "Sequence: defines a series of signal behaviors over time",
+          "Property: wraps a sequence with quantifiers (always, eventually)",
+          "Implication: a |-> b means 'if a, then in same cycle b must hold'",
+          "a |=> b means 'if a, then in NEXT cycle b must hold'"
+        ],
+        "content": "SVA assertions are the most powerful bug-finding tool in verification. Unlike testbench checks that only fire when stimulus hits a specific scenario, concurrent assertions monitor the design every clock cycle automatically. The implication operator |-> (overlapping) and |=> (non-overlapping) are used to check protocol handshakes. For example: 'once valid goes high, it must stay high until ready goes high' — this can be written as one SVA property that catches violations across all 1M+ cycles of simulation without any explicit testbench code.",
+        "xp": 20
+      },
+      {
+        "id": "ver-4-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "SVA syntax — sequences, properties, assert, assume, cover.",
+        "keyPoints": [
+          "assert property (@(posedge clk) prop) else $error;",
+          "sequence s; a ##1 b; endsequence — a then b next cycle",
+          "##N — exactly N clock cycles later",
+          "##[1:3] — between 1 and 3 cycles later",
+          "a |-> b — if a then b in same cycle",
+          "a |=> b — if a then b in next cycle",
+          "not (a ##1 b) — b must NOT follow a"
+        ],
+        "content": "// VALID/READY handshake assertions\n\n// 1. Once valid asserted, stays until ready\nproperty valid_stable;\n  @(posedge clk)\n  (valid && !ready) |=> valid; // valid must stay high\nendproperty\nassert property (valid_stable)\n  else $error(\"valid deasserted before ready!\");\n\n// 2. After ready+valid, data must change next cycle\nproperty data_changes;\n  @(posedge clk)\n  (valid && ready) |=> (data != $past(data));\nendproperty\n\n// 3. No X on data when valid\nassert property (@(posedge clk)\n  valid |-> !$isunknown(data))\n  else $error(\"X on data during valid!\");\n\n// 4. Sequence: req then ack within 3 cycles\nsequence req_ack;\n  req ##[1:3] ack;\nendsequence\nassert property (@(posedge clk) req |-> req_ack);",
+        "xp": 20
+      },
+      {
+        "id": "ver-4-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read complete SVA assertions for an AXI4-Lite write channel.",
+        "keyPoints": [
+          "AWVALID must stay high until AWREADY",
+          "WVALID must stay high until WREADY",
+          "No X on AWADDR when AWVALID is high",
+          "BVALID must come after both AWVALID+AWREADY and WVALID+WREADY",
+          "BREADY held high means response is always accepted"
+        ],
+        "content": "// AXI4-Lite Write Channel Assertions\nmodule axi_assertions(\n  input logic clk, rst_n,\n  input logic awvalid, awready,\n  input logic wvalid, wready,\n  input logic bvalid, bready,\n  input logic [31:0] awaddr, wdata\n);\n\n  // AW channel: valid stays until ready\n  property aw_valid_stable;\n    @(posedge clk) disable iff (!rst_n)\n    (awvalid && !awready) |=> awvalid;\n  endproperty\n  assert property (aw_valid_stable)\n    else $error(\"AWVALID dropped before AWREADY\");\n\n  // No X on address during valid\n  assert property (@(posedge clk) disable iff (!rst_n)\n    awvalid |-> !$isunknown(awaddr))\n    else $error(\"X on AWADDR during AWVALID\");\n\n  // W channel: valid stays until ready\n  property w_valid_stable;\n    @(posedge clk) disable iff (!rst_n)\n    (wvalid && !wready) |=> wvalid;\n  endproperty\n  assert property (w_valid_stable)\n    else $error(\"WVALID dropped before WREADY\");\n\n  // BVALID must eventually come (within 10 cycles of write)\n  property write_response;\n    @(posedge clk) disable iff (!rst_n)\n    (awvalid && awready) |-> ##[1:10] bvalid;\n  endproperty\n  assert property (write_response)\n    else $error(\"No BVALID within 10 cycles of write\");\n\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "ver-4-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write SVA assertions for a FIFO — full, empty, no overflow, no underflow.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 4: SVA Assertions for a Synchronous FIFO\n\nWrite assertions for a 4-deep FIFO:\n```\nmodule sync_fifo (\n  input  logic clk, rst_n, wr_en, rd_en,\n  input  logic [7:0] wr_data,\n  output logic [7:0] rd_data,\n  output logic full, empty\n);\n```\n\nWrite these 4 assertions:\n1. **No overflow**: when `full`, `wr_en` must NOT be high\n2. **No underflow**: when `empty`, `rd_en` must NOT be high  \n3. **Mutual exclusion**: `full` and `empty` cannot both be high\n4. **No X on output**: when `rd_en` and NOT `empty`, `rd_data` has no X\n\nModule name: `tb_fifo_sva`",
+          "starterCode": "// Lab 4: FIFO Assertions\nmodule tb_fifo_sva;\n  logic clk=0, rst_n;\n  logic wr_en, rd_en;\n  logic [7:0] wr_data, rd_data;\n  logic full, empty;\n\n  sync_fifo dut(.clk,.rst_n,.wr_en,.rd_en,\n                .wr_data,.rd_data,.full,.empty);\n  always #5 clk = ~clk;\n\n  // Assertion 1: No overflow — don't write when full\n  property no_overflow;\n    @(posedge clk) disable iff (!rst_n)\n    // full must mean wr_en is NOT high\n    // write your property here\n  endproperty\n  assert property (no_overflow)\n    else $error(\"OVERFLOW: wr_en high when full!\");\n\n  // Assertion 2: No underflow — don't read when empty\n  property no_underflow;\n    @(posedge clk) disable iff (!rst_n)\n    // write your property here\n  endproperty\n  assert property (no_underflow)\n    else $error(\"UNDERFLOW: rd_en high when empty!\");\n\n  // Assertion 3: full and empty cannot both be 1\n  // write as immediate or concurrent assertion\n\n  // Assertion 4: No X on rd_data during valid read\n  // write your assertion here\n\n  // Stimulus to exercise the FIFO\n  initial begin\n    rst_n=0; wr_en=0; rd_en=0;\n    repeat(2) @(posedge clk);\n    rst_n=1;\n    // Write 4 items\n    repeat(4) begin\n      @(posedge clk);\n      wr_en<=1; wr_data<=$urandom;\n    end\n    @(posedge clk); wr_en<=0;\n    // Read 4 items\n    repeat(4) begin\n      @(posedge clk); rd_en<=1;\n    end\n    @(posedge clk); rd_en<=0;\n    repeat(5) @(posedge clk);\n    $display(\"FIFO assertion test done\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "No overflow: full |-> !wr_en; (if full, wr_en must be 0)",
+            "No underflow: empty |-> !rd_en;",
+            "Mutual exclusion: assert property(@(posedge clk) !(full && empty));",
+            "No X: (rd_en && !empty) |-> !$isunknown(rd_data);"
+          ],
+          "requiredPatterns": [
+            "module tb_fifo_sva",
+            "sync_fifo dut",
+            "property no_overflow",
+            "property no_underflow",
+            "assert property",
+            "disable iff",
+            "$error",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FIFO assertions protect against overflow (writing to full FIFO) and underflow (reading from empty FIFO). disable iff(!rst_n) suppresses assertions during reset when X values are expected. These assertions catch DUT bugs AND testbench bugs — if your stimulus drives wr_en when full, the assertion fires."
+        }
+      },
+      {
+        "id": "ver-4-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your SVA knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "a |-> b in SVA means:", "options": ["a implies b in next cycle", "if a, then b must hold in same cycle", "a and b are equal", "b causes a"], "answer": 1 },
+          { "q": "a |=> b means:", "options": ["a and b simultaneously", "if a, then b in NEXT cycle", "b before a", "a or b"], "answer": 1 },
+          { "q": "disable iff (!rst_n) in a property:", "options": ["Disables the assertion permanently", "Suppresses assertion checking during reset", "Makes assertion optional", "Disables the clock"], "answer": 1 },
+          { "q": "$isunknown(sig) returns 1 when:", "options": ["sig is 0", "sig has X or Z values", "sig is driven", "sig is high"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 5,
+    "bonusXp": 130,
+    "badge": "Coverage Champion",
+    "subLevels": [
+      {
+        "id": "ver-5-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Functional coverage — measuring what scenarios have been tested.",
+        "keyPoints": [
+          "Functional coverage: have all required scenarios been exercised?",
+          "covergroup: defines a set of coverage points",
+          "coverpoint: tracks which values a variable has taken",
+          "bins: divides a coverpoint into labeled buckets",
+          "cross: measures combinations of multiple coverpoints",
+          "Coverage closure: 100% means all scenarios were hit",
+          "Coverage drives stimulus — what's not covered gets more random tests"
+        ],
+        "content": "Functional coverage answers 'have we tested enough?' Code coverage (line/branch) only shows which lines executed — it misses semantic gaps. Functional coverage tracks design-intent scenarios: 'did we ever send a packet of size 0? of max size? back-to-back packets? with errors?' The covergroup samples these scenarios automatically. When coverage is below 100%, the verification engineer writes directed tests or adjusts constraints to hit missing bins. Coverage closure — reaching 100% functional coverage — is the exit criterion for tape-out.",
+        "xp": 20
+      },
+      {
+        "id": "ver-5-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "covergroup, coverpoint, bins, cross, and coverage sampling syntax.",
+        "keyPoints": [
+          "covergroup cg @(posedge clk); ... endgroup",
+          "coverpoint signal_name { bins ... }",
+          "bins low = {[0:63]}; — range bin",
+          "bins specific[] = {0, 128, 255}; — specific values",
+          "cross cp_a, cp_b; — cross coverage",
+          "cg.sample() — manually sample the covergroup",
+          "$get_coverage() — get overall coverage percentage"
+        ],
+        "content": "// Functional coverage for an 8-bit data bus\ncovergroup data_cg @(posedge clk);\n  // Track data values in meaningful ranges\n  cp_data: coverpoint data {\n    bins zero      = {0};\n    bins low       = {[1:63]};\n    bins mid       = {[64:191]};\n    bins high      = {[192:254]};\n    bins max_val   = {255};\n  }\n\n  // Track op codes\n  cp_op: coverpoint op {\n    bins add  = {2'b00};\n    bins sub  = {2'b01};\n    bins and_ = {2'b10};\n    bins or_  = {2'b11};\n  }\n\n  // Cross: every op with every data range\n  cx_data_op: cross cp_data, cp_op;\nendgroup\n\n// Instantiate and use\ndata_cg cg_inst = new();\n// Coverage auto-samples at posedge clk\n// Check coverage:\n// $display(\"Coverage: %0.2f%%\", cg_inst.get_coverage());",
+        "xp": 20
+      },
+      {
+        "id": "ver-5-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete coverage model for a FIFO design.",
+        "keyPoints": [
+          "Cover: FIFO empty, FIFO full, FIFO mid-fill",
+          "Cover: write-only, read-only, simultaneous read-write",
+          "Cover: first write after reset, last read to empty",
+          "Cross: data value ranges with fill levels",
+          "Sample automatically on clock edge",
+          "Report coverage at end of simulation"
+        ],
+        "content": "// FIFO Coverage Model\ncovergroup fifo_cg @(posedge clk);\n  // Fill level coverage\n  cp_fill: coverpoint count {\n    bins empty    = {0};\n    bins quarter  = {[1:1]};  // 1/4 of 4-deep FIFO\n    bins half     = {[2:2]};\n    bins threequarter = {[3:3]};\n    bins full_val = {4};\n  }\n\n  // Operation coverage\n  cp_op: coverpoint {wr_en, rd_en} {\n    bins write_only  = {2'b10};\n    bins read_only   = {2'b01};\n    bins both        = {2'b11}; // simultaneous R+W\n    bins idle        = {2'b00};\n  }\n\n  // Write data value coverage\n  cp_wdata: coverpoint wr_data {\n    bins zero    = {8'h00};\n    bins max     = {8'hFF};\n    bins others  = default;\n  }\n\n  // Cross: operation vs fill level\n  cx_op_fill: cross cp_op, cp_fill;\nendgroup\n\n// In testbench:\nfifo_cg cg = new();\n// Runs random stimulus until coverage closes...\n// final: $display(\"FIFO Coverage: %.1f%%\", cg.get_coverage());",
+        "xp": 20
+      },
+      {
+        "id": "ver-5-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a complete coverage model for an 8-bit ALU.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 5: Functional Coverage for ALU\n\nWrite a coverage model for:\n```\nmodule alu8 (\n  input  logic [7:0] a, b,\n  input  logic [1:0] op,\n  output logic [7:0] result\n);\n```\n\nYour covergroup must cover:\n1. **cp_op**: all 4 operations (ADD, SUB, AND, OR)\n2. **cp_a**: zero(0), small(1-63), mid(64-191), large(192-255)\n3. **cp_b**: same bins as cp_a\n4. **cp_result**: zero output, max output(255), others\n5. **cx_op_a**: cross of cp_op and cp_a\n\nAlso write a testbench that runs 200 random transactions and reports coverage.\n\nModule name: `tb_alu_cov`",
+          "starterCode": "// Lab 5: ALU Functional Coverage\nmodule tb_alu_cov;\n  logic [7:0] a, b, result;\n  logic [1:0] op;\n\n  alu8 dut(.a,.b,.op,.result);\n\n  // Coverage group\n  covergroup alu_cg @(a or b or op);\n    // Coverpoint for operation\n    cp_op: coverpoint op {\n      // add bins for all 4 ops\n    }\n\n    // Coverpoint for input a\n    cp_a: coverpoint a {\n      // zero, small, mid, large bins\n    }\n\n    // Coverpoint for input b (same bins as a)\n    cp_b: coverpoint b {\n      bins zero  = {8'h00};\n      bins small = {[8'h01:8'h3F]};\n      bins mid   = {[8'h40:8'hBF]};\n      bins large = {[8'hC0:8'hFF]};\n    }\n\n    // Coverpoint for result\n    cp_result: coverpoint result {\n      // zero result and max result bins\n    }\n\n    // Cross: every op with every input-a range\n    cx_op_a: cross cp_op, cp_a;\n  endgroup\n\n  alu_cg cg = new();\n\n  // Randomized stimulus\n  initial begin\n    repeat(200) begin\n      a  = $urandom;\n      b  = $urandom;\n      op = $urandom_range(0, 3);\n      #5;\n      // cg samples automatically\n    end\n    $display(\"ALU Coverage: %.1f%%\", cg.get_coverage());\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "cp_op bins: bins add={2'b00}; bins sub={2'b01}; bins and_op={2'b10}; bins or_op={2'b11};",
+            "cp_a bins: bins zero={8'h00}; bins small={[8'h01:8'h3F]}; bins mid={[8'h40:8'hBF]}; bins large={[8'hC0:8'hFF]};",
+            "cp_result: bins zero_out={8'h00}; bins max_out={8'hFF}; bins others=default;",
+            "Cross: cx_op_a: cross cp_op, cp_a;"
+          ],
+          "requiredPatterns": [
+            "module tb_alu_cov",
+            "covergroup alu_cg",
+            "cp_op: coverpoint op",
+            "cp_a: coverpoint a",
+            "cp_result: coverpoint result",
+            "cx_op_a: cross",
+            "cg.get_coverage()",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A good coverage model mirrors the verification plan. Each coverpoint tracks a meaningful signal. Bins divide values into semantically important buckets (zero, boundary, random). Cross coverage catches combinations — e.g., did we test ADD with zero operand? With max operand? Coverage closure means all bins were hit."
+        }
+      },
+      {
+        "id": "ver-5-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your functional coverage knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Functional coverage differs from code coverage by:", "options": ["Being faster", "Tracking design-intent scenarios, not just code lines", "Requiring no simulation", "Using fewer resources"], "answer": 1 },
+          { "q": "A cross in a covergroup measures:", "options": ["Signal transitions", "Combinations of multiple coverpoints", "Clock frequency", "Data width"], "answer": 1 },
+          { "q": "Coverage closure means:", "options": ["100% code lines executed", "All functional coverage bins have been hit", "Simulation completed without errors", "All assertions passed"], "answer": 1 },
+          { "q": "bins others = default in a coverpoint:", "options": ["Ignores all values", "Catches all values not covered by other bins", "Creates a named bin", "Disables the coverpoint"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 6,
+    "bonusXp": 140,
+    "badge": "UVM Architect",
+    "subLevels": [
+      {
+        "id": "ver-6-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "UVM architecture — components, hierarchy, and the standard verification methodology.",
+        "keyPoints": [
+          "UVM = Universal Verification Methodology — industry standard TB framework",
+          "uvm_component: base class for all structural TB components",
+          "uvm_object: base class for data objects (transactions)",
+          "Agent: contains Driver + Sequencer + Monitor — the reusable unit",
+          "Environment (env): contains one or more agents + scoreboard",
+          "Test: top-level, configures env and starts sequences",
+          "UVM phases: build_phase, connect_phase, run_phase — structured startup"
+        ],
+        "content": "UVM standardizes how verification environments are built across the industry. Every UVM environment has the same structure: sequences generate transactions → sequencer queues them → driver sends them to DUT → monitor captures DUT I/O → scoreboard checks correctness. This structure means a UVM environment for one project is instantly understandable by any verification engineer. The phase mechanism (build → connect → run → report) ensures components are created and connected in the right order, eliminating initialization bugs.",
+        "xp": 20
+      },
+      {
+        "id": "ver-6-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "UVM component structure — build_phase, run_phase, TLM ports.",
+        "keyPoints": [
+          "class MyDrv extends uvm_driver #(MyTx);",
+          "`uvm_component_utils(MyDrv) — factory registration",
+          "function void build_phase(uvm_phase phase);",
+          "task run_phase(uvm_phase phase);",
+          "seq_item_port.get_next_item(req) — get from sequencer",
+          "seq_item_port.item_done() — signal done to sequencer",
+          "uvm_analysis_port — broadcast observed items"
+        ],
+        "content": "// Minimal UVM Driver\nclass my_driver extends uvm_driver #(my_tx);\n  `uvm_component_utils(my_driver)\n\n  virtual dut_if vif; // virtual interface to DUT\n\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n\n  function void build_phase(uvm_phase phase);\n    super.build_phase(phase);\n    // Get virtual interface from config_db\n    if (!uvm_config_db #(virtual dut_if)::get(\n          this, \"\", \"vif\", vif))\n      `uvm_fatal(\"NO_VIF\", \"Virtual interface not set\")\n  endfunction\n\n  task run_phase(uvm_phase phase);\n    my_tx req;\n    forever begin\n      seq_item_port.get_next_item(req); // get from sequencer\n      // drive req onto vif\n      @(posedge vif.clk);\n      vif.data  <= req.data;\n      vif.valid <= 1;\n      @(posedge vif.clk);\n      vif.valid <= 0;\n      seq_item_port.item_done(); // tell sequencer done\n    end\n  endtask\nendclass",
+        "xp": 20
+      },
+      {
+        "id": "ver-6-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete minimal UVM environment for a simple FIFO.",
+        "keyPoints": [
+          "Transaction class extends uvm_sequence_item",
+          "Sequence extends uvm_sequence and generates transactions",
+          "Driver extends uvm_driver and drives DUT",
+          "Monitor extends uvm_monitor and observes DUT",
+          "Env extends uvm_env and connects all components",
+          "Test extends uvm_test and runs the sequence"
+        ],
+        "content": "// UVM Transaction\nclass fifo_tx extends uvm_sequence_item;\n  `uvm_object_utils(fifo_tx)\n  rand logic [7:0] data;\n  rand logic wr_en, rd_en;\n  function new(string name=\"\"); super.new(name); endfunction\nendclass\n\n// UVM Sequence\nclass fifo_seq extends uvm_sequence #(fifo_tx);\n  `uvm_object_utils(fifo_seq)\n  function new(string name=\"\"); super.new(name); endfunction\n  task body();\n    fifo_tx tx;\n    repeat(20) begin\n      tx = fifo_tx::type_id::create(\"tx\");\n      start_item(tx);\n      assert(tx.randomize());\n      finish_item(tx); // sends to driver\n    end\n  endtask\nendclass\n\n// UVM Test (top level)\nclass fifo_test extends uvm_test;\n  `uvm_component_utils(fifo_test)\n  fifo_env env;\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n  function void build_phase(uvm_phase phase);\n    env = fifo_env::type_id::create(\"env\", this);\n  endfunction\n  task run_phase(uvm_phase phase);\n    fifo_seq seq = fifo_seq::type_id::create(\"seq\");\n    phase.raise_objection(this);\n    seq.start(env.agent.sequencer);\n    phase.drop_objection(this);\n  endtask\nendclass",
+        "xp": 20
+      },
+      {
+        "id": "ver-6-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Build a UVM transaction and sequence for an 8-bit adder.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 6: UVM Transaction + Sequence for Adder\n\nBuild the UVM transaction and sequence for:\n```\nmodule adder8 (\n  input  logic [7:0] a, b,\n  output logic [8:0] result  // 9-bit to hold carry\n);\n```\n\nRequirements:\n1. Class `adder_tx` extends `uvm_sequence_item`\n   - `rand logic [7:0] a, b`\n   - Register with `uvm_object_utils`\n   - Add constraint: `a + b < 300` (prevent large overflow)\n2. Class `adder_seq` extends `uvm_sequence #(adder_tx)`\n   - Run 30 randomized transactions\n   - Use `start_item` and `finish_item`\n3. Register both with UVM factory\n\nModule name: write both classes (no module wrapper needed)",
+          "starterCode": "// Lab 6: UVM Transaction and Sequence for Adder\nimport uvm_pkg::*;\n`include \"uvm_macros.svh\"\n\n// Transaction class\nclass adder_tx extends uvm_sequence_item;\n  // Register with factory\n  `uvm_object_utils(adder_tx)\n\n  // Randomizable fields\n  rand logic [7:0] a;\n  rand logic [7:0] b;\n\n  // Constraint: prevent extreme overflow\n  constraint c_sum {\n    // your constraint here\n  }\n\n  // Constructor\n  function new(string name = \"adder_tx\");\n    super.new(name);\n  endfunction\n\n  // Optional: print function\n  function string convert2string();\n    return $sformatf(\"a=%0d b=%0d\", a, b);\n  endfunction\nendclass\n\n// Sequence class\nclass adder_seq extends uvm_sequence #(adder_tx);\n  `uvm_object_utils(adder_seq)\n\n  function new(string name = \"adder_seq\");\n    super.new(name);\n  endfunction\n\n  task body();\n    adder_tx tx;\n    repeat(30) begin\n      // Create transaction\n      tx = adder_tx::type_id::create(\"tx\");\n      // Start item (reserves sequencer)\n      start_item(tx);\n      // Randomize\n      assert(tx.randomize()) else `uvm_fatal(\"RAND\",\"Failed\");\n      // Finish item (sends to driver)\n      finish_item(tx);\n    end\n  endtask\nendclass",
+          "hints": [
+            "Constraint: constraint c_sum { a + b < 300; }",
+            "`uvm_object_utils(adder_tx) registers with factory",
+            "start_item(tx) → randomize → finish_item(tx) is the sequence pattern",
+            "adder_tx::type_id::create(\"tx\") — factory creation, not 'new'"
+          ],
+          "requiredPatterns": [
+            "class adder_tx extends uvm_sequence_item",
+            "`uvm_object_utils(adder_tx)",
+            "rand logic [7:0] a",
+            "rand logic [7:0] b",
+            "constraint",
+            "class adder_seq extends uvm_sequence",
+            "`uvm_object_utils(adder_seq)",
+            "start_item",
+            "finish_item",
+            "repeat(30)"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "UVM transactions extend uvm_sequence_item and use uvm_object_utils for factory registration. Sequences extend uvm_sequence and use start_item/finish_item to send transactions through the sequencer to the driver. Factory creation (type_id::create) enables test-level substitution of transaction types."
+        }
+      },
+      {
+        "id": "ver-6-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your UVM fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "UVM stands for:", "options": ["Universal Verilog Methodology", "Universal Verification Methodology", "Unit Verification Model", "Unified VM"], "answer": 1 },
+          { "q": "An UVM Agent contains:", "options": ["Only a driver", "Driver + Sequencer + Monitor", "Test + Env + Score", "Only assertions"], "answer": 1 },
+          { "q": "uvm_object_utils macro does:", "options": ["Creates the component", "Registers class with UVM factory", "Defines the interface", "Starts the simulation"], "answer": 1 },
+          { "q": "phase.raise_objection / drop_objection controls:", "options": ["Clock generation", "When run_phase ends — simulation continues until all objections dropped", "Coverage sampling", "Factory registration"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 7,
+    "bonusXp": 160,
+    "badge": "UVM Expert",
+    "subLevels": [
+      {
+        "id": "ver-7-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Advanced UVM — factory, config_db, scoreboard, and callbacks.",
+        "keyPoints": [
+          "UVM Factory: allows test to override any component/object type",
+          "config_db: global key-value store for passing configuration between components",
+          "Scoreboard: compares DUT output to reference model (golden output)",
+          "TLM Analysis Port: broadcast mechanism — monitor → scoreboard",
+          "Callback: hook into component behavior without modifying it",
+          "Virtual Sequence: coordinates multiple agents from one sequence",
+          "uvm_reg: register abstraction layer for CSR verification"
+        ],
+        "content": "The UVM factory pattern enables test-level customization without modifying the environment. A test can override any component: 'use my ErrorPacket instead of NormalPacket everywhere' — one line of code. config_db passes the virtual interface from the top module down to the driver without manual handle passing. The scoreboard is the heart of self-checking verification — it has a reference model that computes expected outputs and compares to DUT. TLM analysis ports allow one monitor to broadcast to multiple scoreboards, coverage collectors, and loggers simultaneously.",
+        "xp": 20
+      },
+      {
+        "id": "ver-7-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Factory override, config_db set/get, scoreboard with TLM port.",
+        "keyPoints": [
+          "factory.set_type_override_by_type(Base::get_type(), Override::get_type())",
+          "uvm_config_db#(T)::set(this, path, key, value)",
+          "uvm_config_db#(T)::get(this, \"\", key, var)",
+          "uvm_analysis_port #(Tx) ap — analysis port",
+          "uvm_analysis_imp #(Tx, Scb) — analysis implementation",
+          "function void write(Tx tx) — called by analysis port",
+          "uvm_tlm_analysis_fifo — buffer between monitor and scoreboard"
+        ],
+        "content": "// Scoreboard with TLM analysis\nclass my_scoreboard extends uvm_scoreboard;\n  `uvm_component_utils(my_scoreboard)\n\n  // Port to receive observed transactions from monitor\n  uvm_analysis_imp #(my_tx, my_scoreboard) analysis_export;\n\n  // Reference model queue\n  my_tx exp_queue[$];\n\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n\n  function void build_phase(uvm_phase phase);\n    analysis_export = new(\"analysis_export\", this);\n  endfunction\n\n  // Called by monitor when it observes a transaction\n  function void write(my_tx observed);\n    my_tx expected;\n    if (exp_queue.size() == 0) begin\n      `uvm_error(\"SCB\", \"Unexpected transaction\")\n      return;\n    end\n    expected = exp_queue.pop_front();\n    if (observed.data !== expected.data)\n      `uvm_error(\"SCB\", $sformatf(\n        \"MISMATCH: got %0h exp %0h\",\n        observed.data, expected.data))\n    else\n      `uvm_info(\"SCB\", \"MATCH\", UVM_LOW)\n  endfunction\nendclass",
+        "xp": 20
+      },
+      {
+        "id": "ver-7-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete UVM environment with scoreboard for a FIFO.",
+        "keyPoints": [
+          "Monitor has analysis port — broadcasts observed transactions",
+          "Scoreboard has analysis imp — receives from monitor",
+          "Env connects monitor.ap to scoreboard.analysis_export",
+          "Reference model in scoreboard computes expected output",
+          "config_db passes virtual interface from top to driver",
+          "Test runs sequence, simulation ends when objection dropped"
+        ],
+        "content": "// UVM Environment connecting all pieces\nclass fifo_env extends uvm_env;\n  `uvm_component_utils(fifo_env)\n\n  fifo_agent    agent;\n  fifo_scoreboard scb;\n\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n\n  function void build_phase(uvm_phase phase);\n    agent = fifo_agent::type_id::create(\"agent\", this);\n    scb   = fifo_scoreboard::type_id::create(\"scb\", this);\n  endfunction\n\n  function void connect_phase(uvm_phase phase);\n    // Connect monitor's analysis port to scoreboard\n    agent.monitor.ap.connect(scb.analysis_export);\n  endfunction\nendclass\n\n// In top module (tb_top):\n// Pass virtual interface via config_db\ninitial begin\n  uvm_config_db #(virtual fifo_if)::set(\n    null, \"uvm_test_top.*\", \"vif\", dut_if);\n  run_test(\"fifo_test\"); // starts UVM\nend\n\n// In driver build_phase:\n// Retrieve interface\nuvm_config_db #(virtual fifo_if)::get(\n  this, \"\", \"vif\", vif);",
+        "xp": 20
+      },
+      {
+        "id": "ver-7-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a UVM scoreboard for an 8-bit adder.",
+        "xp": 55,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 7: UVM Scoreboard for Adder\n\nWrite a scoreboard for the adder:\n```\nmodule adder8(input [7:0] a, b, output [8:0] result);\n```\n\nTransaction: `adder_tx` has fields `a`, `b`, `result`\n\nYour scoreboard must:\n1. Extend `uvm_scoreboard`\n2. Have `uvm_analysis_imp` to receive transactions from monitor\n3. Implement `write(adder_tx tx)` function\n4. In `write`: compute `expected = tx.a + tx.b`\n5. Compare `tx.result` to expected\n6. Use `uvm_error` on mismatch, `uvm_info` on match\n7. Track pass/fail counts, report in `report_phase`\n\nModule name: write the scoreboard class",
+          "starterCode": "// Lab 7: UVM Scoreboard for Adder\nimport uvm_pkg::*;\n`include \"uvm_macros.svh\"\n\n// Assume adder_tx is defined with: a, b, result fields\n\nclass adder_scoreboard extends uvm_scoreboard;\n  `uvm_component_utils(adder_scoreboard)\n\n  // Analysis port to receive transactions from monitor\n  uvm_analysis_imp #(adder_tx, adder_scoreboard) analysis_export;\n\n  // Counters\n  int pass_count = 0;\n  int fail_count = 0;\n\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n\n  function void build_phase(uvm_phase phase);\n    super.build_phase(phase);\n    // Create analysis export\n    analysis_export = new(\"analysis_export\", this);\n  endfunction\n\n  // Called by monitor for every observed transaction\n  function void write(adder_tx tx);\n    logic [8:0] expected;\n\n    // Compute expected result\n    expected = // a + b\n\n    // Compare and report\n    if (tx.result === expected) begin\n      // pass\n      pass_count++;\n    end else begin\n      // fail with uvm_error\n      fail_count++;\n    end\n  endfunction\n\n  // Report results at end of simulation\n  function void report_phase(uvm_phase phase);\n    `uvm_info(\"SCB\",\n      $sformatf(\"Results: %0d PASS, %0d FAIL\",\n                pass_count, fail_count), UVM_NONE)\n    if (fail_count > 0)\n      `uvm_error(\"SCB\", \"TEST FAILED\")\n    else\n      `uvm_info(\"SCB\", \"TEST PASSED\", UVM_NONE)\n  endfunction\n\nendclass",
+          "hints": [
+            "expected = tx.a + tx.b; (9-bit result)",
+            "On pass: `uvm_info(\"SCB\", \"MATCH\", UVM_LOW)",
+            "On fail: `uvm_error(\"SCB\", $sformatf(\"MISMATCH: got %0h exp %0h\", tx.result, expected))",
+            "analysis_export = new(\"analysis_export\", this); in build_phase"
+          ],
+          "requiredPatterns": [
+            "class adder_scoreboard extends uvm_scoreboard",
+            "`uvm_component_utils(adder_scoreboard)",
+            "uvm_analysis_imp",
+            "function void write(adder_tx tx)",
+            "expected",
+            "pass_count",
+            "fail_count",
+            "`uvm_error",
+            "`uvm_info",
+            "function void report_phase"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A scoreboard receives transactions from the monitor via TLM analysis port. The write() function is automatically called for each observed transaction. It computes the expected result using a reference model (a+b) and compares to actual. Pass/fail counts are reported in report_phase at simulation end."
+        }
+      },
+      {
+        "id": "ver-7-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your advanced UVM knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "UVM config_db is used to:", "options": ["Store coverage results", "Pass configuration (like virtual interfaces) between components", "Define transactions", "Run sequences"], "answer": 1 },
+          { "q": "A scoreboard's write() function is called by:", "options": ["The driver", "The test", "The monitor via TLM analysis port", "The sequencer"], "answer": 2 },
+          { "q": "UVM factory override allows:", "options": ["Changing clock frequency", "Replacing component/object types without modifying env code", "Disabling assertions", "Modifying the DUT"], "answer": 1 },
+          { "q": "connect_phase in UVM is used to:", "options": ["Build component hierarchy", "Connect TLM ports between components", "Start sequences", "Report results"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 8,
+    "bonusXp": 180,
+    "badge": "Debug Elite",
+    "subLevels": [
+      {
+        "id": "ver-8-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Debugging verification failures — waveforms, logs, seeds, and root cause analysis.",
+        "keyPoints": [
+          "Seed: the random number that determines all randomized values in a run",
+          "Regression: running the same test with many different seeds automatically",
+          "Failing seed: reproduce a failure with the exact same seed that caused it",
+          "+ntb_random_seed=N — pass seed to simulation",
+          "Waveform: dump signals to VCD/FSDB and view in GTKWave/Verdi",
+          "Root cause: find the FIRST wrong value, not the last symptom",
+          "$dumpfile / $dumpvars — generate VCD waveform dump"
+        ],
+        "content": "Debugging is 60% of verification work. When a simulation fails, the first step is to identify the failing seed and reproduce it deterministically. Then dump waveforms and find the earliest point where the DUT deviates from expected behavior — this is the root cause. Common mistakes: debugging the symptom (wrong output) instead of the cause (wrong internal state 10 cycles earlier). UVM provides `uvm_info`, `uvm_warning`, `uvm_error`, `uvm_fatal` for structured logging — use verbosity levels to control output volume.",
+        "xp": 20
+      },
+      {
+        "id": "ver-8-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Debug techniques — waveform dumps, UVM verbosity, $past, and time stamps.",
+        "keyPoints": [
+          "$dumpfile(\"wave.vcd\"); $dumpvars(0, tb); — dump all signals",
+          "$time — current simulation time",
+          "$past(signal, N) — value of signal N cycles ago",
+          "`uvm_info(\"TAG\", msg, UVM_LOW/MED/HIGH/DEBUG)",
+          "set_report_verbosity_level(UVM_DEBUG) — show all messages",
+          "UVM_LOG=+UVM_VERBOSITY=UVM_DEBUG — command line verbosity",
+          "$monitor — auto-print on any signal change"
+        ],
+        "content": "// Debugging techniques in SystemVerilog\n\n// 1. Waveform dump\ninitial begin\n  $dumpfile(\"sim.vcd\");\n  $dumpvars(0, tb_top); // dump all signals\nend\n\n// 2. Time-stamped display\n$display(\"[%0t] data=%0h state=%0d\", $time, data, state);\n\n// 3. Check past values (useful in assertions)\nassert property (@(posedge clk)\n  (state == DONE) |-> ($past(valid, 2) == 1))\n  else $error(\"[%0t] valid was not set 2 cycles ago\", $time);\n\n// 4. Monitor all changes to a signal\ninitial begin\n  $monitor(\"[%0t] valid=%b data=%h\", $time, valid, data);\nend\n\n// 5. UVM verbosity control\n// In test:\nset_report_verbosity_level_hier(UVM_DEBUG);\n// `uvm_info only prints if msg verbosity <= sim verbosity",
+        "xp": 20
+      },
+      {
+        "id": "ver-8-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Debug a real FIFO underflow bug step by step.",
+        "keyPoints": [
+          "Step 1: Identify failing test and seed",
+          "Step 2: Reproduce with same seed — confirm consistent failure",
+          "Step 3: Add $display at scoreboard mismatch",
+          "Step 4: Dump waveform — view rd_data vs expected",
+          "Step 5: Trace back to root cause — rd_ptr off by one",
+          "Step 6: Find RTL bug — rd_ptr increments before data read",
+          "Step 7: Fix RTL, re-run, confirm passing"
+        ],
+        "content": "// Debug session walkthrough:\n\n// FAILURE: Scoreboard reports rd_data=0x42 expected=0x17\n// at time 1250ns, seed=8734652\n\n// Step 1: Add detailed logging at failure point\nfunction void write(fifo_tx tx);\n  if (tx.rd_data !== expected_data) begin\n    `uvm_error(\"SCB\",\n      $sformatf(\"[%0t] FAIL: got=0x%0h exp=0x%0h rd_ptr=%0d\",\n      $time, tx.rd_data, expected_data, tx.rd_ptr))\n  end\nendfunction\n\n// Step 2: Waveform shows rd_ptr increments BEFORE data captured\n// Root cause: in RTL read logic:\n//   BUGGY:  rd_ptr <= rd_ptr + 1;  // increments first!\n//           rd_data <= mem[rd_ptr]; // reads from WRONG address\n//\n//   FIXED:  rd_data <= mem[rd_ptr]; // read first\n//           rd_ptr  <= rd_ptr + 1;  // then increment\n\n// Key insight: the scoreboard reported wrong output at t=1250ns\n// but the bug happened at t=1240ns (wrong pointer increment order)\n// Always look BEFORE the failure timestamp in waveforms!",
+        "xp": 20
+      },
+      {
+        "id": "ver-8-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Add comprehensive debug logging and waveform dump to a testbench.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 8: Debug-Ready Testbench\n\nEnhance a basic ALU testbench with full debug capabilities:\n\n```\nmodule alu8(input [7:0] a, b, input [1:0] op, output [7:0] result);\n```\n\nAdd to the testbench:\n1. **Waveform dump**: `$dumpfile` + `$dumpvars` at start\n2. **Time-stamped logging**: print `[time] a=X b=X op=X result=X expected=X` on every mismatch\n3. **$monitor**: auto-print whenever `result` changes\n4. **Pass/fail counter**: track total pass and fail\n5. **Final report**: print summary at end\n6. Run 100 random tests\n\nModule name: `tb_alu_debug`",
+          "starterCode": "// Lab 8: Debug-Ready ALU Testbench\nmodule tb_alu_debug;\n  logic [7:0] a, b, result;\n  logic [1:0] op;\n\n  alu8 dut(.a,.b,.op,.result);\n\n  int pass_count = 0;\n  int fail_count = 0;\n\n  // 1. Waveform dump\n  initial begin\n    // add $dumpfile and $dumpvars here\n  end\n\n  // 2. Monitor result changes\n  initial begin\n    // add $monitor here\n  end\n\n  // Function: compute expected\n  function logic [7:0] expected_result(logic [7:0] a, b, logic [1:0] op);\n    case (op)\n      2'b00: return a + b;\n      2'b01: return a - b;\n      2'b10: return a & b;\n      2'b11: return a | b;\n    endcase\n  endfunction\n\n  initial begin\n    repeat(100) begin\n      a  = $urandom;\n      b  = $urandom;\n      op = $urandom_range(0,3);\n      #5;\n\n      // Check result with time-stamped logging\n      if (result === expected_result(a, b, op)) begin\n        pass_count++;\n      end else begin\n        // print mismatch with $time\n        fail_count++;\n      end\n    end\n\n    // Final report\n    // print pass_count and fail_count\n\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "$dumpfile(\"alu_debug.vcd\"); $dumpvars(0, tb_alu_debug);",
+            "$monitor(\"[%0t] result=%0h\", $time, result);",
+            "Mismatch log: $display(\"[%0t] FAIL: a=%0d b=%0d op=%0d got=%0d exp=%0d\", $time, a, b, op, result, expected_result(a,b,op));",
+            "Final: $display(\"SUMMARY: %0d PASS %0d FAIL\", pass_count, fail_count);"
+          ],
+          "requiredPatterns": [
+            "module tb_alu_debug",
+            "$dumpfile",
+            "$dumpvars",
+            "$monitor",
+            "pass_count",
+            "fail_count",
+            "$time",
+            "expected_result",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A debug-ready testbench has waveform dump (vcd), automatic signal monitoring, time-stamped mismatch logging, pass/fail tracking, and a final report. These features turn a failing simulation from a mystery into a traceable bug — you can see exactly when and where the DUT diverged from expected behavior."
+        }
+      },
+      {
+        "id": "ver-8-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your debugging knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A simulation seed determines:", "options": ["Clock frequency", "All random values generated during that run", "Test duration", "Coverage targets"], "answer": 1 },
+          { "q": "Root cause of a bug is:", "options": ["The last wrong output", "The first deviation from correct behavior", "The failing assertion", "The scoreboard mismatch"], "answer": 1 },
+          { "q": "$past(sig, 2) in an assertion gives:", "options": ["Signal value 2ns ago", "Signal value 2 clock cycles ago", "Signal in 2 cycles", "Average of last 2 values"], "answer": 1 },
+          { "q": "To reproduce a failing simulation:", "options": ["Run with any seed", "Run with the exact same failing seed", "Increase simulation time", "Reduce constraints"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 9,
+    "bonusXp": 200,
+    "badge": "Protocol Verification Expert",
+    "subLevels": [
+      {
+        "id": "ver-9-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Real protocol verification — AXI, UART, SPI verification environments.",
+        "keyPoints": [
+          "Protocol VIP (Verification IP): pre-built, configurable env for standard protocols",
+          "AXI verification: check read/write handshakes, ordering, response codes",
+          "UART verification: check baud rate, frame format, parity errors",
+          "SPI verification: check SCLK polarity, CPHA, chip select timing",
+          "Back-pressure testing: hold READY low, verify VALID stays stable",
+          "Error injection: deliberately inject protocol violations to test error handling",
+          "Coverage closure: ensure all protocol corner cases are exercised"
+        ],
+        "content": "Protocol verification goes beyond simple data checking — it verifies timing relationships, handshake rules, error handling, and corner cases. For AXI, this means verifying burst transactions, outstanding transactions, exclusive access, and response ordering. For UART, it means checking start/stop bits, parity, and framing errors. The key verification challenge is negative testing — what happens when the DUT receives a malformed packet? Does it recover gracefully or hang? This is where error injection comes in.",
+        "xp": 20
+      },
+      {
+        "id": "ver-9-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Protocol verification patterns — back-pressure, error injection, timeout checks.",
+        "keyPoints": [
+          "Back-pressure: assert READY=0 for random cycles before accepting",
+          "Timeout: fork a timer thread — fail if response doesn't come",
+          "Error injection: occasionally send malformed transactions",
+          "Burst: send N consecutive transactions without gap",
+          "Out-of-order: send transactions, expect responses in order",
+          "Idle: verify DUT handles long idle periods correctly",
+          "Reset during operation: send reset mid-transaction"
+        ],
+        "content": "// Back-pressure pattern\ntask apply_backpressure(int max_wait);\n  int delay = $urandom_range(0, max_wait);\n  ready <= 0;\n  repeat(delay) @(posedge clk);\n  ready <= 1;\nendtask\n\n// Timeout check pattern\ntask wait_for_response_timeout(int timeout_cycles);\n  fork\n    begin : wait_thread\n      wait(response_valid == 1);\n    end\n    begin : timeout_thread\n      repeat(timeout_cycles) @(posedge clk);\n      `uvm_fatal(\"TIMEOUT\",\n        $sformatf(\"No response after %0d cycles\", timeout_cycles))\n    end\n  join_any\n  disable fork; // kill the other thread\nendtask\n\n// Error injection\nclass ErrorPkt extends NormalPkt;\n  `uvm_object_utils(ErrorPkt)\n  constraint inject_error {\n    // occasionally set invalid field\n    bad_parity dist {1:=10, 0:=90};\n  }\nendclass",
+        "xp": 20
+      },
+      {
+        "id": "ver-9-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete UART receiver verification environment.",
+        "keyPoints": [
+          "Generate byte: randomize data + parity setting",
+          "Driver: serialize into start + 8 data bits + stop",
+          "Apply at correct baud rate (timing critical)",
+          "Monitor: deserialize from DUT output",
+          "Scoreboard: check received byte matches sent byte",
+          "Error test: send wrong parity — check DUT asserts parity_err"
+        ],
+        "content": "// UART RX Verification — key tasks\n\n// Task: send one UART byte at 9600 baud (50MHz clk = 5208 cycles/bit)\nlocalparam BAUD_PERIOD = 5208;\n\ntask send_uart_byte(input logic [7:0] data, input logic parity);\n  // Start bit\n  rx_line = 0;\n  repeat(BAUD_PERIOD) @(posedge clk);\n\n  // Data bits (LSB first)\n  for (int i = 0; i < 8; i++) begin\n    rx_line = data[i];\n    repeat(BAUD_PERIOD) @(posedge clk);\n  end\n\n  // Parity bit (even parity)\n  rx_line = parity;\n  repeat(BAUD_PERIOD) @(posedge clk);\n\n  // Stop bit\n  rx_line = 1;\n  repeat(BAUD_PERIOD) @(posedge clk);\nendtask\n\n// Test: correct parity → data_valid asserted\nsend_uart_byte(8'hA5, ^8'hA5); // even parity\n@(posedge data_valid);\nassert(rx_data == 8'hA5);\nassert(parity_err == 0);\n\n// Test: wrong parity → parity_err asserted\nsend_uart_byte(8'hA5, ~(^8'hA5)); // WRONG parity\n@(posedge clk); #1;\nassert(parity_err == 1);",
+        "xp": 20
+      },
+      {
+        "id": "ver-9-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write an AXI4-Lite write channel verification environment.",
+        "xp": 60,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 9: AXI4-Lite Write Channel Verification\n\nVerify an AXI4-Lite slave write channel:\n```\nmodule axi_slave (\n  input  logic clk, rst_n,\n  input  logic awvalid, output logic awready,\n  input  logic [7:0] awaddr,\n  input  logic wvalid,  output logic wready,\n  input  logic [31:0] wdata,\n  output logic bvalid,  input  logic bready,\n  output logic [1:0] bresp  // 0=OKAY\n);\n```\n\nWrite a testbench that:\n1. Drives `awvalid`+`awaddr` and waits for `awready`\n2. Drives `wvalid`+`wdata` and waits for `wready`\n3. Asserts `bready` and waits for `bvalid`\n4. Checks `bresp == 2'b00` (OKAY)\n5. Tests back-pressure: hold `bready=0` for 5 cycles before accepting\n6. Runs 10 random write transactions\n\nModule name: `tb_axi_write`",
+          "starterCode": "// Lab 9: AXI4-Lite Write Channel Testbench\nmodule tb_axi_write;\n  logic clk=0, rst_n;\n  logic awvalid, awready;\n  logic [7:0] awaddr;\n  logic wvalid, wready;\n  logic [31:0] wdata;\n  logic bvalid, bready;\n  logic [1:0] bresp;\n\n  axi_slave dut(.*);\n  always #5 clk = ~clk;\n\n  // Task: AXI write transaction\n  task axi_write(input logic [7:0] addr,\n                 input logic [31:0] data,\n                 input int bp_cycles = 0);\n    // AW channel: drive address\n    @(posedge clk);\n    awvalid <= 1;\n    awaddr  <= addr;\n    // Wait for awready\n    wait(awready == 1);\n    @(posedge clk);\n    awvalid <= 0;\n\n    // W channel: drive data\n    @(posedge clk);\n    wvalid <= 1;\n    wdata  <= data;\n    // Wait for wready\n    wait(wready == 1);\n    @(posedge clk);\n    wvalid <= 0;\n\n    // B channel: apply back-pressure then accept\n    bready <= 0;\n    repeat(bp_cycles) @(posedge clk); // back-pressure\n    bready <= 1;\n    // Wait for bvalid\n    wait(bvalid == 1);\n    @(posedge clk); #1;\n    // Check response\n    assert(bresp == 2'b00)\n      else $error(\"Non-OKAY response: %0b\", bresp);\n    bready <= 0;\n  endtask\n\n  initial begin\n    rst_n=0; awvalid=0; wvalid=0; bready=0;\n    repeat(3) @(posedge clk);\n    rst_n=1;\n\n    // Test 1: 5 normal writes\n    repeat(5) begin\n      axi_write($urandom_range(0,15)*4, $urandom, 0);\n    end\n\n    // Test 2: 5 writes with back-pressure on B channel\n    repeat(5) begin\n      axi_write($urandom_range(0,15)*4, $urandom, 5);\n    end\n\n    $display(\"AXI Write tests PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "wait(awready == 1) blocks until slave is ready to accept address",
+            "Back-pressure: bready=0 for N cycles before setting bready=1",
+            "bresp == 2'b00 means OKAY response from slave",
+            "AXI rule: once awvalid asserted, keep it until awready seen"
+          ],
+          "requiredPatterns": [
+            "module tb_axi_write",
+            "axi_slave dut",
+            "task axi_write",
+            "awvalid",
+            "awready",
+            "wvalid",
+            "wready",
+            "bvalid",
+            "bready",
+            "assert(bresp",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "AXI4-Lite write has 3 independent channels: AW (address), W (data), B (response). Each channel uses VALID/READY handshake. Back-pressure testing holds READY low to verify the master correctly waits. Checking bresp==OKAY verifies the slave accepted the write successfully."
+        }
+      },
+      {
+        "id": "ver-9-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your protocol verification knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Back-pressure testing verifies:", "options": ["Clock speed", "DUT behavior when consumer is not ready to accept data", "Reset behavior", "Power consumption"], "answer": 1 },
+          { "q": "AXI4-Lite BRESP = 2'b00 means:", "options": ["Slave error", "Decode error", "OKAY — transaction successful", "Exclusive OKAY"], "answer": 2 },
+          { "q": "Error injection in verification:", "options": ["Breaks the simulation", "Tests DUT response to protocol violations", "Is never done", "Only for power testing"], "answer": 1 },
+          { "q": "A timeout check in a testbench:", "options": ["Limits simulation run time", "Fails if DUT doesn't respond within N cycles", "Measures performance", "Counts clock cycles only"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 10,
+    "bonusXp": 200,
+    "badge": "Regression Master",
+    "subLevels": [
+      {
+        "id": "ver-10-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Industry regression — nightly runs, seed management, automation, and metrics.",
+        "keyPoints": [
+          "Regression: running full test suite automatically to catch new bugs",
+          "Nightly regression: automated run of all tests every night",
+          "Seed sweep: same test run with 100s of different seeds",
+          "Pass rate: percentage of tests passing — must be 100% for tapeout",
+          "Coverage regression: track coverage trend over time",
+          "Failure triage: classify failures as new bugs vs known issues",
+          "CI/CD: continuous integration runs regression on every commit"
+        ],
+        "content": "In industry, verification is driven by regressions — automated test suites that run every night and report pass/fail. A new bug introduced by an RTL change shows up immediately in the nightly regression. Seed management is critical: each test run uses a random seed, and failing seeds must be saved and re-run to reproduce bugs. Coverage is tracked across the regression — if coverage drops, someone deleted a test or constrained too tightly. The goal is 100% pass rate AND 100% coverage closure before signoff.",
+        "xp": 20
+      },
+      {
+        "id": "ver-10-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Regression infrastructure patterns — seed control, coverage merging, logging.",
+        "keyPoints": [
+          "+ntb_random_seed=12345 — pass specific seed to simulator",
+          "+UVM_TESTNAME=my_test — select test from command line",
+          "$urandom — uses simulation seed automatically",
+          "coverage merge: combine .ucdb files from multiple runs",
+          "UVM_MAX_QUIT_COUNT=10 — allow N errors before stopping",
+          "`uvm_info with UVM_NONE — always prints (for regression logs)",
+          "Makefile targets: sim, regress, cov_report"
+        ],
+        "content": "// Regression-friendly testbench patterns\n\n// 1. Seed from command line (set by regression script)\n// Simulator uses +ntb_random_seed=N automatically\n// $urandom picks it up — no code change needed\n\n// 2. UVM test selection from command line\n// run: +UVM_TESTNAME=stress_test\n// run: +UVM_TESTNAME=corner_case_test\n\n// 3. Error limit — don't stop on first error in regression\n// +UVM_MAX_QUIT_COUNT=50\n// Allows collecting all failures in one run\n\n// 4. Regression summary in report_phase\nfunction void report_phase(uvm_phase phase);\n  int err_count = uvm_report_server::get_server()\n                    .get_severity_count(UVM_ERROR);\n  if (err_count == 0)\n    `uvm_info(\"TEST\", \"** TEST PASSED **\", UVM_NONE)\n  else\n    `uvm_fatal(\"TEST\",\n      $sformatf(\"** TEST FAILED: %0d errors **\", err_count))\nendfunction",
+        "xp": 20
+      },
+      {
+        "id": "ver-10-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete regression setup with Makefile and coverage merge.",
+        "keyPoints": [
+          "Makefile runs simulation with different seeds",
+          "Each run saves coverage to a separate .ucdb file",
+          "Coverage merge combines all runs into final report",
+          "Pass/fail logged per seed — failing seeds saved",
+          "Final report: N/M tests passed, X% coverage",
+          "Failed seeds re-run with waveform for debug"
+        ],
+        "content": "# Regression Makefile (simplified)\n\n# Run 50 seeds of the same test\nSEEDS = $(shell seq 1 50)\nLOGS  = $(addprefix logs/seed_, $(addsuffix .log, $(SEEDS)))\n\nregress: $(LOGS)\n\tlogs/seed_%.log:\n\t\t$(SIM) +UVM_TESTNAME=fifo_test \\\n\t\t       +ntb_random_seed=$* \\\n\t\t       -cm line+cond+fsm+branch \\\n\t\t       -cm_name seed_$* \\\n\t\t       | tee $@\n\n# Merge all coverage databases\ncov_merge:\n\turgrep -full -dir simv.vdb -dbname merged.vdb\n\n# Report\ncov_report:\n\turn -brewer merged.vdb -report cov_report/\n\n# Quick check: count PASSED vs FAILED\ncheck_results:\n\t@echo \"PASSED: $$(grep -l 'TEST PASSED' logs/*.log | wc -l)\"\n\t@echo \"FAILED: $$(grep -l 'TEST FAILED' logs/*.log | wc -l)\"",
+        "xp": 20
+      },
+      {
+        "id": "ver-10-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a self-checking test with pass/fail report for regression.",
+        "xp": 55,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 10: Regression-Ready Self-Checking Test\n\nWrite a complete self-checking test for an 8-bit multiplier:\n```\nmodule mult8 (\n  input  logic [7:0] a, b,\n  output logic [15:0] product\n);\n```\n\nRequirements:\n1. Run **200 random tests** using `$urandom`\n2. Compute expected: `expected = a * b` (16-bit)\n3. Check result with error counter\n4. Also test **corner cases**: a=0, b=0; a=255, b=255; a=1, b=anything\n5. Print `** TEST PASSED **` or `** TEST FAILED: N errors **` at end\n6. Return non-zero exit if failed: `$fatal` if errors > 0\n\nModule name: `tb_mult8_regress`",
+          "starterCode": "// Lab 10: Regression-Ready Multiplier Test\nmodule tb_mult8_regress;\n  logic [7:0]  a, b;\n  logic [15:0] product;\n  int          err_count = 0;\n  int          test_count = 0;\n\n  mult8 dut(.a,.b,.product);\n\n  // Task: run one test and check\n  task check(input logic [7:0] ta, tb_val,\n             input string label = \"\");\n    logic [15:0] expected;\n    a = ta; b = tb_val; #5;\n    expected = ta * tb_val;\n    test_count++;\n    if (product !== expected) begin\n      $display(\"FAIL[%s] a=%0d b=%0d got=%0d exp=%0d\",\n               label, ta, tb_val, product, expected);\n      err_count++;\n    end\n  endtask\n\n  initial begin\n    // Corner cases\n    check(0, 0,   \"zero_zero\");\n    check(255, 255, \"max_max\");\n    check(1, 128, \"one_mid\");\n    check(0, 255, \"zero_max\");\n\n    // Random tests\n    repeat(200) begin\n      check($urandom, $urandom, \"random\");\n    end\n\n    // Final report\n    if (err_count == 0) begin\n      $display(\"** TEST PASSED ** (%0d tests)\", test_count);\n    end else begin\n      // print failure message and call $fatal\n    end\n\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "expected = {8'h00, ta} * {8'h00, tb_val}; for proper 16-bit multiply",
+            "Failure report: $display(\"** TEST FAILED: %0d errors **\", err_count);",
+            "Then: $fatal(1, \"Regression FAILED\"); — non-zero exit for CI systems",
+            "$urandom returns 32-bit — cast to logic [7:0] automatically truncates"
+          ],
+          "requiredPatterns": [
+            "module tb_mult8_regress",
+            "mult8 dut",
+            "err_count",
+            "test_count",
+            "task check",
+            "repeat(200)",
+            "TEST PASSED",
+            "TEST FAILED",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A regression-ready testbench is self-checking and reports pass/fail clearly. Corner cases are always tested first — they catch the most obvious bugs. Random tests catch subtle interactions. The final report with error count allows regression scripts to parse pass/fail automatically. $fatal with non-zero exit code signals CI systems that the test failed."
+        }
+      },
+      {
+        "id": "ver-10-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your regression knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A nightly regression:", "options": ["Tests one scenario manually", "Runs full test suite automatically every night", "Only checks coverage", "Replaces formal verification"], "answer": 1 },
+          { "q": "Seed sweep means:", "options": ["Clearing simulation results", "Running the same test with many different random seeds", "Changing stimulus patterns manually", "Measuring code coverage"], "answer": 1 },
+          { "q": "100% pass rate in regression means:", "options": ["All code lines executed", "All tests pass with zero errors", "Coverage is 100%", "No assertions written"], "answer": 1 },
+          { "q": "Failing seeds in regression should be:", "options": ["Ignored", "Deleted", "Saved and re-run for reproduction and debug", "Reported but not fixed"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 11,
+    "bonusXp": 220,
+    "badge": "Verification Interview Ready",
+    "subLevels": [
+      {
+        "id": "ver-11-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What verification interviews at top companies actually test.",
+        "keyPoints": [
+          "SV: classes, rand, constraints, interfaces — always asked",
+          "UVM: component hierarchy, phases, TLM ports — deep questions",
+          "Assertions: write SVA for a given protocol spec",
+          "Coverage: design a coverage model for a given DUT",
+          "Debugging: given a failing waveform, find the bug",
+          "Companies: Intel, Qualcomm, NVIDIA, AMD, Synopsys, Cadence",
+          "Coding round: write testbench for FIFO, ALU, or protocol in 45 min"
+        ],
+        "content": "Verification interviews test both theoretical knowledge and practical coding ability. You will be asked to write a complete testbench on the spot, explain the UVM architecture, write SVA properties for a given spec, design a coverage model, and debug a failing waveform. The most common coding question: 'write a self-checking testbench for a synchronous FIFO with full/empty flags.' Practice this until you can write it in 20 minutes. Know: what is a race condition in simulation, what causes X propagation, difference between |-> and |=>.",
+        "xp": 20
+      },
+      {
+        "id": "ver-11-syntax",
+        "type": "syntax",
+        "title": "Common Interview Patterns",
+        "icon": "🔤",
+        "summary": "The top 10 verification coding patterns asked in every interview.",
+        "keyPoints": [
+          "1. Self-checking FIFO testbench",
+          "2. Class-based randomized ALU testbench",
+          "3. SVA: valid/ready handshake properties",
+          "4. Covergroup for a bus protocol",
+          "5. UVM sequence that sends N packets",
+          "6. Mailbox-based generator-driver",
+          "7. Timeout check using fork-join_any",
+          "8. Error injection via class extension",
+          "9. Scoreboard with reference model",
+          "10. UVM test that overrides transaction type"
+        ],
+        "content": "// Most common interview question: FIFO testbench\n// Write this in under 20 minutes:\n\nmodule tb_fifo_interview;\n  logic clk=0, rst_n;\n  logic wr_en, rd_en, full, empty;\n  logic [7:0] wr_data, rd_data;\n\n  sync_fifo dut(.*);\n  always #5 clk = ~clk;\n\n  // Reference queue (golden model)\n  logic [7:0] ref_q[$];\n\n  initial begin\n    rst_n=0; wr_en=0; rd_en=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Write 4 items\n    repeat(4) begin\n      wait(!full);\n      @(posedge clk);\n      wr_en <= 1;\n      wr_data <= $urandom;\n      ref_q.push_back(wr_data);\n    end\n    @(posedge clk); wr_en<=0;\n\n    // Read and check 4 items\n    repeat(4) begin\n      wait(!empty);\n      @(posedge clk); rd_en<=1;\n      @(posedge clk); rd_en<=0;\n      #1;\n      assert(rd_data == ref_q.pop_front())\n        else $error(\"FIFO data mismatch\");\n    end\n\n    $display(\"FIFO interview test PASSED\");\n    $finish;\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "ver-11-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Solve a complete verification interview question step by step.",
+        "keyPoints": [
+          "Q: Write SVA for: 'if req asserted, ack must come within 1-5 cycles'",
+          "Q: What is the difference between assert and assume?",
+          "Q: How do you verify a reset is functional?",
+          "Q: What causes X propagation and how do you debug it?",
+          "Q: Explain UVM phases in order"
+        ],
+        "content": "// Interview Q1: SVA for req → ack within 1-5 cycles\nproperty req_ack_timeout;\n  @(posedge clk) disable iff (!rst_n)\n  req |-> ##[1:5] ack;\nendproperty\nassert property (req_ack_timeout)\n  else $error(\"ACK did not come within 5 cycles of REQ\");\n\n// Interview Q2: assert vs assume\n// assert: property must hold — violation = error\n// assume: property assumed true — constrains formal tool input\n// In simulation: assume behaves like assert\n// In formal: assume constrains input space\n\n// Interview Q3: Verify reset\ninitial begin\n  rst_n = 1; @(posedge clk); // normal operation\n  rst_n = 0; @(posedge clk); // apply reset\n  #1;\n  // Check all outputs are at reset values\n  assert(out == 0) else $error(\"Reset failed: out=%0h\", out);\n  assert(state == IDLE) else $error(\"Reset: wrong state\");\n  rst_n = 1; // release\nend\n\n// Interview Q4: X propagation root causes\n// 1. Uninitialized registers (no reset)\n// 2. Multiple drivers on same wire\n// 3. Reading FIFO when empty (undefined rd_data)\n// Fix: always reset, check for multiple drivers, guard reads\n\n// Interview Q5: UVM phases in order\n// build → connect → start_of_simulation →\n// run (reset_phase → main_phase → shutdown_phase) →\n// extract → check → report",
+        "xp": 20
+      },
+      {
+        "id": "ver-11-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write the classic interview testbench — self-checking FIFO in 20 minutes.",
+        "xp": 60,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 11: The Classic Interview Question — FIFO Testbench\n\nWrite a **complete, self-checking FIFO testbench** for:\n```\nmodule sync_fifo (\n  input  logic clk, rst_n, wr_en, rd_en,\n  input  logic [7:0] wr_data,\n  output logic [7:0] rd_data,\n  output logic full, empty\n);\n```\n\n**Must include:**\n1. Clock generation (10ns)\n2. Reset sequence\n3. Reference queue (`logic [7:0] ref_q[$]`) as golden model\n4. Write N random items (check full before writing)\n5. Read N items (check empty before reading)\n6. Assert `rd_data == ref_q.pop_front()` for each read\n7. Test simultaneous read+write\n8. Final PASS/FAIL report\n\nModule name: `tb_fifo_classic`",
+          "starterCode": "// Lab 11: Classic FIFO Interview Testbench\nmodule tb_fifo_classic;\n  logic clk=0, rst_n;\n  logic wr_en, rd_en;\n  logic [7:0] wr_data, rd_data;\n  logic full, empty;\n  int err_count = 0;\n\n  sync_fifo dut(.clk,.rst_n,.wr_en,.rd_en,\n                .wr_data,.rd_data,.full,.empty);\n  always #5 clk = ~clk;\n\n  // Golden reference queue\n  logic [7:0] ref_q[$];\n\n  // Task: write one item\n  task fifo_write(input logic [7:0] data);\n    wait(!full);\n    @(posedge clk);\n    wr_en   <= 1;\n    wr_data <= data;\n    ref_q.push_back(data);\n    @(posedge clk);\n    wr_en <= 0;\n  endtask\n\n  // Task: read and check one item\n  task fifo_read();\n    logic [7:0] expected;\n    wait(!empty);\n    @(posedge clk);\n    rd_en <= 1;\n    @(posedge clk);\n    rd_en <= 0;\n    #1;\n    expected = ref_q.pop_front();\n    if (rd_data !== expected) begin\n      $display(\"FAIL: got=%0h exp=%0h\", rd_data, expected);\n      err_count++;\n    end\n  endtask\n\n  initial begin\n    rst_n=0; wr_en=0; rd_en=0;\n    repeat(2) @(posedge clk);\n    rst_n=1;\n\n    // Test 1: Write 4, read 4\n    repeat(4) fifo_write($urandom);\n    repeat(4) fifo_read();\n\n    // Test 2: Simultaneous read+write\n    fifo_write($urandom);\n    // write and read simultaneously\n    fork\n      fifo_write($urandom);\n      fifo_read();\n    join\n\n    // Final report\n    if (err_count == 0)\n      $display(\"** TEST PASSED **\");\n    else\n      $display(\"** TEST FAILED: %0d errors **\", err_count);\n\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "ref_q.push_back(data) when writing, ref_q.pop_front() when reading",
+            "wait(!full) before writing — never write to full FIFO",
+            "wait(!empty) before reading — never read from empty FIFO",
+            "fork fifo_write(); fifo_read(); join — simultaneous R+W test"
+          ],
+          "requiredPatterns": [
+            "module tb_fifo_classic",
+            "sync_fifo dut",
+            "ref_q",
+            "push_back",
+            "pop_front",
+            "task fifo_write",
+            "task fifo_read",
+            "err_count",
+            "TEST PASSED",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The FIFO testbench is the most common verification interview question. Key elements: reference queue as golden model, wait(!full) before write, wait(!empty) before read, pop_front() matches FIFO FIFO ordering. This testbench catches: data corruption, ordering errors, flag generation bugs, and simultaneous R+W issues."
+        }
+      },
+      {
+        "id": "ver-11-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Interview-style verification questions.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Most common verification interview coding question:", "options": ["Write a clock generator", "Write a self-checking FIFO testbench", "Write a UVM test", "Write a Makefile"], "answer": 1 },
+          { "q": "Difference between assert and assume in SVA:", "options": ["They are identical", "assert checks property holds; assume constrains inputs for formal tools", "assume is stronger than assert", "assert is only for simulation"], "answer": 1 },
+          { "q": "X propagation is caused by:", "options": ["Too many clock edges", "Uninitialized registers, multiple drivers, or reading invalid data", "High simulation speed", "Using always_ff"], "answer": 1 },
+          { "q": "UVM phases run in order:", "options": ["run → build → connect → report", "build → connect → run → report", "connect → build → run → check", "report → build → run → connect"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 12,
+    "bonusXp": 500,
+    "badge": "Verification Architect",
+    "subLevels": [
+      {
+        "id": "ver-12-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Complete UVM environment for a DMA/FIFO/AXI-lite IP — the final boss.",
+        "keyPoints": [
+          "Full UVM env: transactions + sequences + driver + monitor + scoreboard + coverage",
+          "DMA verification: address generation, burst size, response ordering",
+          "AXI-lite slave: register read/write, response codes, error handling",
+          "FIFO: depth, overflow, underflow, simultaneous R/W",
+          "Functional coverage must close: all scenarios exercised",
+          "Assertions protect protocol rules all simulation long",
+          "Gate-level simulation: run testbench on netlist to catch synthesis bugs"
+        ],
+        "content": "The verification architect designs the complete verification plan before writing a single line of code. The plan specifies: which features to test, what coverage points are needed, what assertions to write, how many seeds to run, and what the exit criteria are. For a DMA+FIFO+AXI-lite IP, this means verifying: AXI write/read channels independently, FIFO depth and flag behavior, DMA burst transfers, error response handling, back-pressure from all consumers, simultaneous operations from multiple masters, and reset during active transactions. This is the industry-level challenge.",
+        "xp": 30
+      },
+      {
+        "id": "ver-12-syntax",
+        "type": "syntax",
+        "title": "Architecture Overview",
+        "icon": "🔤",
+        "summary": "Complete UVM environment structure for a complex IP.",
+        "keyPoints": [
+          "Top: tb_top.sv — DUT + interfaces + run_test()",
+          "Test: configures env, selects sequences, sets factory overrides",
+          "Env: creates agents + scoreboard + coverage collector",
+          "Agent: driver + monitor + sequencer",
+          "Sequences: base, stress, corner_case, error_inject",
+          "Scoreboard: AXI ref model + FIFO ref model + DMA ref model",
+          "Coverage: protocol coverage + data coverage + error coverage"
+        ],
+        "content": "// Complete UVM env structure:\n//\n// tb_top\n// ├── dut (DMA+FIFO+AXI IP)\n// ├── axi_if (AXI interface)\n// ├── fifo_if (FIFO interface)\n// └── uvm_test_top (via run_test)\n//     └── dma_test\n//         └── dma_env\n//             ├── axi_agent\n//             │   ├── axi_driver\n//             │   ├── axi_monitor ──────→ analysis_port\n//             │   └── axi_sequencer          │\n//             ├── fifo_agent                 │\n//             │   ├── fifo_driver            │\n//             │   ├── fifo_monitor ─────→ analysis_port\n//             │   └── fifo_sequencer         │\n//             ├── dma_scoreboard ←───────────┘\n//             │   (receives from both monitors)\n//             └── dma_coverage\n//                 (receives from both monitors)\n//\n// Tests:\n// - dma_basic_test: simple transfers\n// - dma_stress_test: max burst, back-pressure\n// - dma_error_test: inject AXI errors\n// - dma_corner_test: reset mid-transfer, zero-length burst",
+        "xp": 30
+      },
+      {
+        "id": "ver-12-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read through a complete verification plan for the final boss IP.",
+        "keyPoints": [
+          "Feature list: all DUT features to be verified",
+          "Coverage plan: what coverpoints for each feature",
+          "Test plan: which tests hit which features",
+          "Assertion plan: which SVA properties protect which protocols",
+          "Regression plan: how many seeds, which tests, pass criteria",
+          "Exit criteria: 100% pass + 95%+ coverage + all assertions active"
+        ],
+        "content": "// Verification Plan Summary for DMA+FIFO+AXI IP\n\n// FEATURE LIST:\n// F1: AXI write channel — single write\n// F2: AXI write channel — burst write\n// F3: AXI read channel — single read\n// F4: AXI read channel — burst read\n// F5: FIFO write — normal, at full\n// F6: FIFO read — normal, at empty\n// F7: DMA transfer — single burst\n// F8: DMA transfer — back-pressure\n// F9: Error handling — AXI SLVERR response\n// F10: Reset during active transfer\n\n// COVERAGE PLAN:\n// CP1: AXI burst lengths [1,2,4,8,16]\n// CP2: FIFO fill levels [empty, quarter, half, full]\n// CP3: DMA transfer sizes [1,4,16,64 bytes]\n// CP4: Back-pressure duration [0,1,5,10+ cycles]\n// CP5: Error injection rate [0%, 10%, 50%]\n// CX1: Burst length × FIFO fill level\n\n// ASSERTIONS:\n// A1: AWVALID stable until AWREADY\n// A2: WVALID stable until WREADY\n// A3: No FIFO overflow\n// A4: No FIFO underflow\n// A5: DMA completes within timeout\n// A6: No X on AXI data during valid\n\n// EXIT CRITERIA:\n// - 100% test pass rate (1000 seeds)\n// - 95%+ functional coverage\n// - All 6 assertions active and 0 violations\n// - Gate-level simulation passes with 100 seeds",
+        "xp": 30
+      },
+      {
+        "id": "ver-12-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Build the core of a UVM environment — complete agent for AXI-lite.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 12: Final Boss — Complete UVM Agent for AXI-Lite\n\nBuild a complete UVM agent for AXI4-Lite write channel:\n\n**Transaction** (`axi_tx`):\n- `rand logic [7:0] addr` — write address (word-aligned: addr[1:0]==0)\n- `rand logic [31:0] data` — write data\n- `logic [1:0] resp` — response captured by monitor\n- Constraint: `addr[1:0] == 2'b00`\n\n**Sequence** (`axi_write_seq`):\n- Send 20 random write transactions\n\n**Driver** (`axi_driver`):\n- Drive AW channel: awvalid + awaddr, wait awready\n- Drive W channel: wvalid + wdata, wait wready  \n- Assert bready, wait bvalid, capture bresp\n\n**Monitor** (`axi_monitor`):\n- Watch for bvalid+bready\n- Capture completed transaction\n- Broadcast via analysis port\n\nWrite all 4 classes.\n\nNote: Use `import uvm_pkg::*;` and `` `include \"uvm_macros.svh\" ``",
+          "starterCode": "// Lab 12: Final Boss — Complete UVM AXI-Lite Agent\nimport uvm_pkg::*;\n`include \"uvm_macros.svh\"\n\n// ── Transaction ──────────────────────────────────────────────\nclass axi_tx extends uvm_sequence_item;\n  `uvm_object_utils(axi_tx)\n\n  rand logic [7:0]  addr;\n  rand logic [31:0] data;\n  logic [1:0]       resp; // captured by monitor\n\n  // Constraint: word-aligned address\n  constraint c_align { addr[1:0] == 2'b00; }\n\n  function new(string name=\"axi_tx\");\n    super.new(name);\n  endfunction\nendclass\n\n// ── Sequence ─────────────────────────────────────────────────\nclass axi_write_seq extends uvm_sequence #(axi_tx);\n  `uvm_object_utils(axi_write_seq)\n\n  function new(string name=\"axi_write_seq\");\n    super.new(name);\n  endfunction\n\n  task body();\n    axi_tx tx;\n    repeat(20) begin\n      tx = axi_tx::type_id::create(\"tx\");\n      start_item(tx);\n      assert(tx.randomize());\n      finish_item(tx);\n    end\n  endtask\nendclass\n\n// ── Driver ───────────────────────────────────────────────────\nclass axi_driver extends uvm_driver #(axi_tx);\n  `uvm_component_utils(axi_driver)\n\n  virtual axi_if vif;\n\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n\n  function void build_phase(uvm_phase phase);\n    super.build_phase(phase);\n    if (!uvm_config_db #(virtual axi_if)::get(\n          this, \"\", \"vif\", vif))\n      `uvm_fatal(\"NO_VIF\", \"AXI interface not set\")\n  endfunction\n\n  task run_phase(uvm_phase phase);\n    axi_tx req;\n    // Initialize signals\n    vif.awvalid <= 0; vif.wvalid <= 0; vif.bready <= 0;\n    @(posedge vif.rst_n); // wait for reset release\n\n    forever begin\n      seq_item_port.get_next_item(req);\n\n      // Drive AW channel\n      @(posedge vif.clk);\n      vif.awvalid <= 1;\n      vif.awaddr  <= req.addr;\n      wait(vif.awready);\n      @(posedge vif.clk);\n      vif.awvalid <= 0;\n\n      // Drive W channel\n      @(posedge vif.clk);\n      vif.wvalid <= 1;\n      vif.wdata  <= req.data;\n      wait(vif.wready);\n      @(posedge vif.clk);\n      vif.wvalid <= 0;\n\n      // Accept B response\n      vif.bready <= 1;\n      wait(vif.bvalid);\n      @(posedge vif.clk);\n      req.resp = vif.bresp;\n      vif.bready <= 0;\n\n      seq_item_port.item_done();\n    end\n  endtask\nendclass\n\n// ── Monitor ──────────────────────────────────────────────────\nclass axi_monitor extends uvm_monitor;\n  `uvm_component_utils(axi_monitor)\n\n  virtual axi_if vif;\n  uvm_analysis_port #(axi_tx) ap;\n\n  function new(string name, uvm_component parent);\n    super.new(name, parent);\n  endfunction\n\n  function void build_phase(uvm_phase phase);\n    super.build_phase(phase);\n    ap = new(\"ap\", this);\n    if (!uvm_config_db #(virtual axi_if)::get(\n          this, \"\", \"vif\", vif))\n      `uvm_fatal(\"NO_VIF\", \"AXI interface not set\")\n  endfunction\n\n  task run_phase(uvm_phase phase);\n    axi_tx tx;\n    forever begin\n      // Wait for completed write (bvalid + bready)\n      @(posedge vif.clk);\n      if (vif.bvalid && vif.bready) begin\n        tx = axi_tx::type_id::create(\"tx\");\n        tx.resp = vif.bresp;\n        tx.addr = vif.awaddr; // captured earlier\n        ap.write(tx); // broadcast to scoreboard\n      end\n    end\n  endtask\nendclass",
+          "hints": [
+            "Transaction: constraint c_align { addr[1:0] == 2'b00; }",
+            "Driver: seq_item_port.get_next_item(req) then item_done() after driving",
+            "Monitor: ap.write(tx) broadcasts observed transaction to scoreboard",
+            "config_db::get gets virtual interface from top-level set()"
+          ],
+          "requiredPatterns": [
+            "class axi_tx extends uvm_sequence_item",
+            "`uvm_object_utils(axi_tx)",
+            "rand logic [7:0] addr",
+            "constraint c_align",
+            "class axi_write_seq extends uvm_sequence",
+            "start_item",
+            "finish_item",
+            "class axi_driver extends uvm_driver",
+            "`uvm_component_utils(axi_driver)",
+            "seq_item_port.get_next_item",
+            "seq_item_port.item_done",
+            "class axi_monitor extends uvm_monitor",
+            "uvm_analysis_port",
+            "ap.write"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A complete UVM agent has 4 parts: transaction (data model), sequence (generates transactions), driver (drives DUT), monitor (observes DUT). The driver uses TLM seq_item_port to get transactions from the sequencer. The monitor uses analysis port to broadcast observations to the scoreboard. This is the industry-standard pattern used in every ASIC project at Intel, Qualcomm, NVIDIA, and AMD."
+        }
+      },
+      {
+        "id": "ver-12-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Final boss quiz — complete verification knowledge.",
+        "xp": 30,
+        "quiz": [
+          { "q": "A complete UVM agent contains:", "options": ["Only sequences", "Driver + Sequencer + Monitor", "Test + Env + Scoreboard", "Only the monitor"], "answer": 1 },
+          { "q": "The monitor's analysis port is used to:", "options": ["Send transactions to driver", "Broadcast observed DUT activity to scoreboard/coverage", "Control the sequencer", "Reset the DUT"], "answer": 1 },
+          { "q": "Gate-level simulation runs:", "options": ["The original RTL", "The synthesized netlist with actual gate delays", "Formal proofs", "Only assertions"], "answer": 1 },
+          { "q": "Verification exit criteria for tapeout includes:", "options": ["100% code coverage only", "100% pass rate AND coverage closure AND zero assertion violations", "Any passing test", "Simulation compile success"], "answer": 1 }
+        ]
+      }
+    ]
+  }
+]

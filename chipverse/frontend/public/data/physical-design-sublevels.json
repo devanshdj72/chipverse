@@ -1,0 +1,2330 @@
+[
+  {
+    "levelId": 0,
+    "bonusXp": 100,
+    "badge": "Backend Initiate",
+    "subLevels": [
+      {
+        "id": "pd-0-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What physical design is and where it fits in the full ASIC flow.",
+        "keyPoints": [
+          "Physical Design = converting gate-level netlist into physical chip layout (GDSII)",
+          "Input: synthesized netlist + SDC constraints + technology libraries",
+          "Output: GDSII file sent to foundry for manufacturing",
+          "Stages: Floorplan → Power Plan → Placement → CTS → Routing → Signoff",
+          "PPA = Power, Performance, Area — the 3 optimization targets",
+          "Two major tools: Cadence Innovus and Synopsys Fusion Compiler",
+          "Physical design follows frontend (RTL + synthesis) and precedes tapeout"
+        ],
+        "content": "Physical design transforms an abstract gate-level netlist into a physical silicon layout. The netlist describes WHAT gates exist and how they connect — physical design decides WHERE each gate sits on the die and HOW wires route between them. The flow has 6 major stages: floorplanning (die size, macro placement), power planning (VDD/VSS grid), placement (standard cell locations), CTS (clock tree), routing (signal wires), and signoff (DRC/LVS/timing verification). Two industry-dominant tools handle this: Cadence Innovus (formerly EDI/SoC Encounter) and Synopsys Fusion Compiler (evolution of IC Compiler II). Both use Tcl scripting for automation.",
+        "xp": 20
+      },
+      {
+        "id": "pd-0-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Getting started — launching, reading design, and basic setup in both tools.",
+        "keyPoints": [
+          "Both tools use TCL scripting — same language, different commands",
+          "Cadence Innovus: launched with 'innovus' command",
+          "Synopsys FC: launched with 'fc_shell' or 'icc2_shell' command",
+          "Both have GUI mode and batch/script mode",
+          "Design database: Innovus uses .enc/.dat, FC uses .dlib/.ndm",
+          "Always source your setup file before starting work",
+          "Log files capture every command — essential for debugging"
+        ],
+        "cadence": "# ── Cadence Innovus — Getting Started ──────────────────\n\n# Launch Innovus GUI\ninnovus\n# or batch mode:\ninnovus -batch -source run.tcl\n\n# Read technology and library files\nread_mmmc mmmc.view    ;# multi-mode multi-corner setup\nread_physical -lef {tech.lef cells.lef}\n\n# Read netlist and constraints  \nread_netlist design.v\nread_sdc design.sdc\n\n# Initialize design\ninit_design\n\n# Check design loaded correctly\nget_db designs .name\nreport_design_model\n\n# Set design mode\nset_db design_flow_effort high\n\n# Save current state\nsaveDesign ./save/design_start.enc",
+        "synopsys": "# ── Synopsys Fusion Compiler — Getting Started ──────────\n\n# Launch FC Shell\nfc_shell\n# or batch mode:\nfc_shell -f run.tcl\n\n# Create library and read technology\ncreate_lib -technology tech.tf \\\n           -ref_libs {stdcell.ndm io.ndm} \\\n           my_design.dlib\n\n# Read netlist\nread_verilog design.v\nlink_block\n\n# Read constraints\nread_sdc constraints.sdc\n\n# Check design\ncurrent_design\ncheck_design -pre_place_design\n\n# Set scenario\nset_scenario_status -active true [all_scenarios]\n\n# Save block\nsave_block -as design_start",
+        "xp": 25
+      },
+      {
+        "id": "pd-0-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read and understand a basic design summary report from both tools.",
+        "keyPoints": [
+          "Design summary shows: cell count, net count, die area, utilization",
+          "Instance count: total number of standard cells in the design",
+          "Net count: number of electrical connections",
+          "Die area vs core area: die includes I/O ring, core is logic area",
+          "Utilization: what % of core area is filled with cells",
+          "Timing windows: what corners are being analyzed (SS, TT, FF)"
+        ],
+        "reportContent": "# Cadence Innovus — Design Summary Report\n# Command: report_design_model\n\n=================================================\n  Design          : my_soc_top\n  Technology      : TSMC 28nm\n  Process Corner  : SS / TT / FF\n=================================================\n  Instance Count  :    48,293  standard cells\n  Net Count       :    51,847  nets\n  Pin Count       :       342  I/O pins\n-------------------------------------------------\n  Die Area        :  1,200.0 x 1,200.0 um\n                 =  1,440,000 um²\n  Core Area       :  1,100.0 x 1,100.0 um\n                 =  1,210,000 um²\n  Cell Area       :    850,000 um²\n  Utilization     :     70.2%  (cell/core area)\n-------------------------------------------------\n  Macro Count     :        12  hard macros\n  Macro Area      :    180,000 um²\n=================================================\n\n# KEY THINGS TO CHECK:\n# 1. Utilization 70% = healthy (60-75% is good)\n# 2. High utilization (>80%) = congestion risk\n# 3. Too low (<50%) = wasteful die area\n# 4. Macro count affects floorplan complexity",
+        "xp": 20
+      },
+      {
+        "id": "pd-0-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write Innovus commands to initialize a design from scratch.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 0A: Cadence Innovus — Design Initialization\n\nWrite Innovus Tcl commands to:\n1. Read MMMC view file: `mmmc.view`\n2. Read LEF files: `tech.lef` and `stdcell.lef`\n3. Read the gate-level netlist: `top_design.v`\n4. Read SDC constraints: `constraints.sdc`\n5. Initialize the design\n6. Print design name using `get_db designs .name`\n7. Save the design to `./checkpoints/init.enc`\n\nUse proper Cadence Innovus syntax.",
+          "starterCode": "# Cadence Innovus — Design Initialization Script\n# Fill in the correct commands\n\n# Step 1: Read MMMC (multi-mode multi-corner) view\n# read_mmmc ...\n\n# Step 2: Read physical LEF files\n# read_physical -lef { ... }\n\n# Step 3: Read gate-level netlist\n# read_netlist ...\n\n# Step 4: Read timing constraints\n# read_sdc ...\n\n# Step 5: Initialize the design\n# init_design\n\n# Step 6: Print design name\n# puts ...\n\n# Step 7: Save checkpoint\n# saveDesign ...",
+          "hints": [
+            "read_mmmc mmmc.view",
+            "read_physical -lef {tech.lef stdcell.lef}",
+            "read_netlist top_design.v",
+            "read_sdc constraints.sdc",
+            "init_design",
+            "puts [get_db designs .name]",
+            "saveDesign ./checkpoints/init.enc"
+          ],
+          "requiredPatterns": [
+            "read_mmmc",
+            "read_physical -lef",
+            "read_netlist",
+            "read_sdc",
+            "init_design",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Innovus initialization follows a strict order: MMMC → LEF → netlist → SDC → init_design. The MMMC file defines all timing corners. LEF files provide physical cell information. init_design links everything together."
+        }
+      },
+      {
+        "id": "pd-0-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write Fusion Compiler commands to initialize a design from scratch.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 0B: Synopsys Fusion Compiler — Design Initialization\n\nWrite FC Tcl commands to:\n1. Create a design library named `my_chip.dlib` with technology file `28nm.tf` and reference libraries `{stdcell.ndm io.ndm}`\n2. Read the Verilog netlist: `top_design.v`\n3. Link the block (resolve references)\n4. Read SDC constraints: `constraints.sdc`\n5. Check design pre-placement\n6. Save the block as `design_init`\n\nUse proper Synopsys Fusion Compiler syntax.",
+          "starterCode": "# Synopsys Fusion Compiler — Design Initialization Script\n# Fill in the correct commands\n\n# Step 1: Create design library\n# create_lib ...\n\n# Step 2: Read gate-level netlist\n# read_verilog ...\n\n# Step 3: Link the block\n# link_block\n\n# Step 4: Read SDC constraints\n# read_sdc ...\n\n# Step 5: Check design integrity\n# check_design ...\n\n# Step 6: Save block\n# save_block ...",
+          "hints": [
+            "create_lib -technology 28nm.tf -ref_libs {stdcell.ndm io.ndm} my_chip.dlib",
+            "read_verilog top_design.v",
+            "link_block",
+            "read_sdc constraints.sdc",
+            "check_design -pre_place_design",
+            "save_block -as design_init"
+          ],
+          "requiredPatterns": [
+            "create_lib",
+            "read_verilog",
+            "link_block",
+            "read_sdc",
+            "check_design",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC uses a library-based flow. create_lib establishes the design database with technology and reference libraries. read_verilog reads the netlist. link_block resolves all cell references against the NDM libraries. save_block checkpoints the design."
+        }
+      },
+      {
+        "id": "pd-0-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Analyze a design summary and answer questions about utilization and area.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 0C: Design Analysis\n\nGiven this design summary:\n```\nDie Area  : 800um x 800um = 640,000 um²\nCore Area : 700um x 700um = 490,000 um²\nCell Area : 320,000 um²\nMacro Area:  80,000 um²\n```\n\nWrite answers as Tcl comments:\n1. What is the core utilization? (cell+macro / core area)\n2. Is this utilization acceptable? Why?\n3. Write the Innovus command to report utilization: `report_design_model`\n4. Write the FC command to report area: `report_utilization`\n5. If we want 70% utilization, what max cell+macro area is allowed?",
+          "hints": [
+            "Utilization = (320000 + 80000) / 490000 = 400000/490000 = 81.6%",
+            "81.6% is TOO HIGH — risk of congestion, should be 60-75%",
+            "report_design_model    ;# Cadence Innovus",
+            "report_utilization     ;# Synopsys FC",
+            "70% of 490000 = 343000 um² max allowed cell+macro area"
+          ],
+          "requiredPatterns": [
+            "report_design_model",
+            "report_utilization",
+            "70"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Utilization = (cell area + macro area) / core area. 81.6% is dangerously high — above 75-80%, routing congestion and timing closure become very difficult. Target 60-70% for a healthy design."
+        }
+      },
+      {
+        "id": "pd-0-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your physical design fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "What is the output of the physical design flow?", "options": ["RTL netlist", "Gate netlist", "GDSII layout file", "SDC constraints"], "answer": 2 },
+          { "q": "Optimal core utilization is typically:", "options": ["20-40%", "60-75%", "85-95%", "100%"], "answer": 1 },
+          { "q": "In Cadence Innovus, init_design requires:", "options": ["Only the netlist", "MMMC + LEF + netlist + SDC loaded first", "Only the SDC", "Only the LEF"], "answer": 1 },
+          { "q": "PPA in physical design stands for:", "options": ["Process, Placement, Analysis", "Power, Performance, Area", "Placement, Pins, Architecture", "Protocol, Path, Assertion"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 1,
+    "bonusXp": 110,
+    "badge": "Linux & Tcl Expert",
+    "subLevels": [
+      {
+        "id": "pd-1-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Linux and Tcl scripting — the foundation of all PD tool automation.",
+        "keyPoints": [
+          "All PD tools run on Linux — RHEL, CentOS, or Ubuntu servers",
+          "Tcl (Tool Command Language) is the scripting language for all EDA tools",
+          "Variable: set var_name value",
+          "If/else, foreach, proc (functions) are key Tcl constructs",
+          "source script.tcl — runs a Tcl script from within a tool",
+          "puts — print to console, like echo in bash",
+          "EDA tools embed Tcl interpreter — your commands ARE Tcl"
+        ],
+        "content": "Physical design engineers spend 40% of their time writing Tcl scripts to automate repetitive tasks. Tcl is simple but powerful — variables, loops, conditionals, and procedures cover 90% of use cases. The key insight: when you type a command in Innovus or FC shell, you ARE running Tcl. This means you can use full Tcl logic inside tool sessions — loops to process multiple corners, conditionals to handle different design modes, procedures to encapsulate flows. Linux skills (file navigation, grep, awk for log parsing) are equally important for debugging and automation.",
+        "xp": 20
+      },
+      {
+        "id": "pd-1-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Essential Tcl scripting patterns used inside PD tools.",
+        "keyPoints": [
+          "set var [command] — capture command output into variable",
+          "foreach item $list { ... } — loop over a list",
+          "proc name {args} { ... } — define reusable procedure",
+          "if { condition } { ... } else { ... } — conditional",
+          "lappend mylist item — add to list",
+          "string match *pattern* $str — pattern matching",
+          "file exists path — check if file exists"
+        ],
+        "cadence": "# ── Tcl Scripting in Cadence Innovus ───────────────────\n\n# Variable assignment\nset design_name \"my_soc\"\nset clk_period  10.0\nputs \"Design: $design_name, Clock: ${clk_period}ns\"\n\n# Loop over multiple corners\nforeach corner {ss_0p9v_125c tt_1p0v_25c ff_1p1v_m40c} {\n  report_timing -view $corner -max_paths 5\n}\n\n# Procedure: report and save\nproc run_and_save {stage} {\n  report_timing -max_paths 10\n  report_area\n  saveDesign ./checkpoints/${stage}.enc\n  puts \"Stage $stage complete\"\n}\n\n# Conditional check\nset slack [get_db [get_timing_paths] .slack]\nif { $slack < 0 } {\n  puts \"ERROR: Timing violation! Slack = $slack\"\n} else {\n  puts \"Timing clean. Slack = $slack\"\n}\n\n# Get all clocks and print periods\nforeach_in_collection clk [all_clocks] {\n  puts \"Clock: [get_db $clk .name] Period: [get_db $clk .period]\"\n}",
+        "synopsys": "# ── Tcl Scripting in Synopsys Fusion Compiler ───────────\n\n# Variable assignment\nset design_name \"my_soc\"\nset clk_period  10.0\nputs \"Design: $design_name, Clock: ${clk_period}ns\"\n\n# Loop over scenarios\nforeach_in_collection scenario [all_scenarios] {\n  set name [get_object_name $scenario]\n  report_timing -scenario $name -max_paths 5\n}\n\n# Procedure: run stage and save\nproc run_stage {stage_name} {\n  report_timing\n  report_area\n  save_block -as ./checkpoints/$stage_name\n  puts \"$stage_name complete\"\n}\n\n# Conditional check\nset wns [get_attribute [get_timing_paths -max_paths 1] slack]\nif { $wns < 0 } {\n  puts \"ERROR: WNS = $wns — timing violation\"\n} else {\n  puts \"WNS = $wns — timing clean\"\n}\n\n# Get all clocks\nforeach_in_collection clk [all_clocks] {\n  puts \"Clock: [get_attribute $clk name]\"\n  puts \"Period: [get_attribute $clk period]\"\n}",
+        "xp": 25
+      },
+      {
+        "id": "pd-1-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read and understand a Tcl script log file from a PD run.",
+        "keyPoints": [
+          "Log file records every command and output from a tool session",
+          "ERROR/WARNING lines indicate problems to investigate",
+          "CPU time shown per major command — helps identify bottlenecks",
+          "Sourcing a script: all commands execute sequentially",
+          "Return codes: 0 = success, non-zero = failure"
+        ],
+        "reportContent": "# Innovus Session Log — design_init.log\n# ================================================\n[INFO] Innovus Version: 21.1.0.164\n[CMD]  read_mmmc mmmc.view\n[INFO] Reading MMMC view file: mmmc.view\n[INFO] 3 corners defined: ss_0p9v, tt_1p0v, ff_1p1v\n[INFO] 2 modes defined: func, scan\n[CMD]  read_physical -lef {tech.lef stdcell.lef}\n[INFO] Reading LEF: tech.lef ... done (0.3s)\n[INFO] Reading LEF: stdcell.lef ... done (1.2s)\n[INFO] Total cells in library: 847\n[CMD]  read_netlist top.v\n[INFO] Reading Verilog: top.v\n[INFO] Instances: 48,293  Nets: 51,847\n[CMD]  read_sdc constraints.sdc\n[INFO] Reading SDC constraints\n[WARNING] Input port 'scan_en' has no input delay\n[INFO] Clocks defined: 1 (clk: 10.0ns period)\n[CMD]  init_design\n[INFO] Initializing design... done (4.7s)\n\n# ANALYSIS:\n# WARNING about scan_en — need to add set_input_delay for scan\n# 847 cells in library — verify all cells in netlist are covered\n# 4.7s for init_design is normal for this size",
+        "xp": 20
+      },
+      {
+        "id": "pd-1-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write a Tcl automation script for Innovus — loop, procedure, and conditional.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 1A: Cadence Innovus Tcl Automation\n\nWrite a Tcl script that:\n1. Sets variable `design_name` to `\"alu_core\"`\n2. Sets variable `clk_period` to `8.0`\n3. Creates a procedure `check_and_save` that:\n   - Reports timing: `report_timing -max_paths 5`\n   - Saves design: `saveDesign ./out/${design_name}.enc`\n   - Prints: `\"Saved $design_name successfully\"`\n4. Uses `foreach` to loop over corners `{ss tt ff}` and prints each one\n5. Calls the `check_and_save` procedure",
+          "starterCode": "# Lab 1A: Innovus Tcl Automation Script\n\n# Step 1: Set design name variable\n# set design_name ...\n\n# Step 2: Set clock period variable  \n# set clk_period ...\n\n# Step 3: Create procedure\n# proc check_and_save {} {\n#   ...\n# }\n\n# Step 4: Loop over corners\n# foreach corner {ss tt ff} {\n#   puts ...\n# }\n\n# Step 5: Call the procedure\n# check_and_save",
+          "hints": [
+            "set design_name \"alu_core\"",
+            "set clk_period 8.0",
+            "proc check_and_save {} { report_timing -max_paths 5; saveDesign ./out/${design_name}.enc }",
+            "foreach corner {ss tt ff} { puts \"Checking corner: $corner\" }",
+            "check_and_save"
+          ],
+          "requiredPatterns": [
+            "set design_name",
+            "set clk_period",
+            "proc check_and_save",
+            "report_timing",
+            "saveDesign",
+            "foreach",
+            "check_and_save"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Tcl procedures (proc) encapsulate reusable logic. Variables set outside a proc are global. foreach loops iterate over Tcl lists. This automation pattern is used daily in PD flows — run multiple reports, check conditions, save checkpoints."
+        }
+      },
+      {
+        "id": "pd-1-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write a Tcl automation script for Synopsys FC — scenarios, procedures, conditionals.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 1B: Synopsys Fusion Compiler Tcl Automation\n\nWrite a Tcl script that:\n1. Sets variable `top_module` to `\"cpu_core\"`\n2. Creates procedure `check_timing_and_save` that:\n   - Gets WNS: `set wns [get_attribute [get_timing_paths -max_paths 1] slack]`\n   - If WNS < 0: prints `\"TIMING VIOLATION: $wns\"`\n   - Else: prints `\"Timing clean: $wns\"`\n   - Saves block: `save_block -as ./checkpoints/${top_module}`\n3. Loops over scenarios using `foreach_in_collection` and prints scenario name\n4. Calls `check_timing_and_save`",
+          "starterCode": "# Lab 1B: FC Tcl Automation Script\n\n# Step 1: Set top module name\n# set top_module ...\n\n# Step 2: Create procedure\n# proc check_timing_and_save {} {\n#   ...\n# }\n\n# Step 3: Loop over scenarios\n# foreach_in_collection scenario [all_scenarios] {\n#   set name [get_object_name $scenario]\n#   puts ...\n# }\n\n# Step 4: Call procedure\n# check_timing_and_save",
+          "hints": [
+            "set top_module \"cpu_core\"",
+            "proc check_timing_and_save {} { ... }",
+            "set wns [get_attribute [get_timing_paths -max_paths 1] slack]",
+            "if { $wns < 0 } { puts \"TIMING VIOLATION: $wns\" } else { puts \"Timing clean: $wns\" }",
+            "save_block -as ./checkpoints/${top_module}",
+            "foreach_in_collection scenario [all_scenarios] { set name [get_object_name $scenario]; puts $name }"
+          ],
+          "requiredPatterns": [
+            "set top_module",
+            "proc check_timing_and_save",
+            "get_timing_paths",
+            "if",
+            "save_block",
+            "foreach_in_collection",
+            "check_timing_and_save"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC uses collections (not lists) for design objects. foreach_in_collection iterates over collections. get_attribute extracts properties. The pattern of getting WNS and conditionally reporting/saving is the standard post-stage check in FC flows."
+        }
+      },
+      {
+        "id": "pd-1-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Parse a tool log file and write commands to extract key information.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 1C: Log File Analysis\n\nGiven this log snippet:\n```\n[WARNING] Input port 'rst_n' has no input delay specified\n[WARNING] Output port 'data_out' has no output delay specified  \n[ERROR]   Cell 'my_custom_ip' not found in library\n[INFO]    Clocks: clk (10ns), clk_div2 (20ns)\n[INFO]    Init complete: 48293 instances\n```\n\nWrite Tcl commands/comments to:\n1. Fix WARNING 1: write `set_input_delay` for rst_n with 2ns on clk\n2. Fix WARNING 2: write `set_output_delay` for data_out with 2ns on clk  \n3. Fix ERROR: write the Cadence command to check missing cells: `check_library`\n4. Write FC equivalent to check libraries: `check_design -pre_place_design`\n5. Add a clock constraint for clk_div2 at 20ns period",
+          "hints": [
+            "set_input_delay -max 2.0 -clock clk [get_ports rst_n]",
+            "set_output_delay -max 2.0 -clock clk [get_ports data_out]",
+            "check_library    ;# Cadence — checks library completeness",
+            "check_design -pre_place_design    ;# Synopsys FC",
+            "create_clock -name clk_div2 -period 20.0 [get_ports clk_div2]"
+          ],
+          "requiredPatterns": [
+            "set_input_delay",
+            "set_output_delay",
+            "check_library",
+            "check_design",
+            "create_clock"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Log file warnings must be addressed before proceeding. Missing input/output delays cause incorrect timing analysis. Missing library cells cause unresolved references that block the flow. Always fix errors before warnings."
+        }
+      },
+      {
+        "id": "pd-1-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your Linux and Tcl scripting knowledge for PD.",
+        "xp": 25,
+        "quiz": [
+          { "q": "In Tcl, set result [report_timing] stores:", "options": ["Nothing", "The command itself", "The output of report_timing into variable result", "An error"], "answer": 2 },
+          { "q": "proc in Tcl defines:", "options": ["A process ID", "A reusable procedure/function", "A clock", "A design constraint"], "answer": 1 },
+          { "q": "source run.tcl inside Innovus will:", "options": ["Open a new terminal", "Execute all Tcl commands in run.tcl sequentially", "Compile the script", "Only check syntax"], "answer": 1 },
+          { "q": "foreach_in_collection is used in FC because:", "options": ["It is faster than foreach", "Design objects are collections, not Tcl lists", "Tcl lists don't exist in FC", "It works on strings only"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 2,
+    "bonusXp": 120,
+    "badge": "Constraints Expert",
+    "subLevels": [
+      {
+        "id": "pd-2-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Liberty files, LEF/DEF, SDC constraints — the inputs that drive the PD flow.",
+        "keyPoints": [
+          "Liberty (.lib): timing/power characterization of each standard cell",
+          "LEF: Library Exchange Format — physical dimensions of cells and routing rules",
+          "DEF: Design Exchange Format — placement and routing data of the design",
+          "SDC: Synopsys Design Constraints — timing and environment constraints",
+          "MMMC: Multi-Mode Multi-Corner — analyze design under all PVT conditions",
+          "Corners: SS (slow-slow), TT (typical), FF (fast-fast) — P/V/T variations",
+          "create_clock, set_input_delay, set_output_delay — most used SDC commands"
+        ],
+        "content": "The quality of physical design output depends entirely on the quality of constraints. Liberty files tell the tool how fast each gate switches and how much power it consumes — this is the characterization data from the foundry. LEF files define the physical geometry — cell height, pin locations, obstruction layers. SDC (Synopsys Design Constraints) defines timing requirements — clock period, input arrival times, output required times. MMMC (Multi-Mode Multi-Corner) analyzes the design across all PVT (Process-Voltage-Temperature) corners simultaneously — SS corner for setup analysis, FF corner for hold analysis.",
+        "xp": 20
+      },
+      {
+        "id": "pd-2-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "SDC constraint commands — clocks, exceptions, and delays in both tools.",
+        "keyPoints": [
+          "create_clock: defines a clock with period, waveform, source",
+          "set_input_delay: when input data arrives relative to clock",
+          "set_output_delay: when output data must be stable before clock",
+          "set_false_path: paths that don't need timing analysis",
+          "set_multicycle_path: paths that have N clock cycles to complete",
+          "set_max_fanout: limits how many cells a net can drive",
+          "set_dont_touch: prevents tool from modifying a net or cell"
+        ],
+        "cadence": "# ── SDC Constraints in Cadence Innovus ─────────────────\n\n# Define primary clock\ncreate_clock -name clk -period 10.0 \\\n             -waveform {0 5} \\\n             [get_ports clk]\n\n# Define generated clock (divided by 2)\ncreate_generated_clock -name clk_div2 \\\n                       -divide_by 2 \\\n                       -source [get_ports clk] \\\n                       [get_pins clk_div_reg/Q]\n\n# Input delays (data arrives 2ns after clock edge)\nset_input_delay -max 2.0 -clock clk [all_inputs]\nset_input_delay -min 0.5 -clock clk [all_inputs]\n\n# Output delays (data must be stable 2ns before next clock)\nset_output_delay -max 2.0 -clock clk [all_outputs]\nset_output_delay -min 0.5 -clock clk [all_outputs]\n\n# False path — async reset, no timing\nset_false_path -from [get_ports rst_n]\n\n# Multi-cycle path — takes 2 cycles\nset_multicycle_path 2 -setup \\\n  -from [get_cells slow_datapath_reg/*] \\\n  -to   [get_cells output_reg/*]\n\n# Clock uncertainty (jitter + skew)\nset_clock_uncertainty 0.15 [all_clocks]\n\n# Max fanout\nset_max_fanout 32 [current_design]",
+        "synopsys": "# ── SDC Constraints in Synopsys Fusion Compiler ─────────\n\n# Define primary clock\ncreate_clock -name clk -period 10.0 \\\n             -waveform {0 5} \\\n             [get_ports clk]\n\n# Define generated clock\ncreate_generated_clock -name clk_div2 \\\n                       -divide_by 2 \\\n                       -source [get_ports clk] \\\n                       [get_pins clk_div_reg/Q]\n\n# Input delays\nset_input_delay -max 2.0 -clock clk [all_inputs]\nset_input_delay -min 0.5 -clock clk [all_inputs]\n\n# Output delays\nset_output_delay -max 2.0 -clock clk [all_outputs]\nset_output_delay -min 0.5 -clock clk [all_outputs]\n\n# False path\nset_false_path -from [get_ports rst_n]\n\n# Multi-cycle path\nset_multicycle_path -setup 2 \\\n  -from [get_cells slow_datapath_reg/*] \\\n  -to   [get_cells output_reg/*]\n\n# Clock uncertainty\nset_clock_uncertainty 0.15 [all_clocks]\n\n# Set operating conditions (corner)\nset_operating_conditions -max ss_0p9v_125c \\\n                         -min ff_1p1v_m40c\n\n# Verify constraints loaded\nreport_clock\nreport_constraint -all_violators",
+        "xp": 25
+      },
+      {
+        "id": "pd-2-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read and understand a clock and constraint check report.",
+        "keyPoints": [
+          "report_clock shows all defined clocks and their periods",
+          "Unconstrained paths = missing input/output delays — must fix",
+          "False paths should be justified — document why",
+          "Multi-cycle paths show the cycle count",
+          "Clock uncertainty includes jitter and OCV margin"
+        ],
+        "reportContent": "# Innovus — report_clock output\n============================================\n  Clock        Period  Waveform    Source\n============================================\n  clk          10.000  {0.0 5.0}  clk (port)\n  clk_div2     20.000  {0.0 10.0} clk_div_reg/Q\n============================================\n\n# Unconstrained paths report:\n[WARNING] 3 input ports have no input delay:\n  scan_en, test_mode, debug_sel\n[WARNING] 1 output port has no output delay:\n  status_out\n\n# False paths defined:\n  rst_n --> all endpoints    (async reset)\n  scan_en --> all endpoints  (scan control)\n\n# Multi-cycle paths:\n  slow_datapath_reg --> output_reg : 2 cycles\n\n# Clock uncertainty: 0.15ns on all clocks\n\n# ACTION ITEMS:\n# 1. Add input delay for: scan_en, test_mode, debug_sel\n# 2. Add output delay for: status_out\n# 3. Verify false paths are intentional",
+        "xp": 20
+      },
+      {
+        "id": "pd-2-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write complete SDC constraints for a processor core in Innovus.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 2A: Cadence Innovus — SDC Constraints\n\nWrite complete SDC constraints for a RISC-V core:\n\nSpecification:\n- Main clock `clk` at port `clk`, period = 8ns, 50% duty cycle\n- Generated clock `clk_bus` = clk/2, source at `bus_clk_div/Q`\n- All inputs: max delay = 1.6ns, min delay = 0.4ns (on clk)\n- All outputs: max delay = 1.6ns, min delay = 0.4ns (on clk)\n- False path from port `rst_n`\n- False path from port `scan_en` \n- Multi-cycle path (2 cycles): from `mul_reg/*` to `acc_reg/*`\n- Clock uncertainty: 0.1ns\n- Max fanout: 20",
+          "starterCode": "# Lab 2A: RISC-V Core SDC Constraints — Cadence Innovus\n# Write all required constraint commands below\n\n# 1. Primary clock\n\n# 2. Generated clock (clk/2)\n\n# 3. Input delays (max and min)\n\n# 4. Output delays (max and min)\n\n# 5. False paths\n\n# 6. Multi-cycle path\n\n# 7. Clock uncertainty\n\n# 8. Max fanout\n\n# Verify: report all clocks\nreport_clock",
+          "hints": [
+            "create_clock -name clk -period 8.0 -waveform {0 4} [get_ports clk]",
+            "create_generated_clock -name clk_bus -divide_by 2 -source [get_ports clk] [get_pins bus_clk_div/Q]",
+            "set_input_delay -max 1.6 -clock clk [all_inputs]",
+            "set_input_delay -min 0.4 -clock clk [all_inputs]",
+            "set_output_delay -max 1.6 -clock clk [all_outputs]",
+            "set_false_path -from [get_ports rst_n]",
+            "set_multicycle_path 2 -setup -from [get_cells mul_reg/*] -to [get_cells acc_reg/*]",
+            "set_clock_uncertainty 0.1 [all_clocks]",
+            "set_max_fanout 20 [current_design]"
+          ],
+          "requiredPatterns": [
+            "create_clock",
+            "create_generated_clock",
+            "set_input_delay -max",
+            "set_input_delay -min",
+            "set_output_delay",
+            "set_false_path",
+            "set_multicycle_path",
+            "set_clock_uncertainty",
+            "set_max_fanout",
+            "report_clock"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Complete SDC constraints require: clock definition, generated clocks, I/O delays, exceptions (false/multicycle paths), and environment settings. Max and min delays are needed for both setup (max) and hold (min) analysis. Missing constraints = optimistic or incorrect timing."
+        }
+      },
+      {
+        "id": "pd-2-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write complete SDC constraints and MMMC setup in Synopsys FC.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 2B: Synopsys FC — SDC + MMMC Setup\n\nWrite FC Tcl commands to:\n1. Create clock `clk` at 8ns period on port `clk`\n2. Set input delay max=2.0, min=0.5 on all inputs\n3. Set output delay max=2.0, min=0.5 on all outputs  \n4. Set false path from `rst_n` port\n5. Create scenario `func_ss` for setup analysis:\n   - `create_scenario -name func_ss`\n   - `set_scenario_status func_ss -active true -setup true -hold false`\n6. Create scenario `func_ff` for hold analysis:\n   - hold=true, setup=false\n7. Report all constraints: `report_constraint -all_violators`\n8. Check design: `check_design -pre_place_design`",
+          "starterCode": "# Lab 2B: Synopsys FC — SDC and MMMC Setup\n\n# 1. Create primary clock\n\n# 2. Input delays\n\n# 3. Output delays\n\n# 4. False path from reset\n\n# 5. Create func_ss scenario (setup)\n\n# 6. Create func_ff scenario (hold)\n\n# 7. Report constraint violations\n\n# 8. Check design\n",
+          "hints": [
+            "create_clock -name clk -period 8.0 [get_ports clk]",
+            "set_input_delay -max 2.0 -clock clk [all_inputs]",
+            "set_input_delay -min 0.5 -clock clk [all_inputs]",
+            "set_output_delay -max 2.0 -clock clk [all_outputs]",
+            "set_false_path -from [get_ports rst_n]",
+            "create_scenario -name func_ss",
+            "set_scenario_status func_ss -active true -setup true -hold false",
+            "create_scenario -name func_ff",
+            "set_scenario_status func_ff -active true -setup false -hold true",
+            "report_constraint -all_violators",
+            "check_design -pre_place_design"
+          ],
+          "requiredPatterns": [
+            "create_clock",
+            "set_input_delay",
+            "set_output_delay",
+            "set_false_path",
+            "create_scenario",
+            "set_scenario_status",
+            "report_constraint",
+            "check_design"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC uses scenarios to represent mode-corner combinations. func_ss scenario uses slow-slow corner for setup analysis (worst case data path delay). func_ff uses fast-fast for hold analysis (fastest data path, most likely to violate hold). Both must be analyzed for a complete timing sign-off."
+        }
+      },
+      {
+        "id": "pd-2-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Calculate timing budget and identify constraint violations.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 2C: Timing Budget Calculation\n\nGiven these parameters:\n- Clock period: 10ns\n- Input delay (max): 3.0ns\n- Output delay (max): 2.5ns  \n- Cell Tcq: 0.3ns\n- Setup time: 0.5ns\n- Clock uncertainty: 0.2ns\n\nCalculate and write as Tcl comments:\n1. Max combinational delay allowed for a path from input to flip-flop\n   Formula: Tclk - Tinput_delay - Tcq - Tsetup - Tuncertainty\n2. Max combinational delay allowed for flip-flop to output\n   Formula: Tclk - Toutput_delay - Tcq - Tsetup - Tuncertainty\n3. Write the Innovus command to report paths with slack < 0\n4. Write the FC command to report the worst path\n5. If setup slack is -0.4ns, what is the required clock period to fix it?",
+          "hints": [
+            "Input-to-FF: 10 - 3.0 - 0.3 - 0.5 - 0.2 = 6.0ns allowed",
+            "FF-to-Output: 10 - 2.5 - 0.3 - 0.5 - 0.2 = 6.5ns allowed",
+            "report_timing -slack_lesser_than 0    ;# Innovus",
+            "report_timing -max_paths 1 -path_type full    ;# FC",
+            "If slack=-0.4ns, need Tclk >= 10 + 0.4 = 10.4ns minimum"
+          ],
+          "requiredPatterns": [
+            "report_timing",
+            "slack"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Timing budget calculation shows how much combinational delay is available for logic between clock boundaries. Input delay 'consumes' part of the clock period before logic starts. Output delay 'consumes' part after logic ends. Slack = available - required. Negative slack = violation."
+        }
+      },
+      {
+        "id": "pd-2-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your constraints and library knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Liberty (.lib) files contain:", "options": ["Physical cell dimensions", "Timing and power characterization of cells", "Routing rules", "Floorplan data"], "answer": 1 },
+          { "q": "MMMC analysis checks:", "options": ["Only best case timing", "Only worst case timing", "All PVT corners simultaneously", "Only typical corner"], "answer": 2 },
+          { "q": "set_false_path -from [get_ports rst_n] means:", "options": ["rst_n is a clock", "No timing analysis needed on paths from rst_n", "rst_n drives max fanout", "rst_n has zero delay"], "answer": 1 },
+          { "q": "SS corner is used for:", "options": ["Hold analysis (fastest paths)", "Setup analysis (slowest paths)", "Power analysis", "DRC check"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 3,
+    "bonusXp": 130,
+    "badge": "Floorplan Specialist",
+    "subLevels": [
+      {
+        "id": "pd-3-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Floorplanning — defining die size, macro placement, and I/O pin locations.",
+        "keyPoints": [
+          "Floorplan sets the die area — too small = congestion, too large = waste",
+          "Aspect ratio: width/height ratio — typically 0.5-2.0 for good routing",
+          "Core utilization: percentage of core area filled with standard cells",
+          "Hard macros (SRAMs, PLLs) must be placed first — they dominate routing",
+          "Halos: keep-out zones around macros — prevent cell placement too close",
+          "I/O ring: pad cells placed around die perimeter for signal access",
+          "Blockages: areas where standard cells cannot be placed"
+        ],
+        "content": "Floorplanning is the most strategic step in physical design — decisions here affect timing, power, and routability throughout the entire flow. A good floorplan places macros to minimize the distance between blocks that communicate heavily (locality), leaves enough space for power planning (power rings/straps need routing resources), and positions I/O pins close to the logic that drives/samples them. Bad floorplan = long wires = slow timing = hard routing = failed design. The golden rule: macro placement determines 70% of your final timing quality.",
+        "xp": 20
+      },
+      {
+        "id": "pd-3-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Floorplanning commands in Innovus and Fusion Compiler.",
+        "keyPoints": [
+          "floorPlan (Innovus): sets die and core dimensions with margins",
+          "initialize_floorplan (FC): equivalent FC command",
+          "placeMacro: manually place a specific macro at (x, y)",
+          "add_macro_halo: creates keep-out zone around macro",
+          "addHaloToBlock: Innovus equivalent",
+          "createPlaceBlockage: prevents cell placement in an area",
+          "snap_macro_to_grid: ensures macro aligns to manufacturing grid"
+        ],
+        "cadence": "# ── Floorplanning in Cadence Innovus ────────────────────\n\n# Set floorplan: 70% utilization, square die, 10um margins\nfloorPlan -ru 0.70 \\\n          -aspectRatio 1.0 \\\n          -coreMarginT 10 \\\n          -coreMarginB 10 \\\n          -coreMarginL 10 \\\n          -coreMarginR 10\n\n# Or specify exact dimensions (in microns)\nfloorPlan -d 1200 1200 10 10 10 10\n# format: width height top bottom left right\n\n# Place a specific SRAM macro at coordinate (100, 200)\nplaceMacro -inst sram_256x32 -loc {100.0 200.0} -orient R0\n\n# Add halo around all macros (10um on all sides)\naddHaloToBlock -allMacro 10 10 10 10\n\n# Create placement blockage (no cells in this region)\ncreatePlaceBlockage -box {500 500 600 600} -type hard\n\n# Place I/O pins\neditPin -fixedPin -pin clk -side TOP -layer 3 -loc 600.0\n\n# Snap macros to grid\nsnapFPlan -macro\n\n# Check floorplan\ncheckFPlan",
+        "synopsys": "# ── Floorplanning in Synopsys Fusion Compiler ────────────\n\n# Initialize floorplan: 70% utilization, square\ninitialize_floorplan \\\n  -utilization 0.70 \\\n  -aspect_ratio 1.0 \\\n  -core_offset {10 10 10 10}\n# core_offset: {left bottom right top}\n\n# Or specify exact die area\ninitialize_floorplan \\\n  -die_area  {0 0 1200 1200} \\\n  -core_area {10 10 1190 1190}\n\n# Place a specific macro\nset_cell_location -coordinates {100 200} \\\n                  -orientation R0 \\\n                  [get_cells sram_256x32]\n\n# Add macro keepout halo\ncreate_macro_keepout_margin \\\n  -type hard_macro_keepout \\\n  -halo_dimensions {10 10 10 10} \\\n  [get_cells sram_256x32]\n\n# Create hard placement blockage\ncreate_placement_blockage \\\n  -boundary {{500 500} {600 600}} \\\n  -type hard\n\n# Set I/O constraints\nset_die_core_area -die_area {0 0 1200 1200}\n\n# Check floorplan\ncheck_floorplan\nreport_floorplan",
+        "xp": 25
+      },
+      {
+        "id": "pd-3-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a floorplan report and identify issues.",
+        "keyPoints": [
+          "Floorplan report shows die/core dimensions and utilization",
+          "Macro overlap warnings = macros physically collide — critical error",
+          "Macro out of bounds = macro placed outside core area",
+          "High channel density areas = routing congestion risk",
+          "Pin access violation = macro pin not accessible for routing"
+        ],
+        "reportContent": "# Innovus checkFPlan Report\n======================================\n  Die  Area: 1200.0 x 1200.0 um\n  Core Area: 1180.0 x 1180.0 um\n  Utilization: 71.3%\n======================================\n  Macro Summary:\n  Name              X      Y    Orient\n  sram_256x32     100.0  200.0   R0\n  sram_512x64     650.0  200.0   R0\n  pll_core        100.0  900.0  R0\n  usb_phy         800.0  900.0  R0\n======================================\n  [ERROR] Macro overlap detected:\n    sram_256x32 overlaps with sram_512x64\n    Overlap area: 50um x 30um at (650, 200)\n\n  [WARNING] No halo on macro: pll_core\n    PLL needs minimum 20um halo for noise\n\n  [WARNING] Macro near boundary:\n    usb_phy is 2um from core edge\n    Minimum recommended: 10um\n======================================\n\n# FIXES NEEDED:\n# 1. Move sram_512x64 to x=800 to resolve overlap\n# 2. Add 20um halo around pll_core\n# 3. Move usb_phy 8um inward",
+        "xp": 20
+      },
+      {
+        "id": "pd-3-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write Innovus floorplanning commands for a complete SoC block.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 3A: Cadence Innovus — Floorplanning\n\nCreate a floorplan for a CPU subsystem:\n- Die: 800um x 800um\n- Core margins: 15um on all sides\n- Target utilization: 65%\n- Place SRAM `sram_cache` at (50, 50), orientation R0\n- Place SRAM `sram_buffer` at (400, 50), orientation R0\n- Add 15um halo to all macros\n- Create hard blockage at coordinates {380 380 420 420} (avoid center)\n- Place clock pin `clk` on TOP side at location 400um\n- Run `checkFPlan` at the end",
+          "starterCode": "# Lab 3A: Innovus Floorplanning Script\n\n# Step 1: Create floorplan (800x800, 15um margins, 65% util)\n\n# Step 2: Place sram_cache at (50, 50) R0\n\n# Step 3: Place sram_buffer at (400, 50) R0\n\n# Step 4: Add 15um halo to all macros\n\n# Step 5: Hard blockage at center\n\n# Step 6: Place clk pin on TOP at 400um\n\n# Step 7: Snap to grid and check\nsnapFPlan -macro",
+          "hints": [
+            "floorPlan -ru 0.65 -aspectRatio 1.0 -coreMarginT 15 -coreMarginB 15 -coreMarginL 15 -coreMarginR 15",
+            "placeMacro -inst sram_cache -loc {50.0 50.0} -orient R0",
+            "placeMacro -inst sram_buffer -loc {400.0 50.0} -orient R0",
+            "addHaloToBlock -allMacro 15 15 15 15",
+            "createPlaceBlockage -box {380 380 420 420} -type hard",
+            "editPin -fixedPin -pin clk -side TOP -layer 3 -loc 400.0",
+            "checkFPlan"
+          ],
+          "requiredPatterns": [
+            "floorPlan",
+            "placeMacro -inst sram_cache",
+            "placeMacro -inst sram_buffer",
+            "addHaloToBlock",
+            "createPlaceBlockage",
+            "editPin",
+            "checkFPlan"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Floorplanning order matters: set die size first, then place macros, then add halos (halos affect where standard cells can go), then create blockages, then place I/O pins. Always run checkFPlan to verify there are no overlaps or violations."
+        }
+      },
+      {
+        "id": "pd-3-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write Fusion Compiler floorplanning commands for a complete SoC block.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 3B: Synopsys Fusion Compiler — Floorplanning\n\nCreate the same CPU subsystem floorplan in FC:\n- Die area: {0 0 800 800}\n- Core area: {15 15 785 785}\n- Place `sram_cache` at coordinates {50 50}, orientation R0\n- Place `sram_buffer` at coordinates {400 50}, orientation R0\n- Add macro keepout halo of 15um to `sram_cache`\n- Add macro keepout halo of 15um to `sram_buffer`\n- Create hard placement blockage at {{380 380} {420 420}}\n- Run `check_floorplan` and `report_floorplan`",
+          "starterCode": "# Lab 3B: FC Floorplanning Script\n\n# Step 1: Initialize floorplan with die and core areas\n\n# Step 2: Place sram_cache\n\n# Step 3: Place sram_buffer\n\n# Step 4: Add halo to sram_cache\n\n# Step 5: Add halo to sram_buffer\n\n# Step 6: Create hard blockage\n\n# Step 7: Check and report\n",
+          "hints": [
+            "initialize_floorplan -die_area {0 0 800 800} -core_area {15 15 785 785}",
+            "set_cell_location -coordinates {50 50} -orientation R0 [get_cells sram_cache]",
+            "set_cell_location -coordinates {400 50} -orientation R0 [get_cells sram_buffer]",
+            "create_macro_keepout_margin -type hard_macro_keepout -halo_dimensions {15 15 15 15} [get_cells sram_cache]",
+            "create_placement_blockage -boundary {{380 380} {420 420}} -type hard",
+            "check_floorplan",
+            "report_floorplan"
+          ],
+          "requiredPatterns": [
+            "initialize_floorplan",
+            "set_cell_location",
+            "create_macro_keepout_margin",
+            "create_placement_blockage",
+            "check_floorplan",
+            "report_floorplan"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC uses set_cell_location to place macros with exact coordinates. create_macro_keepout_margin creates the halo. Note the different syntax: FC uses {x y} pairs, while Innovus uses separate x/y arguments. Always check_floorplan after placement to catch overlaps."
+        }
+      },
+      {
+        "id": "pd-3-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Analyze a floorplan report and determine optimal macro placement.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 3C: Floorplan Analysis and Fixing\n\nGiven the checkFPlan ERROR report:\n```\n[ERROR] Macro overlap: sram_A (100,100) and sram_B (150,100)\n  sram_A size: 200um x 100um\n  sram_B size: 150um x 100um\n  Overlap: 50um x 100um\n\n[WARNING] sram_A halo violation with core boundary\n  sram_A at (100,100), halo=10um, core_left=50um\n  Available space left of sram_A: 50um (need 10um halo = OK)\n\n[WARNING] Channel between sram_A and sram_B: 0um\n  Minimum routing channel recommended: 20um\n```\n\nWrite Tcl commands to fix all issues:\n1. Move sram_B to avoid overlap (sram_A ends at x=300, need 20um channel)\n2. Add 10um halo to sram_A\n3. Add 10um halo to sram_B (at new location)\n4. Recheck the floorplan\n5. Calculate: what is minimum die width needed if both SRAMs side by side with 20um gap and 50um margins on each side?",
+          "hints": [
+            "sram_A occupies x=100 to x=300 (100+200=300). sram_B should start at 320 (300+20 channel)",
+            "placeMacro -inst sram_B -loc {320.0 100.0} -orient R0    ;# Innovus fix",
+            "set_cell_location -coordinates {320 100} -orientation R0 [get_cells sram_B]    ;# FC fix",
+            "addHaloToBlock -allMacro 10 10 10 10    ;# Innovus",
+            "checkFPlan    ;# recheck",
+            "Min die width: 50(left) + 200(sram_A) + 20(channel) + 150(sram_B) + 50(right) = 470um"
+          ],
+          "requiredPatterns": [
+            "placeMacro",
+            "addHaloToBlock",
+            "checkFPlan"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Macro overlaps are critical errors — must fix before proceeding. Calculate new position: sram_A right edge = 100+200=300. Channel=20. sram_B new X = 320. Minimum die width = left_margin + sram_A + channel + sram_B + right_margin = 50+200+20+150+50 = 470um."
+        }
+      },
+      {
+        "id": "pd-3-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your floorplanning knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A macro halo is:", "options": ["A routing layer", "A keep-out zone around macros where standard cells cannot be placed", "A power ring", "A clock buffer region"], "answer": 1 },
+          { "q": "Aspect ratio of 2.0 means:", "options": ["Width = Height", "Width = 2 × Height", "Height = 2 × Width", "Area = 2 × perimeter"], "answer": 1 },
+          { "q": "What is the risk of >80% core utilization?", "options": ["Low power", "Routing congestion and timing closure failure", "Fast timing", "Better area"], "answer": 1 },
+          { "q": "Why must macros be placed before standard cells?", "options": ["Macros are faster", "Macros are fixed in size and position — they constrain where cells can go", "Macros consume less power", "Standard cells are placed by the foundry"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 4,
+    "bonusXp": 140,
+    "badge": "Power Planning Expert",
+    "subLevels": [
+      {
+        "id": "pd-4-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Power planning — creating the VDD/VSS grid that powers all standard cells.",
+        "keyPoints": [
+          "Power network delivers VDD (supply) and VSS (ground) to every cell",
+          "IR drop: voltage drop across resistance of power wires — must be < 10% VDD",
+          "EM (Electromigration): current density limits — too much current = wire failure",
+          "Power rings: wide VDD/VSS wires around core perimeter",
+          "Power straps: parallel VDD/VSS wires across the die (like a grid)",
+          "Via stacks: connect power from top metal to cell power pins (rail)",
+          "Standard cell power rail: M1 horizontal VDD/VSS at cell height"
+        ],
+        "content": "Power planning creates the power delivery network (PDN) — the grid of metal wires that delivers supply voltage to every standard cell. IR drop (I×R voltage drop across metal resistance) must be minimized: if VDD is 1.0V and IR drop is 150mV, cells see only 0.85V — they slow down and may fail. EM (Electromigration) limits current density through metal wires — exceeding limits causes metal voids over time, field failures. The power grid hierarchy: chip-level rings → block rings → straps → rails. Higher metal layers carry more current (wider, less resistance). M1 power rails connect to cell VDD/VSS pins directly.",
+        "xp": 20
+      },
+      {
+        "id": "pd-4-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Power planning commands — rings, straps, rails, and via connections.",
+        "keyPoints": [
+          "addRing: creates power rings around core or blocks (Innovus)",
+          "addStripe: creates parallel power straps across die (Innovus)",
+          "sroute: connects standard cell rails to power straps (Innovus)",
+          "create_pg_ring: FC equivalent of addRing",
+          "create_pg_mesh: FC equivalent of addStripe (mesh pattern)",
+          "connect_pg_net: FC connects power net to cells",
+          "verify_pg_connectivity: checks power connections are complete"
+        ],
+        "cadence": "# ── Power Planning in Cadence Innovus ───────────────────\n\n# Step 1: Add power rings around core\n# VDD and VSS rings on Metal 5 and Metal 6\naddRing -nets {VDD VSS} \\\n        -width 10 \\\n        -spacing 2 \\\n        -layer {top Metal5 bottom Metal5 \\\n               left Metal6 right Metal6} \\\n        -center 1\n\n# Step 2: Add horizontal straps (Metal 5)\naddStripe -nets {VDD VSS} \\\n          -width 4 \\\n          -spacing 2 \\\n          -direction horizontal \\\n          -layer Metal5 \\\n          -set_to_set_distance 40 \\\n          -start_from_core_boundary\n\n# Step 3: Add vertical straps (Metal 6)\naddStripe -nets {VDD VSS} \\\n          -width 4 \\\n          -spacing 2 \\\n          -direction vertical \\\n          -layer Metal6 \\\n          -set_to_set_distance 40\n\n# Step 4: Connect standard cell rails to straps\nsroute -connect {corePin} \\\n       -nets {VDD VSS} \\\n       -allowJogging 1\n\n# Step 5: Verify power connectivity\nverifyPowerVia\nreport_power_calculation",
+        "synopsys": "# ── Power Planning in Synopsys Fusion Compiler ───────────\n\n# Step 1: Create power ring around core\ncreate_pg_ring -nets {VDD VSS} \\\n               -mode core_ring \\\n               -width 10 \\\n               -spacing 2 \\\n               -offset 2 \\\n               -metal_list {M6 M5}\n\n# Step 2: Create horizontal power mesh\ncreate_pg_mesh -nets {VDD VSS} \\\n               -layer M5 \\\n               -width 4 \\\n               -pitch 40 \\\n               -offset 20 \\\n               -direction horizontal\n\n# Step 3: Create vertical power mesh\ncreate_pg_mesh -nets {VDD VSS} \\\n               -layer M6 \\\n               -width 4 \\\n               -pitch 40 \\\n               -offset 20 \\\n               -direction vertical\n\n# Step 4: Connect pg nets to standard cell rails\nconnect_pg_net -net VDD [get_pins -hierarchical */VDD]\nconnect_pg_net -net VSS [get_pins -hierarchical */VSS]\n\n# Step 5: Create via stacks to connect layers\ncreate_pg_vias -nets {VDD VSS} -layers {M1 M2 M3 M4 M5 M6}\n\n# Step 6: Check power connectivity\ncheck_pg_connectivity\nreport_power",
+        "xp": 25
+      },
+      {
+        "id": "pd-4-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read an IR drop analysis report and identify critical violations.",
+        "keyPoints": [
+          "IR drop map shows voltage distribution across the die",
+          "Max IR drop: worst case voltage drop — must be < 10% VDD",
+          "Hotspot: region with high power density and insufficient supply",
+          "Average IR drop: 50-60mV is good, >100mV is problematic",
+          "EM violation: current density > limit — fix by widening the wire"
+        ],
+        "reportContent": "# Innovus IR Drop Analysis Report\n# Command: report_power_calculation\n===============================================\n  Analysis: Static IR Drop (VDD network)\n  VDD Nominal: 1.0V\n===============================================\n  Average IR Drop : 48.3 mV   (4.83%)  PASS\n  Maximum IR Drop : 142.7 mV  (14.27%) FAIL <<<\n  Hotspot Location: (450um, 380um)\n\n  IR Drop Distribution:\n  < 50mV  : 68% of die area   GOOD\n  50-100mV: 24% of die area   WARNING\n  > 100mV : 8%  of die area   VIOLATION\n\n===============================================\n  EM Analysis (Metal 5 VDD strap):\n  Max Current Density: 2.8 mA/um²\n  EM Limit:            2.0 mA/um²\n  Status: VIOLATION — strap at (400, 350)\n===============================================\n\n# ROOT CAUSE:\n# 1. IR hotspot at (450,380) — dense logic, sparse straps\n# FIX: Add M5 strap between x=400 and x=500\n\n# 2. EM violation on M5 strap\n# FIX: Increase strap width from 4um to 6um at (400,350)",
+        "xp": 20
+      },
+      {
+        "id": "pd-4-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write complete power planning commands in Innovus for a CPU block.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 4A: Cadence Innovus — Power Planning\n\nCreate a complete power network for a CPU core:\n1. Add power rings: nets={VDD VSS}, width=8, spacing=2\n   - top/bottom: Metal5, left/right: Metal6\n2. Add horizontal straps: Metal5, width=3, spacing=1.5, pitch=30um\n3. Add vertical straps: Metal6, width=3, spacing=1.5, pitch=30um\n4. Connect standard cell rails: `sroute -connect {corePin} -nets {VDD VSS}`\n5. Verify power: `verifyPowerVia`\n6. Report power: `report_power_calculation`\n7. If IR drop > 100mV, add additional strap (write the command with pitch=20um)",
+          "starterCode": "# Lab 4A: Innovus Power Planning\n\n# 1. Power rings\n\n# 2. Horizontal straps (M5)\n\n# 3. Vertical straps (M6)\n\n# 4. Connect rails to straps\n\n# 5. Verify power vias\n\n# 6. Report IR drop\n\n# 7. Additional strap if needed (pitch=20)\n# addStripe -nets {VDD VSS} -width 3 -spacing 1.5 \\\n#           -direction horizontal -layer Metal5 \\\n#           -set_to_set_distance 20",
+          "hints": [
+            "addRing -nets {VDD VSS} -width 8 -spacing 2 -layer {top Metal5 bottom Metal5 left Metal6 right Metal6} -center 1",
+            "addStripe -nets {VDD VSS} -width 3 -spacing 1.5 -direction horizontal -layer Metal5 -set_to_set_distance 30",
+            "addStripe -nets {VDD VSS} -width 3 -spacing 1.5 -direction vertical -layer Metal6 -set_to_set_distance 30",
+            "sroute -connect {corePin} -nets {VDD VSS} -allowJogging 1",
+            "verifyPowerVia",
+            "report_power_calculation"
+          ],
+          "requiredPatterns": [
+            "addRing",
+            "addStripe -direction horizontal",
+            "addStripe -direction vertical",
+            "sroute",
+            "verifyPowerVia",
+            "report_power_calculation"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Power planning order: rings first (establish outer boundary), then straps (create internal grid), then sroute (connect cell rails to grid), then verify. IR drop is proportional to strap pitch — smaller pitch = lower IR drop but more metal = higher capacitance."
+        }
+      },
+      {
+        "id": "pd-4-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write complete power planning commands in Synopsys FC for a CPU block.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 4B: Synopsys Fusion Compiler — Power Planning\n\nCreate the same power network in FC:\n1. Create power ring: nets={VDD VSS}, width=8, spacing=2, metal_list={M6 M5}\n2. Create horizontal mesh: M5, width=3, pitch=30, direction=horizontal\n3. Create vertical mesh: M6, width=3, pitch=30, direction=vertical\n4. Connect PG nets to cell pins:\n   - VDD to all VDD pins\n   - VSS to all VSS pins\n5. Create via stacks: layers={M1 M2 M3 M4 M5 M6}\n6. Check PG connectivity\n7. Report power",
+          "starterCode": "# Lab 4B: FC Power Planning\n\n# 1. Power ring\n\n# 2. Horizontal power mesh (M5)\n\n# 3. Vertical power mesh (M6)\n\n# 4. Connect PG nets to cells\n\n# 5. Create via stacks\n\n# 6. Check connectivity\n\n# 7. Report power\n",
+          "hints": [
+            "create_pg_ring -nets {VDD VSS} -mode core_ring -width 8 -spacing 2 -metal_list {M6 M5}",
+            "create_pg_mesh -nets {VDD VSS} -layer M5 -width 3 -pitch 30 -direction horizontal",
+            "create_pg_mesh -nets {VDD VSS} -layer M6 -width 3 -pitch 30 -direction vertical",
+            "connect_pg_net -net VDD [get_pins -hierarchical */VDD]",
+            "connect_pg_net -net VSS [get_pins -hierarchical */VSS]",
+            "create_pg_vias -nets {VDD VSS} -layers {M1 M2 M3 M4 M5 M6}",
+            "check_pg_connectivity",
+            "report_power"
+          ],
+          "requiredPatterns": [
+            "create_pg_ring",
+            "create_pg_mesh -direction horizontal",
+            "create_pg_mesh -direction vertical",
+            "connect_pg_net -net VDD",
+            "connect_pg_net -net VSS",
+            "create_pg_vias",
+            "check_pg_connectivity",
+            "report_power"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC uses create_pg_ring and create_pg_mesh for power planning. connect_pg_net explicitly connects power nets to cell pins. Via stacks are created separately with create_pg_vias. check_pg_connectivity verifies every cell has a power connection — open power = floating cell = functional failure."
+        }
+      },
+      {
+        "id": "pd-4-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Calculate IR drop and determine power strap sizing.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 4C: IR Drop and EM Analysis\n\nGiven:\n- VDD = 1.0V, max allowed IR drop = 10%\n- CPU block power = 500mW, area = 1mm²\n- Current power strap: width=3um, pitch=40um, M5 resistivity=0.05 ohm/sq\n- M5 EM limit: 2.0 mA/um width\n\nCalculate:\n1. Maximum allowed IR drop in mV\n2. Total supply current (P = V × I)\n3. Current per strap if 25 straps cover 1mm (1000/40 = 25 straps)\n4. Current density per strap width (current / 3um width)\n5. Is the EM limit violated? (compare to 2.0 mA/um limit)\n6. Write commands to fix if violated:\n   - Innovus: increase strap width to 5um\n   - FC: same width change\n7. Report the fix verification command for both tools",
+          "hints": [
+            "Max IR drop = 10% × 1.0V = 100mV",
+            "Total current = P/V = 500mW / 1.0V = 500mA",
+            "Current per strap = 500mA / 25 = 20mA per strap",
+            "Current density = 20mA / 3um = 6.67 mA/um — VIOLATED (limit=2.0)",
+            "Fix width: need width >= 20mA / 2.0mA/um = 10um minimum!",
+            "addStripe -nets {VDD VSS} -width 10 -spacing 2 -direction horizontal -layer Metal5 -set_to_set_distance 40",
+            "create_pg_mesh -nets {VDD VSS} -layer M5 -width 10 -pitch 40 -direction horizontal"
+          ],
+          "requiredPatterns": [
+            "addStripe",
+            "create_pg_mesh",
+            "width"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "EM analysis: current density = current/width. At 3um width and 20mA/strap, density = 6.67mA/um — 3.3x over limit. Need width = 20mA/2.0mA/um = 10um minimum. This is a critical calculation PD engineers do before committing to a power plan."
+        }
+      },
+      {
+        "id": "pd-4-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your power planning knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "IR drop must be less than:", "options": ["1% of VDD", "5% of VDD", "10% of VDD", "50% of VDD"], "answer": 2 },
+          { "q": "Electromigration (EM) is caused by:", "options": ["Too many vias", "Excessive current density through metal wires", "High capacitance", "Clock skew"], "answer": 1 },
+          { "q": "sroute in Innovus connects:", "options": ["Clock to flip-flops", "Standard cell power rails to power straps", "Macros to I/O pins", "Signal nets to pins"], "answer": 1 },
+          { "q": "To reduce IR drop, you should:", "options": ["Increase strap pitch (fewer straps)", "Decrease strap width", "Increase strap width or decrease pitch (more/wider straps)", "Remove power rings"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 5,
+    "bonusXp": 150,
+    "badge": "Placement Engineer",
+    "subLevels": [
+      {
+        "id": "pd-5-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Placement — automatically placing standard cells to minimize wirelength and congestion.",
+        "keyPoints": [
+          "Global placement: rough placement to minimize half-perimeter wirelength",
+          "Detailed placement: legalizes cells to rows, resolves overlaps",
+          "Congestion: too many wires needed in a small area — routing cannot complete",
+          "Timing-driven placement: places cells to minimize critical path delay",
+          "Multi-corner: place considering all timing corners simultaneously",
+          "Scan chain reordering: optimization to minimize scan wire length",
+          "Cell padding: adds extra space around cells to ease routing"
+        ],
+        "content": "Placement is the first automated step that determines where every standard cell sits on the die. The placer minimizes total wirelength (shorter wires = better timing and less routing congestion) while satisfying timing constraints (critical path cells must be placed close together). Congestion analysis checks if any routing region has more wire demand than available tracks — congested areas need cell spreading or floorplan adjustment. After global placement, detailed placement legalizes cells to rows and sites. Timing-driven placement iterates with timing analysis to push critical cells together.",
+        "xp": 20
+      },
+      {
+        "id": "pd-5-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Placement commands and congestion analysis in both tools.",
+        "keyPoints": [
+          "place_design (Innovus): runs complete placement flow",
+          "place_opt (FC): runs placement with optimization",
+          "-effort: low/medium/high — controls optimization runtime",
+          "checkPlace: verifies placement legality (Innovus)",
+          "report_congestion: shows routing congestion hotspots",
+          "reportDensityMap: visualizes cell density across die",
+          "setCellPadding: adds whitespace around cells for routing"
+        ],
+        "cadence": "# ── Placement in Cadence Innovus ────────────────────────\n\n# Set placement effort\nset_db place_design_effort high\n\n# Timing-driven placement with congestion awareness\nplace_design -timing_driven \\\n             -congestion_effort high\n\n# Check placement results\ncheckPlace\n\n# Report congestion (routing overflow)\nreport_congestion -hotspot\n\n# View density map\nreportDensityMap -density cell -window {0 0 1200 1200}\n\n# If congestion exists: add padding to spread cells\nsetCellPadding -site FreePDK45_38x28_10R_NP_162NW_34O \\\n               -left 1 -right 1\n\n# Re-run placement with congestion fix\nplace_design -congestion_effort high \\\n             -reuse_placement\n\n# Report timing post-placement (estimated)\nreport_timing -max_paths 10\n\n# Save placement checkpoint\nsaveDesign ./checkpoints/placement.enc",
+        "synopsys": "# ── Placement in Synopsys Fusion Compiler ────────────────\n\n# Global placement\nplace_coarse\n\n# Optimized placement with timing\nplace_opt -effort high\n\n# Check placement legality\ncheck_legality\n\n# Report congestion\nreport_congestion\n\n# Get congestion details\nreport_congestion -layers {M2 M3} -effort high\n\n# Spread cells in congested area\nspread_objects -boundary {400 300 600 500}\n\n# Add cell padding if needed\nset_app_options -name place.coarse.max_density -value 0.80\n\n# Re-run with congestion effort\nplace_opt -congestion_effort high\n\n# Report timing post-placement\nreport_timing -max_paths 10 -slack_lesser_than 0\n\n# Save block\nsave_block -as ./checkpoints/post_place",
+        "xp": 25
+      },
+      {
+        "id": "pd-5-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a placement and congestion report — identify hotspots.",
+        "keyPoints": [
+          "Overflow: routing demand > routing supply in a region",
+          "GRC (Global Routing Congestion): measured per GRC cell (tile)",
+          "Hotspot >100% overflow = routing will likely fail in that area",
+          "WNS (Worst Negative Slack): most critical path violation",
+          "TNS (Total Negative Slack): sum of all violations — design health",
+          "Cell density >85% in a region = high congestion risk"
+        ],
+        "reportContent": "# Innovus Post-Placement Report\n# Command: report_congestion -hotspot\n\n======================================\n  Placement Statistics\n  Total cells placed: 48,293\n  Utilization: 71.3%\n  CPU time: 847 seconds\n======================================\n  Routing Congestion Analysis:\n  Layer M2 Overflow: 0.0%    PASS\n  Layer M3 Overflow: 0.8%    WARNING\n  Layer M4 Overflow: 0.0%    PASS\n  Overall Overflow:  0.4%    WARNING\n\n  Hotspot Regions (overflow >2%):\n  Region (350,400)-(450,500): M3 overflow 8.4%  HIGH\n  Region (600,200)-(700,300): M3 overflow 3.1%  MEDIUM\n======================================\n  Timing (estimated post-placement):\n  WNS: -0.42 ns  (1 path)\n  TNS: -1.87 ns  (5 paths)\n  Setup violations: 5 paths\n======================================\n\n# ACTIONS:\n# 1. M3 hotspot at (350-450, 400-500): spread cells\n#    addHaloToBlock or create blockage to reduce density\n# 2. WNS -0.42ns: check critical path, may close in routing\n#    or need placement improvement",
+        "xp": 20
+      },
+      {
+        "id": "pd-5-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Run placement and fix congestion in Cadence Innovus.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 5A: Cadence Innovus — Placement and Congestion Fix\n\nWrite a placement script that:\n1. Sets placement effort to high\n2. Runs timing-driven placement with congestion_effort high\n3. Checks placement with `checkPlace`\n4. Reports congestion hotspots\n5. If overflow exists, create a soft placement blockage at {350 400 450 500}\n   to spread cells out of the hotspot: `createPlaceBlockage -box {350 400 450 500} -type soft`\n6. Re-runs placement\n7. Reports timing with max_paths=20 and shows only violating paths\n8. Saves checkpoint to `./checkpoints/post_placement.enc`",
+          "starterCode": "# Lab 5A: Innovus Placement Script\n\n# 1. Set effort\n\n# 2. Run placement (timing-driven, high congestion effort)\n\n# 3. Check placement\n\n# 4. Report congestion\n\n# 5. Soft blockage in hotspot area\n\n# 6. Re-run placement\n\n# 7. Report timing (violations only)\n\n# 8. Save checkpoint\n",
+          "hints": [
+            "set_db place_design_effort high",
+            "place_design -timing_driven -congestion_effort high",
+            "checkPlace",
+            "report_congestion -hotspot",
+            "createPlaceBlockage -box {350 400 450 500} -type soft",
+            "place_design -congestion_effort high -reuse_placement",
+            "report_timing -max_paths 20 -slack_lesser_than 0",
+            "saveDesign ./checkpoints/post_placement.enc"
+          ],
+          "requiredPatterns": [
+            "place_design",
+            "checkPlace",
+            "report_congestion",
+            "createPlaceBlockage",
+            "report_timing",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The placement flow: set effort → place → check → analyze → fix → iterate. A soft blockage pushes cells out of the hotspot without completely forbidding placement — the tool can still use the area if needed but prefers to spread cells out. Always check timing post-placement to see how much work the router needs to do."
+        }
+      },
+      {
+        "id": "pd-5-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Run placement optimization and fix congestion in Synopsys FC.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 5B: Synopsys FC — Placement and Congestion Fix\n\nWrite an FC placement script that:\n1. Runs `place_coarse` for global placement\n2. Runs `place_opt -effort high` for optimized placement\n3. Checks legality: `check_legality`\n4. Reports congestion: `report_congestion`\n5. If congested, spread objects in region {350 400 450 500}: \n   `spread_objects -boundary {350 400 450 500}`\n6. Runs `refine_placement` to improve after spreading\n7. Reports timing with `report_timing -max_paths 20 -slack_lesser_than 0`\n8. Reports QOR: `report_qor`\n9. Saves block as `post_place`",
+          "starterCode": "# Lab 5B: FC Placement Script\n\n# 1. Global placement\n\n# 2. Optimized placement\n\n# 3. Check legality\n\n# 4. Report congestion\n\n# 5. Spread congested area\n\n# 6. Refine placement\n\n# 7. Report timing violations\n\n# 8. QOR report\n\n# 9. Save\n",
+          "hints": [
+            "place_coarse",
+            "place_opt -effort high",
+            "check_legality",
+            "report_congestion",
+            "spread_objects -boundary {350 400 450 500}",
+            "refine_placement",
+            "report_timing -max_paths 20 -slack_lesser_than 0",
+            "report_qor",
+            "save_block -as post_place"
+          ],
+          "requiredPatterns": [
+            "place_coarse",
+            "place_opt",
+            "check_legality",
+            "report_congestion",
+            "spread_objects",
+            "report_timing",
+            "report_qor",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC placement: place_coarse for global, place_opt for timing-driven optimization. spread_objects physically moves cells away from a congested region. refine_placement improves cell positions after manual spreading. report_qor (Quality of Results) gives a holistic design health summary including timing, area, and power."
+        }
+      },
+      {
+        "id": "pd-5-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Analyze placement congestion and calculate cell density.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 5C: Congestion Analysis\n\nGiven:\n- Die core: 1000um x 1000um\n- Routing: 4 signal layers (M2-M5), each with 100 tracks per 100um\n- Hotspot region: 100um x 100um at (400-500, 300-400)\n  - Signal nets crossing: 450 horizontal, 380 vertical\n  - Available tracks: 100 horizontal, 100 vertical\n\nCalculate:\n1. Horizontal routing overflow in hotspot: (450-100)/100 × 100%\n2. Vertical routing overflow: same calculation\n3. Is this a critical hotspot? (threshold: >20% overflow)\n4. Write Innovus command to report this specific area\n5. Write FC command to report congestion in that area\n6. What action would you take: write the spread_objects command",
+          "hints": [
+            "H overflow = (450-100)/100 × 100% = 350%  — CRITICAL!",
+            "V overflow = (380-100)/100 × 100% = 280%  — CRITICAL!",
+            "Yes, both >20% threshold — routing will fail without fix",
+            "report_congestion -window {400 300 500 400}    ;# Innovus",
+            "report_congestion -area {400 300 500 400}    ;# FC",
+            "spread_objects -boundary {350 250 550 450}    ;# FC — spread in larger area around hotspot"
+          ],
+          "requiredPatterns": [
+            "report_congestion",
+            "spread_objects"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Routing overflow = (required tracks - available tracks) / available tracks. 350% overflow means 4.5x more wires needed than available — routing is impossible without fix. The fix area should be larger than the hotspot to give cells space to spread into."
+        }
+      },
+      {
+        "id": "pd-5-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your placement knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Routing congestion occurs when:", "options": ["Cells are too slow", "Routing demand exceeds available routing tracks in a region", "Power rings are too small", "Clock skew is too high"], "answer": 1 },
+          { "q": "WNS stands for:", "options": ["Wire Net Size", "Worst Negative Slack — most critical timing violation", "Width of Net Stripe", "Wire Node Sum"], "answer": 1 },
+          { "q": "A soft placement blockage:", "options": ["Completely forbids cells", "Discourages tool from placing cells there but allows it if needed", "Blocks routing only", "Removes existing cells"], "answer": 1 },
+          { "q": "After placement, WNS of -0.5ns means:", "options": ["Timing is 0.5ns better than required", "Most critical path is 0.5ns late — needs optimization", "Clock is 0.5ns fast", "Hold violation of 0.5ns"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 6,
+    "bonusXp": 160,
+    "badge": "CTS Specialist",
+    "subLevels": [
+      {
+        "id": "pd-6-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Clock Tree Synthesis — distributing the clock signal to all flip-flops with minimal skew.",
+        "keyPoints": [
+          "CTS builds a balanced tree of buffers/inverters to deliver clock to all FFs",
+          "Clock skew: difference in arrival time between two flip-flops — target <100ps",
+          "Clock latency: total delay from clock port to flip-flop clock pin",
+          "Insertion delay: time for clock signal to travel through entire tree",
+          "H-tree/fishbone: common balanced clock tree topologies",
+          "Useful skew: intentionally adding skew to fix hold violations",
+          "NDR (Non-Default Rule): wider/spaced wires for clock nets"
+        ],
+        "content": "Clock tree synthesis is one of the most critical steps in physical design. Every flip-flop must receive the clock at nearly the same time — if FF_A gets the clock 500ps before FF_B, data launched by FF_A has 500ps less time to reach FF_B (setup violation) or 500ps extra (hold violation). CTS builds a hierarchical buffer tree that balances the clock arrival time. Modern designs use 'useful skew' — deliberately delaying the clock to some FFs to help close timing on critical paths. NDR rules use wider-than-normal wires for clock nets to reduce resistance and minimize crosstalk noise.",
+        "xp": 20
+      },
+      {
+        "id": "pd-6-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "CTS commands — clock specification, synthesis, and skew analysis in both tools.",
+        "keyPoints": [
+          "ccopt_design (Innovus): runs concurrent CTS + optimization",
+          "clock_opt (FC): FC clock tree optimization command",
+          "set_ccopt_property: configures CTS targets (skew, latency)",
+          "report_clock_tree: shows clock tree statistics",
+          "reportClockTimingInfo: detailed clock skew report (Innovus)",
+          "report_clock_qor: FC clock quality report",
+          "NDR: create_ndr_rule for special clock routing rules"
+        ],
+        "cadence": "# ── CTS in Cadence Innovus ──────────────────────────────\n\n# Step 1: Specify clock sources and targets\nset_ccopt_property target_skew 0.100    ;# 100ps target skew\nset_ccopt_property target_max_trans 0.150 ;# 150ps max transition\n\n# Create NDR for clock nets (wider wires)\ncreate_ndr -name NDR_CLK \\\n           -width  {Metal3 0.14 Metal4 0.28 Metal5 0.42} \\\n           -space  {Metal3 0.28 Metal4 0.56 Metal5 0.84}\nassign_ndr -ndr NDR_CLK -net clk\n\n# Run CTS with concurrent optimization\nccopt_design\n\n# Report clock tree quality\nreportClockTimingInfo -type skew\nreport_clock_tree -summary\n\n# Check hold violations introduced by CTS\nreport_timing -max_paths 10 -min_delay\n\n# Fix hold violations with useful skew\noptDesign -postCTS -hold\n\n# Save post-CTS checkpoint\nsaveDesign ./checkpoints/post_cts.enc",
+        "synopsys": "# ── CTS in Synopsys Fusion Compiler ─────────────────────\n\n# Step 1: Set clock optimization targets\nset_app_options -name cts.compile.enable_local_skew -value true\nset_app_options -name cts.common_options.target_skew -value 0.100\n\n# Create NDR for clock nets\ncreate_routing_rule NDR_CLK \\\n  -widths {M3 0.14 M4 0.28 M5 0.42} \\\n  -spacings {M3 0.28 M4 0.56 M5 0.84}\nset_routing_rule -nets [get_nets clk] NDR_CLK\n\n# Run clock optimization\nclock_opt\n\n# Report clock tree quality\nreport_clock_qor\nreport_clock_tree -scenarios [all_scenarios]\n\n# Check hold timing post-CTS\nreport_timing -scenarios func_ff -max_paths 10\n\n# Fix hold violations\nhold_fixing\n\n# Save post-CTS block\nsave_block -as post_cts",
+        "xp": 25
+      },
+      {
+        "id": "pd-6-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a clock tree report and analyze skew and hold violations.",
+        "keyPoints": [
+          "Skew = max(arrival) - min(arrival) across all sinks",
+          "Insertion delay: clock source to farthest sink latency",
+          "Buffer count: number of clock buffers inserted",
+          "Hold TNS: total negative hold slack — positive hold violations after CTS are common",
+          "Transition time: clock signal rise/fall time at sinks — must meet spec"
+        ],
+        "reportContent": "# Innovus reportClockTimingInfo -type skew\n======================================\n  Clock: clk (period: 10.0ns)\n======================================\n  Tree Statistics:\n  Sinks (FFs):        12,847\n  Buffer count:          4,231\n  Inverter count:        2,108\n  Total cells:           6,339\n\n  Timing Summary:\n  Insertion delay:     1.842 ns  (source to farthest sink)\n  Skew (local):        0.078 ns  78ps  PASS (target: 100ps)\n  Skew (global):       0.312 ns  312ps WARNING\n  Max transition:      0.138 ns  PASS (target: 150ps)\n\n  Hold Violations (post-CTS):\n  Hold TNS: -24.8 ns  (187 violations)\n  Hold WNS: -0.31 ns\n======================================\n\n# ANALYSIS:\n# Global skew 312ps > 100ps — check if any outlier sinks\n# 187 hold violations — expected after CTS, fix with hold buffers\n# 'optDesign -postCTS -hold' in Innovus will insert hold buffers",
+        "xp": 20
+      },
+      {
+        "id": "pd-6-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Run complete CTS flow in Cadence Innovus with NDR rules.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 6A: Cadence Innovus — CTS Flow\n\nWrite a complete CTS script:\n1. Set target skew to 80ps: `set_ccopt_property target_skew 0.080`\n2. Set max transition to 120ps: `set_ccopt_property target_max_trans 0.120`  \n3. Create NDR rule `CLK_NDR`: Metal3 width=0.14, space=0.28; Metal4 width=0.28, space=0.56\n4. Assign NDR to clock nets: `assign_ndr -ndr CLK_NDR -net clk`\n5. Run CTS: `ccopt_design`\n6. Report clock tree summary\n7. Report hold violations: `report_timing -max_paths 20 -min_delay`\n8. Fix hold: `optDesign -postCTS -hold`\n9. Re-report timing (setup and hold): `report_timing -max_paths 10`\n10. Save checkpoint",
+          "starterCode": "# Lab 6A: Innovus CTS Flow\n\n# 1. Set skew target\n\n# 2. Set transition target\n\n# 3. Create NDR rule\n\n# 4. Assign NDR to clk\n\n# 5. Run CTS\n\n# 6. Report clock tree\n\n# 7. Report hold violations\n\n# 8. Fix hold\n\n# 9. Final timing report\n\n# 10. Save\n",
+          "hints": [
+            "set_ccopt_property target_skew 0.080",
+            "set_ccopt_property target_max_trans 0.120",
+            "create_ndr -name CLK_NDR -width {Metal3 0.14 Metal4 0.28} -space {Metal3 0.28 Metal4 0.56}",
+            "assign_ndr -ndr CLK_NDR -net clk",
+            "ccopt_design",
+            "report_clock_tree -summary",
+            "report_timing -max_paths 20 -min_delay",
+            "optDesign -postCTS -hold",
+            "report_timing -max_paths 10",
+            "saveDesign ./checkpoints/post_cts.enc"
+          ],
+          "requiredPatterns": [
+            "set_ccopt_property target_skew",
+            "set_ccopt_property target_max_trans",
+            "create_ndr",
+            "assign_ndr",
+            "ccopt_design",
+            "report_clock_tree",
+            "report_timing -min_delay",
+            "optDesign -postCTS -hold",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "CTS flow: set targets → create NDR → assign NDR → synthesize → analyze → fix hold → verify. NDR ensures clock wires are wide enough to minimize resistance and crosstalk. Hold violations after CTS are normal and expected — optDesign -postCTS -hold inserts delay buffers to fix them."
+        }
+      },
+      {
+        "id": "pd-6-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Run complete CTS flow in Synopsys Fusion Compiler with NDR rules.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 6B: Synopsys FC — CTS Flow\n\nWrite a complete CTS script in FC:\n1. Enable local skew: `set_app_options -name cts.compile.enable_local_skew -value true`\n2. Set target skew 80ps: `set_app_options -name cts.common_options.target_skew -value 0.080`\n3. Create routing rule `CLK_NDR`: M3 width=0.14 space=0.28, M4 width=0.28 space=0.56\n4. Apply rule to clk net\n5. Run clock optimization: `clock_opt`\n6. Report clock QOR: `report_clock_qor`\n7. Report hold timing on func_ff scenario\n8. Run hold fixing: `hold_fixing`\n9. Report QOR: `report_qor`\n10. Save block as `post_cts`",
+          "starterCode": "# Lab 6B: FC CTS Flow\n\n# 1. Enable local skew\n\n# 2. Set target skew\n\n# 3. Create routing rule\n\n# 4. Apply to clk net\n\n# 5. Run clock optimization\n\n# 6. Report clock QOR\n\n# 7. Hold timing check\n\n# 8. Fix hold\n\n# 9. QOR report\n\n# 10. Save\n",
+          "hints": [
+            "set_app_options -name cts.compile.enable_local_skew -value true",
+            "set_app_options -name cts.common_options.target_skew -value 0.080",
+            "create_routing_rule CLK_NDR -widths {M3 0.14 M4 0.28} -spacings {M3 0.28 M4 0.56}",
+            "set_routing_rule -nets [get_nets clk] CLK_NDR",
+            "clock_opt",
+            "report_clock_qor",
+            "report_timing -scenarios func_ff -max_paths 20",
+            "hold_fixing",
+            "report_qor",
+            "save_block -as post_cts"
+          ],
+          "requiredPatterns": [
+            "set_app_options -name cts.compile.enable_local_skew",
+            "set_app_options -name cts.common_options.target_skew",
+            "create_routing_rule",
+            "set_routing_rule",
+            "clock_opt",
+            "report_clock_qor",
+            "hold_fixing",
+            "report_qor",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC CTS uses set_app_options to configure the clock optimizer. create_routing_rule defines NDR. hold_fixing is FC's dedicated hold violation fixer. report_clock_qor gives comprehensive clock quality metrics including skew, latency, and transition times."
+        }
+      },
+      {
+        "id": "pd-6-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Analyze clock skew impact on setup and hold timing.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 6C: Clock Skew Impact Analysis\n\nGiven:\n- Clock period: 10ns\n- Launch FF clock arrival: 1.8ns (from port to FF_A)\n- Capture FF clock arrival: 2.1ns (from port to FF_B)  \n- Combinational delay: 7.5ns\n- Setup time: 0.5ns\n- Hold time: 0.2ns\n\nCalculate:\n1. Clock skew = arrival_capture - arrival_launch\n2. Setup slack = Tclk + skew - Tcomb - Tsetup\n   (positive skew HELPS setup)\n3. Hold slack = skew - Thold - Tcomb_min\n   (assume Tcomb_min = 0.1ns for hold check)\n   (positive skew HURTS hold)\n4. Is this skew safe? (threshold: |skew| < 300ps)\n5. Write Innovus command to report this specific path\n6. Write FC command to report same path",
+          "hints": [
+            "Skew = 2.1 - 1.8 = 0.3ns = 300ps (at threshold!)",
+            "Setup slack = 10 + 0.3 - 7.5 - 0.5 = 2.3ns  PASS",
+            "Hold slack = 0.3 - 0.2 - 0.1 = 0.0ns  AT LIMIT (risky!)",
+            "300ps is right at the threshold — any worse and hold fails",
+            "report_timing -from FF_A -to FF_B -max_paths 1    ;# Innovus",
+            "report_timing -from [get_cells FF_A] -to [get_cells FF_B]    ;# FC"
+          ],
+          "requiredPatterns": [
+            "report_timing",
+            "from",
+            "to"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Clock skew has opposite effects on setup and hold. Positive skew (capture later than launch) helps setup but hurts hold. At exactly 300ps skew, the hold slack is 0.0ns — any CTS variation makes it negative. This is why CTS targets are kept tight (80-100ps) and why hold fixing is always needed post-CTS."
+        }
+      },
+      {
+        "id": "pd-6-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your CTS knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Clock skew is:", "options": ["Clock frequency variation", "Difference in clock arrival time between two flip-flops", "Clock power consumption", "Number of clock buffers"], "answer": 1 },
+          { "q": "NDR (Non-Default Rule) for clock nets uses:", "options": ["Narrower wires to save area", "Wider/more spaced wires to reduce resistance and crosstalk", "Minimum metal rules", "Only via rules"], "answer": 1 },
+          { "q": "After CTS, hold violations occur because:", "options": ["Setup time is reduced", "Clock skew can make data arrive at capture FF too quickly", "Routing is incomplete", "Power is insufficient"], "answer": 1 },
+          { "q": "Useful skew is:", "options": ["Unwanted clock variation", "Intentional skew addition to help timing closure", "A CTS error", "A routing violation"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 7,
+    "bonusXp": 170,
+    "badge": "Routing Engineer",
+    "subLevels": [
+      {
+        "id": "pd-7-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Routing — connecting all signal nets with metal wires while meeting DRC rules.",
+        "keyPoints": [
+          "Global routing: assigns nets to routing regions (GRC cells) without exact wires",
+          "Detailed routing: draws exact wire shapes and vias",
+          "DRC (Design Rule Check): minimum spacing, width, via enclosure rules from foundry",
+          "Antenna effect: charge buildup during fab can destroy gate oxide",
+          "Crosstalk: coupling between adjacent wires causes noise and delay",
+          "Shielding: VDD/VSS wires alongside sensitive nets to reduce crosstalk",
+          "Metal layers: M1 (local), M2-M5 (signal), M6+ (power) — varies by process"
+        ],
+        "content": "Routing is the final major physical step — placing exact wire shapes for every signal net. Global routing first reserves routing resources per region (like highway planning). Detailed routing then draws the exact wires (like street-level navigation). DRC rules from the foundry define minimum distances between wires, minimum widths, via enclosure requirements — violations cause yield loss or functional failure in silicon. Antenna violations occur when long metal wires accumulate charge during plasma etching, potentially destroying the thin gate oxide. Post-routing optimization fixes timing violations by tweaking wire shapes and inserting buffers.",
+        "xp": 20
+      },
+      {
+        "id": "pd-7-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Routing commands, DRC checking, and antenna fixing in both tools.",
+        "keyPoints": [
+          "route_design (Innovus): runs complete signal routing",
+          "route_auto (FC): FC full routing command",
+          "verify_drc: checks all design rules after routing",
+          "verify_connectivity: checks all nets are connected",
+          "verify_antenna: checks for antenna violations",
+          "editTrimRoute: trims/extends routes to fix DRC (Innovus)",
+          "route_opt: post-routing optimization for timing"
+        ],
+        "cadence": "# ── Routing in Cadence Innovus ──────────────────────────\n\n# Step 1: Global routing first\nset_db route_design_with_via_in_pin true\nset_db route_design_antenna_cell_name {ANTENNA}\n\n# Step 2: Full routing\nroute_design -viaOpt \\\n             -wireOpt \\\n             -globalDetail\n\n# Step 3: Check DRC\nverify_drc -limit 1000 \\\n           -report ./reports/drc.rpt\n\n# Step 4: Check connectivity\nverify_connectivity -report ./reports/connectivity.rpt\n\n# Step 5: Check antenna\nverify_antenna -report ./reports/antenna.rpt\n\n# Step 6: Post-route optimization\noptDesign -postRoute\noptDesign -postRoute -hold\n\n# Step 7: Final timing\nreport_timing -max_paths 20 -slack_lesser_than 0\n\n# Step 8: Save\nsaveDesign ./checkpoints/post_route.enc",
+        "synopsys": "# ── Routing in Synopsys Fusion Compiler ─────────────────\n\n# Step 1: Configure router\nset_app_options -name route.common.enable_via_opt -value true\nset_app_options -name route.detail.antenna -value true\n\n# Step 2: Global routing\nroute_global\n\n# Step 3: Track assignment\nroute_track\n\n# Step 4: Detailed routing\nroute_detail\n\n# Or run all in one command:\n# route_auto\n\n# Step 5: Post-route optimization\nroute_opt\n\n# Step 6: Verify DRC\nverify_drc -output ./reports/drc.rpt\n\n# Step 7: Verify connectivity\nverify_lvs\n\n# Step 8: Fix antenna violations\nfix_antenna_violations\n\n# Step 9: Report final timing\nreport_timing -max_paths 20 -slack_lesser_than 0\nreport_qor\n\n# Step 10: Save\nsave_block -as post_route",
+        "xp": 25
+      },
+      {
+        "id": "pd-7-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a DRC violation report and understand how to fix each type.",
+        "keyPoints": [
+          "Metal spacing violation: two wires too close — must move one wire",
+          "Metal width violation: wire too narrow — increase width",
+          "Via enclosure violation: via not properly enclosed by metal",
+          "Antenna violation: wire too long without diode protection",
+          "Short circuit: two different nets touching — critical error"
+        ],
+        "reportContent": "# Innovus verify_drc Report\n# File: ./reports/drc.rpt\n======================================\n  DRC Summary (1000 violation limit)\n  Total violations: 47\n======================================\n  Category          Count  Severity\n  metal2_spacing      18   ERROR\n  metal3_spacing       6   ERROR\n  via2_enclosure      12   ERROR\n  metal4_width         3   WARNING\n  antenna_metal5       8   ERROR\n======================================\n\n  Sample Violations:\n  [M2_SP_1] metal2 spacing violation\n    Net1: data_bus[3] at (423.1, 187.4)\n    Net2: data_bus[4] at (423.3, 187.4)\n    Spacing: 0.20um  Required: 0.28um\n    DELTA: -0.08um\n\n  [M5_ANT] Antenna ratio violation\n    Net: addr_out[7]\n    Antenna ratio: 487:1\n    Limit: 400:1\n    FIX: Add antenna diode or reduce wire length\n======================================\n\n# ACTIONS:\n# 1. M2 spacing: spread routes — use ECO router\n# 2. Via enclosure: check via type — switch to larger via\n# 3. Antenna M5: add antenna diode cell on addr_out[7]",
+        "xp": 20
+      },
+      {
+        "id": "pd-7-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Run complete routing flow and fix DRC violations in Innovus.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 7A: Cadence Innovus — Routing Flow\n\nWrite a complete routing script:\n1. Enable via optimization: `set_db route_design_with_via_in_pin true`\n2. Set antenna cell: `set_db route_design_antenna_cell_name {ANTENNACELL}`\n3. Run routing with all optimizations: `route_design -viaOpt -wireOpt -globalDetail`\n4. Run DRC check, limit to 500 violations, save to `./reports/routing_drc.rpt`\n5. Run connectivity check: save to `./reports/connectivity.rpt`\n6. Run antenna check: save to `./reports/antenna.rpt`\n7. Post-route optimization for setup: `optDesign -postRoute`\n8. Post-route optimization for hold: `optDesign -postRoute -hold`\n9. Report timing (violations only, max 20 paths)\n10. Save final checkpoint to `./checkpoints/post_route.enc`",
+          "starterCode": "# Lab 7A: Innovus Routing Flow\n\n# 1. Enable via optimization\n\n# 2. Set antenna cell\n\n# 3. Run routing\n\n# 4. DRC check\n\n# 5. Connectivity check\n\n# 6. Antenna check\n\n# 7. Post-route setup optimization\n\n# 8. Post-route hold optimization\n\n# 9. Timing report\n\n# 10. Save checkpoint\n",
+          "hints": [
+            "set_db route_design_with_via_in_pin true",
+            "set_db route_design_antenna_cell_name {ANTENNACELL}",
+            "route_design -viaOpt -wireOpt -globalDetail",
+            "verify_drc -limit 500 -report ./reports/routing_drc.rpt",
+            "verify_connectivity -report ./reports/connectivity.rpt",
+            "verify_antenna -report ./reports/antenna.rpt",
+            "optDesign -postRoute",
+            "optDesign -postRoute -hold",
+            "report_timing -max_paths 20 -slack_lesser_than 0",
+            "saveDesign ./checkpoints/post_route.enc"
+          ],
+          "requiredPatterns": [
+            "route_design",
+            "verify_drc",
+            "verify_connectivity",
+            "verify_antenna",
+            "optDesign -postRoute",
+            "optDesign -postRoute -hold",
+            "report_timing",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Routing flow order: configure → route → verify DRC → verify connectivity → fix antenna → optimize timing. Always run both setup and hold optimization post-routing. DRC and connectivity must be clean before signoff. Save checkpoint after routing — it's expensive to re-run."
+        }
+      },
+      {
+        "id": "pd-7-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Run complete routing flow in Synopsys Fusion Compiler.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 7B: Synopsys FC — Routing Flow\n\nWrite a complete FC routing script:\n1. Enable via optimization: `set_app_options -name route.common.enable_via_opt -value true`\n2. Enable antenna fixing: `set_app_options -name route.detail.antenna -value true`\n3. Run global routing: `route_global`\n4. Run track assignment: `route_track`\n5. Run detailed routing: `route_detail`\n6. Run post-route optimization: `route_opt`\n7. Fix antenna violations: `fix_antenna_violations`\n8. Run DRC: `verify_drc -output ./reports/fc_drc.rpt`\n9. Run LVS: `verify_lvs`\n10. Report timing and QOR\n11. Save block as `post_route`",
+          "starterCode": "# Lab 7B: FC Routing Flow\n\n# 1. Via optimization\n\n# 2. Antenna fixing enabled\n\n# 3. Global routing\n\n# 4. Track assignment\n\n# 5. Detailed routing\n\n# 6. Post-route optimization\n\n# 7. Fix antenna\n\n# 8. DRC check\n\n# 9. LVS check\n\n# 10. Timing and QOR reports\n\n# 11. Save\n",
+          "hints": [
+            "set_app_options -name route.common.enable_via_opt -value true",
+            "set_app_options -name route.detail.antenna -value true",
+            "route_global",
+            "route_track",
+            "route_detail",
+            "route_opt",
+            "fix_antenna_violations",
+            "verify_drc -output ./reports/fc_drc.rpt",
+            "verify_lvs",
+            "report_timing -max_paths 20 -slack_lesser_than 0",
+            "report_qor",
+            "save_block -as post_route"
+          ],
+          "requiredPatterns": [
+            "route_global",
+            "route_track",
+            "route_detail",
+            "route_opt",
+            "fix_antenna_violations",
+            "verify_drc",
+            "verify_lvs",
+            "report_timing",
+            "report_qor",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC routing is split into global → track → detail stages for fine-grained control. fix_antenna_violations automatically inserts diode cells on violating nets. verify_lvs (Layout vs. Schematic) confirms the physical layout matches the netlist — critical for tapeout clearance."
+        }
+      },
+      {
+        "id": "pd-7-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Analyze DRC violations and determine the correct fix strategy.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 7C: DRC Violation Analysis\n\nGiven this DRC report:\n```\nViolation 1: M2 spacing\n  Actual: 0.19um  Required: 0.28um  Delta: -0.09um\n  Net A: ctrl_bus[0], Net B: ctrl_bus[1]\n\nViolation 2: Via1 enclosure  \n  Actual enclosure: 0.04um  Required: 0.07um\n\nViolation 3: Antenna ratio M4\n  Net: mem_addr[15]\n  Ratio: 620:1  Limit: 400:1\n  Metal4 wire length: 2480um\n\nViolation 4: M3 width\n  Actual: 0.12um  Required: 0.14um\n```\n\nFor each violation, write:\n1. What caused it and how to fix (as Tcl comment)\n2. Innovus ECO command to fix spacing: use `ecoRoute -fixDRC`\n3. Innovus command to add antenna diode: `addAntennaDiode -net mem_addr[15]`\n4. FC equivalent to fix DRC: `route_opt -effort high -fixDRC`\n5. Calculate: what M4 wire length is safe at 400:1 ratio for this net?",
+          "hints": [
+            "# Viol 1: Two wires too close — ecoRoute will reroute with proper spacing",
+            "# Viol 2: Via not fully enclosed by metal — switch to larger via type",
+            "# Viol 3: Antenna — wire too long, insert diode cell mid-route",
+            "# Viol 4: Wire too narrow — tool must widen during ECO",
+            "ecoRoute -fixDRC",
+            "addAntennaDiode -net mem_addr[15]",
+            "route_opt -effort high",
+            "Safe M4 length = 400 × (threshold_area / Metal4_width) — at 400:1, need to reduce 620um equiv or add diode"
+          ],
+          "requiredPatterns": [
+            "ecoRoute",
+            "addAntennaDiode",
+            "route_opt"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "DRC fixes: spacing violations need rerouting (ecoRoute). Via enclosure needs via type change. Antenna needs diode insertion — diode drains the charge accumulated on long wires. Width violations need wire widening. Always fix errors before warnings. Clean DRC is mandatory for tapeout."
+        }
+      },
+      {
+        "id": "pd-7-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your routing knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "DRC violations must be fixed because:", "options": ["They slow simulation", "They cause manufacturing yield loss or functional failures", "They increase power", "They affect simulation only"], "answer": 1 },
+          { "q": "An antenna violation occurs when:", "options": ["Clocks are too slow", "Long metal wires accumulate charge that can damage gate oxide during fabrication", "Power straps are too narrow", "Two wires cross"], "answer": 1 },
+          { "q": "verify_lvs checks:", "options": ["Timing violations", "Physical layout matches the schematic/netlist", "DRC rules", "Power connectivity"], "answer": 1 },
+          { "q": "Crosstalk in routing can be reduced by:", "options": ["Increasing utilization", "Shielding sensitive nets with VDD/VSS wires", "Removing clock buffers", "Increasing clock period"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 8,
+    "bonusXp": 180,
+    "badge": "STA Expert",
+    "subLevels": [
+      {
+        "id": "pd-8-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Static Timing Analysis — verifying setup and hold timing across all paths.",
+        "keyPoints": [
+          "STA: analyzes all timing paths without simulation — exhaustive and fast",
+          "Critical path: the path with the least setup slack — limits max frequency",
+          "Setup check: data must arrive before clock edge — checked at SS corner",
+          "Hold check: data must stay stable after clock edge — checked at FF corner",
+          "OCV (On-Chip Variation): same-die process variation modeled with derating",
+          "CPPR (Clock Path Pessimism Removal): removes common path pessimism",
+          "Signoff STA: Primetime (Synopsys) or Tempus (Cadence) — gold standard"
+        ],
+        "content": "STA is the critical gating function before tapeout — it analyzes every possible timing path in the design to verify setup and hold margins. Unlike simulation which tests specific input patterns, STA exhaustively checks all paths. The setup slack equation: Slack = Required_time - Arrival_time. Negative = violation. OCV models the fact that identical cells on the same die have slightly different delays due to process variation — launch path is derated slow, capture path is derated fast (worst case for setup). CPPR removes the double-counting of common path pessimism in clock paths.",
+        "xp": 20
+      },
+      {
+        "id": "pd-8-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "STA commands — timing reports, path analysis, and ECO fixes in both tools.",
+        "keyPoints": [
+          "report_timing: shows timing paths with slack values",
+          "-path_type full_clock_expanded: shows complete clock path",
+          "-slack_lesser_than 0: shows only violating paths",
+          "report_analysis_coverage: shows % of paths analyzed",
+          "set_timing_derate: applies OCV derating factors",
+          "Primetime (pt_shell): Synopsys golden signoff STA tool",
+          "Tempus (tempus -sh): Cadence golden signoff STA tool"
+        ],
+        "cadence": "# ── STA in Cadence Innovus / Tempus ─────────────────────\n\n# In Innovus: set OCV derating\nset_timing_derate -early 0.95 -late 1.05\nset_timing_derate -early 0.92 -late 1.08 -cell_delay\n\n# Report worst setup path (full clock detail)\nreport_timing -max_paths 1 \\\n             -path_type full_clock_expanded \\\n             -rpt_buf_detail\n\n# Report all setup violations\nreport_timing -max_paths 50 \\\n             -slack_lesser_than 0 \\\n             -path_type summary\n\n# Report hold violations\nreport_timing -max_paths 50 \\\n             -slack_lesser_than 0 \\\n             -min_delay\n\n# Summary: WNS, TNS, NVE (number of violating endpoints)\nreport_timing_summary\n\n# In Tempus (signoff STA):\n# tempus -sh  then:\n# read_db design.enc\n# report_timing -max_paths 100\n# report_constraint -all_violators",
+        "synopsys": "# ── STA in Synopsys FC / PrimeTime ──────────────────────\n\n# In FC: set OCV\nset_timing_derate -early 0.95 -late 1.05\n\n# Report worst setup path\nreport_timing -max_paths 1 \\\n             -path_type full \\\n             -scenarios func_ss\n\n# All setup violations\nreport_timing -max_paths 50 \\\n             -slack_lesser_than 0 \\\n             -scenarios func_ss\n\n# Hold violations\nreport_timing -max_paths 50 \\\n             -slack_lesser_than 0 \\\n             -scenarios func_ff\n\n# QOR summary\nreport_qor -scenarios [all_scenarios]\n\n# In PrimeTime (pt_shell signoff):\n# pt_shell\n# read_netlist design.v\n# read_sdc constraints.sdc\n# link_design\n# report_timing -max_paths 100\n# report_constraint -all_violators\n# report_qor",
+        "xp": 25
+      },
+      {
+        "id": "pd-8-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a complete timing path report and understand every line.",
+        "keyPoints": [
+          "Path start/end: launch and capture flip-flops",
+          "Data path delay: sum of cell delays and wire delays",
+          "Clock path delay: delay from port to FF clock pin",
+          "Required time: clock period - setup time + launch clock delay",
+          "Arrival time: sum of all delays from launch FF to capture FF",
+          "Slack = required - arrival (negative = violation)"
+        ],
+        "reportContent": "# report_timing -max_paths 1 -path_type full_clock_expanded\n\n  Startpoint: alu_reg/Q (rising edge-triggered FF, clk)\n  Endpoint:   result_reg/D (rising edge-triggered FF, clk)\n  Path type:  max (setup)\n\n  ============ Data Path ============\n  Cell              Delay   Arr_Time\n  alu_reg/CK→Q      0.312     0.312  (launch)\n  U_add1 (AND2)     0.187     0.499\n  U_add2 (OR2)      0.203     0.702\n  wire (0.8mm)      0.420     1.122\n  U_add3 (XOR2)     0.156     1.278\n  result_reg/D      0.000     1.278\n  -----------------------------------\n  Data Arrival:             1.278 ns\n\n  ============ Clock Path ============\n  clk port → alu_reg/CK:    1.842 ns (launch)\n  clk port → result_reg/CK: 2.103 ns (capture)\n\n  ============ Timing Check ============\n  Required time  = clock_period + capture_clk - setup\n                 = 10.000 + 2.103 - 0.500 = 11.603 ns\n  Arrival time   = data_arrival + launch_clk\n                 = 1.278 + 1.842 = 3.120 ns\n  Slack          = 11.603 - 3.120 = +8.483 ns  PASS\n\n# NOTE: This path has large positive slack (8.5ns)\n# The critical path will have slack near 0 or negative",
+        "xp": 20
+      },
+      {
+        "id": "pd-8-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Run comprehensive STA and ECO timing fixes in Innovus.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 8A: Cadence Innovus — STA and ECO Timing Fix\n\nWrite a complete post-route STA and fix script:\n1. Set OCV derating: early=0.95, late=1.05 for wire delay\n2. Set cell delay derating: early=0.92, late=1.08\n3. Report top 5 worst setup paths (full clock expanded)\n4. Report top 5 worst hold paths\n5. Report timing summary: `report_timing_summary`\n6. Run ECO to fix setup: `optDesign -postRoute -setup`\n7. Run ECO to fix hold: `optDesign -postRoute -hold`\n8. Re-report timing (should improve)\n9. Report QOR: `report_power` and `report_area`\n10. Save final checkpoint",
+          "starterCode": "# Lab 8A: Innovus STA and ECO\n\n# 1. OCV derating (wire)\n\n# 2. OCV derating (cell)\n\n# 3. Top 5 setup violations\n\n# 4. Top 5 hold violations\n\n# 5. Timing summary\n\n# 6. ECO setup fix\n\n# 7. ECO hold fix\n\n# 8. Re-report timing\n\n# 9. Power and area reports\n\n# 10. Save\n",
+          "hints": [
+            "set_timing_derate -early 0.95 -late 1.05",
+            "set_timing_derate -early 0.92 -late 1.08 -cell_delay",
+            "report_timing -max_paths 5 -path_type full_clock_expanded",
+            "report_timing -max_paths 5 -min_delay -path_type full_clock_expanded",
+            "report_timing_summary",
+            "optDesign -postRoute -setup",
+            "optDesign -postRoute -hold",
+            "report_timing -max_paths 10 -slack_lesser_than 0",
+            "report_power",
+            "report_area",
+            "saveDesign ./checkpoints/final_signoff.enc"
+          ],
+          "requiredPatterns": [
+            "set_timing_derate -early",
+            "set_timing_derate -late",
+            "report_timing -max_paths",
+            "report_timing -min_delay",
+            "report_timing_summary",
+            "optDesign -postRoute -setup",
+            "optDesign -postRoute -hold",
+            "report_power",
+            "report_area",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "OCV derating models process variation — launch path uses slow (late) derating, capture path uses fast (early) derating for setup check. This is pessimistic but models real silicon behavior. ECO (Engineering Change Order) ops make targeted changes to fix remaining violations without re-running full flow."
+        }
+      },
+      {
+        "id": "pd-8-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Run comprehensive STA and timing ECO in Synopsys Fusion Compiler.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 8B: Synopsys FC — STA and Timing Fix\n\nWrite a complete FC STA script:\n1. Apply OCV derating: `set_timing_derate -early 0.95 -late 1.05`\n2. Report top 5 setup paths on func_ss scenario (full path type)\n3. Report top 5 hold paths on func_ff scenario\n4. Report QOR for all scenarios: `report_qor -scenarios [all_scenarios]`\n5. Run timing ECO optimization: `optimize_routed_design`\n6. Re-report timing summary\n7. Write GDSII: `write_gds -output design_final.gds`\n8. Write final netlist: `write_verilog -output design_final.v`\n9. Write final SDC: `write_sdc -output design_final.sdc`\n10. Save final block",
+          "starterCode": "# Lab 8B: FC STA and Timing Fix\n\n# 1. OCV derating\n\n# 2. Setup violations (func_ss)\n\n# 3. Hold violations (func_ff)\n\n# 4. QOR all scenarios\n\n# 5. Timing ECO\n\n# 6. Re-report\n\n# 7. Write GDSII\n\n# 8. Write netlist\n\n# 9. Write SDC\n\n# 10. Save block\n",
+          "hints": [
+            "set_timing_derate -early 0.95 -late 1.05",
+            "report_timing -max_paths 5 -scenarios func_ss -path_type full",
+            "report_timing -max_paths 5 -scenarios func_ff",
+            "report_qor -scenarios [all_scenarios]",
+            "optimize_routed_design",
+            "report_timing -max_paths 10 -slack_lesser_than 0",
+            "write_gds -output design_final.gds",
+            "write_verilog -output design_final.v",
+            "write_sdc -output design_final.sdc",
+            "save_block -as final_signoff"
+          ],
+          "requiredPatterns": [
+            "set_timing_derate",
+            "report_timing -scenarios func_ss",
+            "report_timing -scenarios func_ff",
+            "report_qor",
+            "optimize_routed_design",
+            "write_gds",
+            "write_verilog",
+            "write_sdc",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Final STA in FC includes OCV derating, per-scenario analysis (setup on SS, hold on FF), and timing ECO. The trifecta of output files: GDSII (for fab), netlist (for verification), SDC (for integration) must all be generated and consistent. save_block preserves the complete design state."
+        }
+      },
+      {
+        "id": "pd-8-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Calculate timing slack from a path report and identify the fix.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 8C: Timing Path Analysis\n\nGiven this timing path:\n```\nCell/Net              Delay   Arrival\nreg_A/Q (FF launch)   0.28    0.28\nU1 (INV)              0.09    0.37\nU2 (AND3)             0.31    0.68\nwire_net1 (1.2mm)     0.58    1.26\nU3 (MUX2)             0.24    1.50\nreg_B/D               0.00    1.50\n\nLaunch clock (clk→reg_A): 1.85ns\nCapture clock (clk→reg_B): 1.92ns\nClock period: 8.0ns\nSetup time: 0.45ns\nOCV late derate: 1.05\n```\n\nCalculate:\n1. Data arrival time = launch_clk + sum(data_path_delays)\n2. Required time = period + capture_clk - setup\n3. Setup slack (before OCV)\n4. Apply 1.05 OCV to data path: new data arrival time\n5. New setup slack with OCV\n6. Write Innovus command to report this path from reg_A to reg_B\n7. If slack is negative, write the fix command: `optDesign -postRoute -setup`",
+          "hints": [
+            "Data arrival = 1.85 + 1.50 = 3.35ns",
+            "Required = 8.0 + 1.92 - 0.45 = 9.47ns",
+            "Slack (no OCV) = 9.47 - 3.35 = 6.12ns PASS",
+            "With OCV: data_path = 1.50 × 1.05 = 1.575ns; total arrival = 1.85 + 1.575 = 3.425ns",
+            "Slack (OCV) = 9.47 - 3.425 = 6.045ns PASS",
+            "report_timing -from reg_A -to reg_B -max_paths 1 -path_type full_clock_expanded",
+            "optDesign -postRoute -setup    ;# if slack were negative"
+          ],
+          "requiredPatterns": [
+            "report_timing",
+            "from",
+            "to",
+            "optDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Data arrival = launch clock + all data delays = 1.85 + 1.50 = 3.35ns. Required = period + capture_clk - setup = 8.0 + 1.92 - 0.45 = 9.47ns. Slack = 6.12ns before OCV. With 1.05 OCV on data: data path becomes 1.575ns, arrival = 3.425ns, slack = 6.045ns. Still positive. OCV reduces but doesn't eliminate slack here."
+        }
+      },
+      {
+        "id": "pd-8-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your STA knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Setup analysis is done at:", "options": ["FF (fast-fast) corner", "TT (typical) corner", "SS (slow-slow) corner — worst case delay", "All corners simultaneously"], "answer": 2 },
+          { "q": "Negative slack in STA means:", "options": ["Timing is 100% clean", "The path is too slow — violates setup or hold", "The path is unused", "Clock is missing"], "answer": 1 },
+          { "q": "OCV derating in STA models:", "options": ["Power variation", "On-chip process variation between different cells on same die", "Temperature variation only", "Voltage droop only"], "answer": 1 },
+          { "q": "PrimeTime (pt_shell) is used for:", "options": ["Routing", "Golden signoff STA — industry standard timing verification", "Power planning", "Floorplanning"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 9,
+    "bonusXp": 200,
+    "badge": "Signoff Champion",
+    "subLevels": [
+      {
+        "id": "pd-9-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Signoff closure — DRC/LVS clean, timing clean, IR drop, EM — ready for tapeout.",
+        "keyPoints": [
+          "Signoff = all checks pass — design is ready to send to foundry",
+          "DRC signoff: Mentor Calibre or Synopsys IC Validator — zero violations",
+          "LVS signoff: layout matches schematic — zero mismatches",
+          "Timing signoff: Primetime/Tempus — zero violations all corners",
+          "IR drop signoff: Voltus/RedHawk — max IR drop < 10% VDD",
+          "EM signoff: all metal wires within current density limits",
+          "GDSII: final layout format sent to foundry for mask making"
+        ],
+        "content": "Signoff is the final gate before tapeout — all checks must pass with zero violations. DRC (Design Rule Check) uses Mentor Calibre or Synopsys IC Validator to verify every wire, via, and cell against foundry manufacturing rules — these tools are separate from the PD tools and are considered the industry gold standard. LVS (Layout vs. Schematic) confirms the physical layout is functionally identical to the netlist. Timing signoff with PrimeTime includes all corners, modes, and OCV effects. IR drop (Voltus in Cadence, RedHawk in Ansys) simulates actual current flow. Only when all checks pass can the GDSII be sent for tapeout.",
+        "xp": 20
+      },
+      {
+        "id": "pd-9-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Signoff flow commands — DRC, LVS, timing, and GDSII export.",
+        "keyPoints": [
+          "write_gds / write_stream: export GDSII from PD tool",
+          "Calibre DRC: mentor.calibre -drc -hier -runset drc.rules gds.file",
+          "Calibre LVS: mentor.calibre -lvs -hier -runset lvs.rules gds.file",
+          "PrimeTime: pt_shell for signoff STA with SPEF parasitics",
+          "SPEF: Standard Parasitic Exchange Format — extracted wire parasitics",
+          "Voltus/RedHawk: power integrity sign off tools",
+          "tapeout: final submission of clean GDSII to foundry"
+        ],
+        "cadence": "# ── Signoff Flow in Cadence Innovus ─────────────────────\n\n# Step 1: Final timing optimization\noptDesign -postRoute -setup\noptDesign -postRoute -hold\n\n# Step 2: Final DRC in Innovus\nverify_drc -limit 0 -report ./signoff/final_drc.rpt\n\n# Step 3: Final LVS\nverify_connectivity -type all -report ./signoff/connectivity.rpt\n\n# Step 4: Export GDSII\nstreamOut ./signoff/design_final.gds \\\n          -mapFile gds_map.txt \\\n          -merge {stdcell.gds macro.gds}\n\n# Step 5: Export SPEF (parasitics for Tempus/PrimeTime)\nrcOut -spef ./signoff/design.spef \\\n      -corner ss\n\n# Step 6: Run Tempus signoff STA\n# tempus -sh\n# source run_tempus.tcl\n\n# In Tempus:\n# read_db ./checkpoints/final_signoff.enc\n# read_spef ./signoff/design.spef\n# report_timing -max_paths 100 -slack_lesser_than 0\n\n# Step 7: Final save and report\nreport_area\nreport_power\nsaveDesign ./signoff/tapeout_ready.enc",
+        "synopsys": "# ── Signoff Flow in Synopsys Fusion Compiler ─────────────\n\n# Step 1: Final optimization\noptimize_routed_design\n\n# Step 2: Extract parasitics\nextract_rc -output ./signoff/design.spef \\\n           -corner max\n\n# Step 3: Run timing signoff with SPEF\nread_parasitic -cell [current_block] \\\n               ./signoff/design.spef\nupdate_timing -full\nreport_timing -max_paths 100 -slack_lesser_than 0\n\n# Step 4: Run DRC\nverify_drc -output ./signoff/drc.rpt\n\n# Step 5: Export GDSII\nwrite_gds -output ./signoff/design_final.gds \\\n          -lib_cell_name {stdcell macro}\n\n# Step 6: Export netlist and constraints\nwrite_verilog -output ./signoff/design_final.v\nwrite_sdc -output ./signoff/design_final.sdc\n\n# Step 7: Final QOR report\nreport_qor -scenarios [all_scenarios]\nreport_area\nreport_power\n\n# Step 8: Save tapeout block\nsave_block -as tapeout_ready",
+        "xp": 25
+      },
+      {
+        "id": "pd-9-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a final signoff checklist report — all checks for tapeout readiness.",
+        "keyPoints": [
+          "All checks must show PASS or 0 violations for tapeout",
+          "DRC: zero violations required — even 1 can cause yield loss",
+          "LVS: zero mismatches — any error means layout is wrong",
+          "Timing: all corners must show WNS >= 0",
+          "IR drop: max < 10% VDD on all power nets",
+          "EM: all wires within limits for 10-year lifetime target"
+        ],
+        "reportContent": "# Tapeout Signoff Checklist\n# Design: my_soc_v3\n# Date: 2024-03-15\n=================================================\n  CHECK                  STATUS    VALUE\n=================================================\n  DRC (Calibre)          PASS      0 violations\n  LVS (Calibre)          PASS      0 mismatches\n=================================================\n  TIMING SIGNOFF (PrimeTime)\n  Setup WNS (func_ss)    PASS      +0.12 ns\n  Setup TNS (func_ss)    PASS      0.00 ns\n  Hold WNS  (func_ff)    PASS      +0.08 ns\n  Hold TNS  (func_ff)    PASS      0.00 ns\n  Setup WNS (scan_ss)    PASS      +0.35 ns\n=================================================\n  POWER INTEGRITY (Voltus)\n  IR Drop VDD (avg)      PASS      42 mV (4.2%)\n  IR Drop VDD (max)      PASS      87 mV (8.7%)\n  EM M5 VDD strap        PASS      1.8 mA/um²\n  EM M6 VDD strap        PASS      1.6 mA/um²\n=================================================\n  TOTAL CHECKS: 10    PASS: 10    FAIL: 0\n\n  >> TAPEOUT APPROVED << \n=================================================",
+        "xp": 20
+      },
+      {
+        "id": "pd-9-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Run complete signoff flow and export tapeout files in Innovus.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 9A: Cadence Innovus — Signoff and Tapeout Export\n\nWrite the complete tapeout preparation script:\n1. Final timing optimization (setup and hold)\n2. Run DRC with zero violation limit: `verify_drc -limit 0`\n3. Run connectivity check: `verify_connectivity -type all`\n4. Run antenna check: `verify_antenna`\n5. Export GDSII: `streamOut ./tapeout/design_v1.gds -mapFile gds_map.txt -merge {stdcell.gds}`\n6. Export parasitics (SPEF) for signoff: `rcOut -spef ./tapeout/design.spef -corner ss`\n7. Export final netlist: `saveNetlist ./tapeout/design_final.v`\n8. Report area, power, and timing summary\n9. Print: `puts \"TAPEOUT FILES READY\"`\n10. Save final design state",
+          "starterCode": "# Lab 9A: Innovus Tapeout Script\n\n# 1. Final timing optimization\n\n# 2. DRC check (zero tolerance)\n\n# 3. Connectivity check\n\n# 4. Antenna check\n\n# 5. Export GDSII\n\n# 6. Export SPEF\n\n# 7. Export netlist\n\n# 8. Reports\n\n# 9. Print completion\n\n# 10. Save\n",
+          "hints": [
+            "optDesign -postRoute -setup",
+            "optDesign -postRoute -hold",
+            "verify_drc -limit 0 -report ./tapeout/drc_final.rpt",
+            "verify_connectivity -type all -report ./tapeout/connectivity.rpt",
+            "verify_antenna -report ./tapeout/antenna.rpt",
+            "streamOut ./tapeout/design_v1.gds -mapFile gds_map.txt -merge {stdcell.gds}",
+            "rcOut -spef ./tapeout/design.spef -corner ss",
+            "saveNetlist ./tapeout/design_final.v",
+            "report_area; report_power; report_timing_summary",
+            "puts \"TAPEOUT FILES READY\"",
+            "saveDesign ./tapeout/tapeout_final.enc"
+          ],
+          "requiredPatterns": [
+            "optDesign -postRoute",
+            "verify_drc -limit 0",
+            "verify_connectivity",
+            "verify_antenna",
+            "streamOut",
+            "rcOut -spef",
+            "saveNetlist",
+            "report_area",
+            "report_power",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Tapeout requires three output files: GDSII (fabrication), SPEF (for signoff STA with real parasitics), and netlist (for integration and verification). verify_drc with -limit 0 means halt immediately if any DRC violation exists — tapeout with DRC violations is not allowed."
+        }
+      },
+      {
+        "id": "pd-9-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Run complete signoff and export tapeout files in Synopsys FC.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 9B: Synopsys FC — Signoff and Tapeout Export\n\nWrite the complete FC tapeout preparation script:\n1. Final routed optimization: `optimize_routed_design`\n2. Extract parasitics: `extract_rc -output ./tapeout/design.spef -corner max`\n3. Update timing with parasitics: `update_timing -full`\n4. Report timing all scenarios: violations only, max 100 paths\n5. Run DRC: `verify_drc -output ./tapeout/drc_signoff.rpt`\n6. Export GDSII: `write_gds -output ./tapeout/design_final.gds`\n7. Export Verilog netlist\n8. Export SDC constraints\n9. Final QOR and area/power reports\n10. Save tapeout block",
+          "starterCode": "# Lab 9B: FC Tapeout Script\n\n# 1. Final optimization\n\n# 2. Extract parasitics\n\n# 3. Update timing\n\n# 4. Report all timing violations\n\n# 5. DRC signoff\n\n# 6. Export GDSII\n\n# 7. Export netlist\n\n# 8. Export SDC\n\n# 9. Reports\n\n# 10. Save tapeout block\n",
+          "hints": [
+            "optimize_routed_design",
+            "extract_rc -output ./tapeout/design.spef -corner max",
+            "update_timing -full",
+            "report_timing -max_paths 100 -slack_lesser_than 0 -scenarios [all_scenarios]",
+            "verify_drc -output ./tapeout/drc_signoff.rpt",
+            "write_gds -output ./tapeout/design_final.gds",
+            "write_verilog -output ./tapeout/design_final.v",
+            "write_sdc -output ./tapeout/design_final.sdc",
+            "report_qor; report_area; report_power",
+            "save_block -as tapeout_signoff"
+          ],
+          "requiredPatterns": [
+            "optimize_routed_design",
+            "extract_rc",
+            "update_timing",
+            "report_timing -scenarios",
+            "verify_drc",
+            "write_gds",
+            "write_verilog",
+            "write_sdc",
+            "report_qor",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "FC signoff flow extracts real wire parasitics (SPEF) post-routing and updates timing — this is more accurate than pre-route estimated parasitics. The trifecta (GDSII + Verilog + SDC) must all be exported consistently. report_qor gives the final design health metric that goes into the tapeout package."
+        }
+      },
+      {
+        "id": "pd-9-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Evaluate a signoff checklist and determine tapeout readiness.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 9C: Signoff Analysis\n\nGiven this signoff status:\n```\nDRC violations:        3 (M3_spacing x2, Via2_enclosure x1)\nLVS mismatches:        0\nSetup WNS (func_ss): -0.08ns  (VIOLATION)\nSetup TNS (func_ss): -0.31ns\nHold WNS (func_ff): +0.12ns\nIR Drop max:          94mV (9.4%)  \nIR Drop avg:          45mV (4.5%)\nEM M5 max:            1.9 mA/um²  (limit: 2.0)\n```\n\nFor each issue:\n1. DRC: write the ECO routing fix command (Innovus)\n2. Setup violation: write the timing fix command\n3. Setup WNS=-0.08ns: how much clock period needs to increase to fix?\n4. IR drop 9.4%: is this passing or failing? Write the fix approach\n5. EM 1.9 mA/um²: is this passing? What is the margin?\n6. Write the FC command to check all constraints: `report_constraint -all_violators`\n7. Is this design ready for tapeout? What must be fixed first?",
+          "hints": [
+            "ecoRoute -fixDRC    ;# Innovus ECO routing fix",
+            "optDesign -postRoute -setup    ;# Innovus timing fix",
+            "Setup violation: need period >= current_period + 0.08 = 10.08ns minimum",
+            "IR drop 9.4% < 10% limit — PASSING (barely!)",
+            "EM 1.9 < 2.0 limit — PASSING, margin = 0.1 mA/um² (5%)",
+            "report_constraint -all_violators    ;# FC check",
+            "NOT ready: DRC violations (3) and setup violation (-0.08ns) must be fixed"
+          ],
+          "requiredPatterns": [
+            "ecoRoute",
+            "optDesign",
+            "report_constraint"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Tapeout status: DRC must be 0 violations — 3 DRC failures = NOT ready. Setup WNS=-0.08ns = NOT ready. IR drop 9.4% is passing but barely — monitor carefully. EM 1.9 mA/um² is passing with 5% margin. LVS is clean. Must fix DRC and setup before tapeout. EM and IR can proceed."
+        }
+      },
+      {
+        "id": "pd-9-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your signoff knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "GDSII is:", "options": ["A timing format", "The final layout format sent to foundry for chip manufacturing", "A constraint format", "A netlist format"], "answer": 1 },
+          { "q": "SPEF contains:", "options": ["Clock constraints", "Extracted wire parasitics (resistance, capacitance) for accurate STA", "Standard cell timing", "Power grid data"], "answer": 1 },
+          { "q": "LVS (Layout vs. Schematic) checks:", "options": ["Timing violations", "That physical layout matches the gate-level netlist", "DRC rules", "IR drop"], "answer": 1 },
+          { "q": "Mentor Calibre is used for:", "options": ["Placement", "Gold-standard DRC and LVS signoff — separate from PD tools", "Routing", "CTS"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 10,
+    "bonusXp": 200,
+    "badge": "Industry PD Engineer",
+    "subLevels": [
+      {
+        "id": "pd-10-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Industry PD projects — CPU blocks, SRAM wrappers, PCIe, and AI accelerators.",
+        "keyPoints": [
+          "CPU core backend: critical timing closure, aggressive floorplan",
+          "SRAM wrapper: timing-critical macro interface, special I/O handling",
+          "PCIe controller: mixed analog/digital, SERDES interface challenges",
+          "AI accelerator: massive parallel datapath, power-critical design",
+          "Memory subsystem: high bandwidth, complex timing with DDR/HBM",
+          "Block-level vs chip-level PD: blocks are smaller but must integrate cleanly",
+          "ECO (Engineering Change Order): late-stage changes after signoff"
+        ],
+        "content": "Industry PD work focuses on specific blocks within a larger SoC. A CPU core backend must achieve the highest possible operating frequency — every picosecond matters. AI accelerators have massive parallel datapaths with thousands of multiply-accumulate units — power density is the primary challenge. PCIe and USB controllers interface between the digital SoC and high-speed serial links. SRAM wrappers interface between the core logic and memory macros — getting timing right at the SRAM interface requires careful constraint writing. ECOs (Engineering Change Orders) are late-stage fixes applied after signoff when last-minute RTL changes are needed — the art of minimal intervention.",
+        "xp": 20
+      },
+      {
+        "id": "pd-10-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Advanced flow commands for industry PD projects.",
+        "keyPoints": [
+          "ECO flow: change RTL → re-synthesize → incremental place/route",
+          "set_dont_touch: prevent tool from modifying specific cells",
+          "create_voltage_area: for multi-voltage domain designs",
+          "set_level_shifter: for crossing voltage domains",
+          "path_group: prioritize timing of critical paths",
+          "set_max_capacitance: limit wire capacitance on critical nets",
+          "Time borrowing: latch-based designs borrow time across cycles"
+        ],
+        "cadence": "# ── Advanced PD Commands — Cadence Innovus ──────────────\n\n# Path group: prioritize CPU critical paths\ncreate_path_group -name cpu_critical \\\n  -from [get_cells core/alu/*] \\\n  -to   [get_cells core/reg_file/*]\nset_path_group_options cpu_critical -weight 5.0\n\n# Multi-voltage domain\ncreate_voltage_area -name VDDL_domain \\\n                    -power_domain VDDL \\\n                    -area {200 200 600 600}\n\n# Dont-touch on verified IP\nset_db [get_cells analog_ip] .dont_touch true\nset_db [get_nets {clk pll_out}] .dont_touch true\n\n# ECO: incremental changes after signoff\n# 1. Apply RTL patch\n# 2. Re-synthesize affected logic\n# 3. Incremental placement:\necoPplace\n# 4. Incremental routing:\necoRoute -fixDRC\n\n# Max capacitance on critical path\nset_max_capacitance 0.05 [get_nets critical_data_bus]\n\n# Report path groups\nreport_timing -path_group cpu_critical -max_paths 10",
+        "synopsys": "# ── Advanced PD Commands — Synopsys Fusion Compiler ──────\n\n# Path group for critical paths\ngroup_path -name cpu_critical \\\n           -from [get_cells core/alu/*] \\\n           -to   [get_cells core/reg_file/*] \\\n           -weight 5\n\n# Multi-voltage domain\ncreate_power_domain -name VDDL_PD \\\n  -elements {low_power_block}\nset_voltage_area -domain VDDL_PD -coordinate {200 200 600 600}\n\n# Level shifter insertion\nset_level_shifter -domain_name VDDL_PD \\\n                  -applies_to inputs \\\n                  -rule low_to_high \\\n                  -cell_name LS_H2L\n\n# Dont touch\nset_dont_touch [get_cells analog_ip] true\n\n# ECO incremental flow\n# After RTL change:\ncompile_ultra -incremental\nplace_opt -effort low\nroute_opt -effort low\n\n# Critical path constraint\nset_max_capacitance 0.05 [get_nets critical_data_bus]\n\n# Path group timing report\nreport_timing -path_group cpu_critical -max_paths 10",
+        "xp": 25
+      },
+      {
+        "id": "pd-10-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read a comprehensive PD QOR report for an industry project.",
+        "keyPoints": [
+          "QOR = Quality of Results — holistic design health metric",
+          "WNS/TNS for each path group and scenario",
+          "Area breakdown: logic vs clock vs buffer cells",
+          "Power breakdown: dynamic vs leakage, clock vs logic",
+          "Congestion summary: global and local overflow",
+          "DRC status: must be zero at signoff"
+        ],
+        "reportContent": "# Final QOR Report — CPU Core Block\n# report_qor (FC) / report_design_model (Innovus)\n=================================================\n  Design: cpu_core_v2\n  Technology: 7nm FinFET\n  Target Frequency: 1.2 GHz (833ps period)\n=================================================\n  TIMING (SS corner, func mode)\n  Path Group        WNS(ns)  TNS(ns) Violators\n  cpu_critical      +0.021    0.000      0\n  default           +0.118    0.000      0\n  clk_gating        +0.234    0.000      0\n\n  TIMING (FF corner, hold)\n  Hold WNS:         +0.063 ns   PASS\n=================================================\n  AREA\n  Total cell area:  1,847,230 um²\n  Logic cells:        892,430 um²  (48.3%)\n  Clock cells:        423,180 um²  (22.9%)\n  Buffer/Inverter:    531,620 um²  (28.8%)\n=================================================\n  POWER (at 1.2GHz, 25°C)\n  Total:  2.83 W\n  Dynamic: 2.41 W  (85.2%)\n  Leakage: 0.42 W  (14.8%)\n  Clock:   0.87 W  (30.7% of total)\n=================================================\n  DRC: 0 violations  >> SIGNOFF CLEAN <<\n=================================================",
+        "xp": 20
+      },
+      {
+        "id": "pd-10-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Implement a path group and ECO flow for a CPU core in Innovus.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 10A: Innovus — CPU Core Advanced Flow\n\nWrite a script for CPU core timing closure:\n1. Create path group `cpu_alu` from `core/alu/*` to `core/rf/*` with weight 5\n2. Set dont_touch on `pll_core` cell and `clk_pll` net\n3. Set max capacitance 0.08pF on net `cpu_data_bus`\n4. Run timing optimization for the path group: `optDesign -postRoute -setup`\n5. Report timing for cpu_alu path group: max 10 paths\n6. Report area breakdown: `report_area -physical_hierarchy_level 2`\n7. Report power: `report_power -format detail`\n8. Apply ECO incremental placement: `ecoPplace`\n9. Apply ECO routing fix: `ecoRoute -fixDRC`\n10. Final DRC check and save",
+          "starterCode": "# Lab 10A: Innovus CPU Core Advanced Flow\n\n# 1. Create CPU ALU path group\n\n# 2. Set dont_touch on PLL\n\n# 3. Max capacitance on data bus\n\n# 4. Timing optimization\n\n# 5. Report path group timing\n\n# 6. Area breakdown\n\n# 7. Power report\n\n# 8. ECO placement\n\n# 9. ECO routing\n\n# 10. DRC and save\n",
+          "hints": [
+            "create_path_group -name cpu_alu -from [get_cells core/alu/*] -to [get_cells core/rf/*]",
+            "set_path_group_options cpu_alu -weight 5.0",
+            "set_db [get_cells pll_core] .dont_touch true",
+            "set_db [get_nets clk_pll] .dont_touch true",
+            "set_max_capacitance 0.08 [get_nets cpu_data_bus]",
+            "optDesign -postRoute -setup",
+            "report_timing -path_group cpu_alu -max_paths 10",
+            "report_area -physical_hierarchy_level 2",
+            "report_power -format detail",
+            "ecoPplace",
+            "ecoRoute -fixDRC",
+            "verify_drc; saveDesign ./checkpoints/cpu_core_final.enc"
+          ],
+          "requiredPatterns": [
+            "create_path_group",
+            "set_path_group_options",
+            "dont_touch",
+            "set_max_capacitance",
+            "optDesign -postRoute",
+            "report_timing -path_group",
+            "report_area",
+            "report_power",
+            "ecoPplace",
+            "ecoRoute",
+            "verify_drc"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Industry CPU PD uses path groups to prioritize critical paths (ALU to register file is the most critical in most CPUs). dont_touch protects verified IPs from modification. ECO flows make minimal changes post-signoff. max_capacitance limits wire loading on critical paths."
+        }
+      },
+      {
+        "id": "pd-10-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Implement advanced multi-voltage flow in Synopsys FC for an AI accelerator.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 10B: FC — AI Accelerator Multi-Voltage Flow\n\nWrite an FC script for AI accelerator with 2 voltage domains:\n1. Create power domain `VDDH` (high power, 1.0V) for MAC arrays\n2. Create power domain `VDDL` (low power, 0.7V) for control logic\n3. Set voltage area VDDL at coordinates {100 100 500 500}\n4. Group path `mac_critical` from `mac_array/*` to `accum_reg/*` weight=8\n5. Run `place_opt -effort high`\n6. Run `clock_opt`\n7. Run `route_auto`\n8. Run `route_opt -effort high`\n9. Report timing for mac_critical: max 10 paths\n10. Report power by domain: `report_power -domains [all_power_domains]`\n11. Save final block as `ai_accel_final`",
+          "starterCode": "# Lab 10B: FC AI Accelerator Multi-Voltage Flow\n\n# 1. Create VDDH power domain\n\n# 2. Create VDDL power domain\n\n# 3. Set VDDL voltage area\n\n# 4. Create mac_critical path group\n\n# 5. Placement optimization\n\n# 6. Clock optimization\n\n# 7. Auto routing\n\n# 8. Route optimization\n\n# 9. MAC critical timing report\n\n# 10. Power by domain\n\n# 11. Save\n",
+          "hints": [
+            "create_power_domain -name VDDH -elements {mac_array accum_reg}",
+            "create_power_domain -name VDDL -elements {control_logic}",
+            "set_voltage_area -domain VDDL -coordinate {100 100 500 500}",
+            "group_path -name mac_critical -from [get_cells mac_array/*] -to [get_cells accum_reg/*] -weight 8",
+            "place_opt -effort high",
+            "clock_opt",
+            "route_auto",
+            "route_opt -effort high",
+            "report_timing -path_group mac_critical -max_paths 10",
+            "report_power -domains [all_power_domains]",
+            "save_block -as ai_accel_final"
+          ],
+          "requiredPatterns": [
+            "create_power_domain -name VDDH",
+            "create_power_domain -name VDDL",
+            "set_voltage_area",
+            "group_path -name mac_critical",
+            "place_opt",
+            "clock_opt",
+            "route_auto",
+            "route_opt",
+            "report_timing -path_group mac_critical",
+            "report_power -domains",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "AI accelerators use multiple voltage domains — MAC arrays at high voltage for performance, control at low voltage for power efficiency. Path groups ensure the tool prioritizes MAC timing (most critical). Multi-voltage requires careful level shifter insertion at domain crossings and separate power planning for each domain."
+        }
+      },
+      {
+        "id": "pd-10-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Analyze a QOR report and identify the next optimization action.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 10C: QOR Analysis and Action Plan\n\nGiven this QOR report:\n```\nPath Group     WNS(ns)  TNS(ns)  Violations\ncpu_critical  -0.089   -0.412      4\nmemory_path   +0.234    0.000      0\ndefault       +0.401    0.000      0\n\nArea:  1,250,000 um²  (Util: 73.2%)\nPower: 1.8W  (Clock: 38%)\nDRC:   12 violations (M3_spacing x8, Via_enc x4)\n```\n\nWrite an action plan as Tcl comments AND commands:\n1. Priority order: what to fix first, second, third?\n2. Fix timing (Innovus): target cpu_critical path group\n3. Fix timing (FC): target cpu_critical path group  \n4. Fix DRC (Innovus): ECO route\n5. Clock power is 38% — is this high? Write command to analyze\n6. Utilization 73.2% — is there room for ECO cells?\n7. What is the minimum clock period achievable? (current WNS = -0.089ns)",
+          "hints": [
+            "# Priority: 1=DRC (blocks tapeout), 2=Timing (closes WNS), 3=Power (optimization)",
+            "optDesign -postRoute -setup -path_group cpu_critical    ;# Innovus timing fix",
+            "optimize_routed_design -path_group cpu_critical    ;# FC timing fix",
+            "ecoRoute -fixDRC    ;# Innovus DRC fix",
+            "# Clock 38% is HIGH — typical is 20-25% — investigate clock gating",
+            "report_clock_gating -status    ;# Check clock gating efficiency",
+            "# 73.2% util — yes, enough room for ECO buffer insertion (typically need <80%)",
+            "# Min period = current_period + |WNS| = current + 0.089ns"
+          ],
+          "requiredPatterns": [
+            "optDesign -postRoute",
+            "ecoRoute",
+            "report_clock_gating"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Priority order: DRC first (it blocks tapeout even if timing is perfect), then timing (4 violations must close), then power (optimization not blocking). Clock at 38% of power is abnormally high — investigate clock gating. 73.2% utilization is healthy with room for ECO cells. Min achievable period = current_period + 0.089ns."
+        }
+      },
+      {
+        "id": "pd-10-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your industry PD knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "An ECO (Engineering Change Order) is:", "options": ["A new design from scratch", "An incremental late-stage change to fix a specific issue without full re-run", "A DRC rule exception", "A timing constraint"], "answer": 1 },
+          { "q": "Path groups in PD tools are used to:", "options": ["Create new clock domains", "Prioritize timing optimization effort on specific paths", "Add power rings", "Define routing layers"], "answer": 1 },
+          { "q": "Multi-voltage design requires at domain crossings:", "options": ["Clock buffers only", "Level shifters to convert signal levels between voltage domains", "Extra routing resources only", "Wider power straps only"], "answer": 1 },
+          { "q": "Clock power at 38% of total is:", "options": ["Normal — clocks always dominate", "Abnormally high — investigate clock gating efficiency", "Insufficient — need more buffers", "Only relevant at signoff"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 11,
+    "bonusXp": 220,
+    "badge": "PD Interview Ready",
+    "subLevels": [
+      {
+        "id": "pd-11-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What PD interviews at top companies actually test.",
+        "keyPoints": [
+          "Flow knowledge: explain RTL-to-GDSII stage by stage",
+          "Tool commands: write Innovus/FC commands on the spot",
+          "Timing analysis: calculate setup/hold slack from given numbers",
+          "Debug: given a timing path, identify the violation cause",
+          "Congestion: explain what causes it and how to fix",
+          "Companies: Qualcomm, Intel, NVIDIA, AMD, MediaTek, Apple, Samsung",
+          "Script writing: write a Tcl automation script in 15 minutes"
+        ],
+        "content": "PD interviews at top companies test a combination of theoretical knowledge and practical tool experience. You will be asked to walk through the complete PD flow, explain timing analysis from first principles, debug a failing timing path from a report excerpt, write SDC constraints for a given design spec, and identify the cause of routing congestion. The most common command question: 'write the Innovus command to create a power ring with 10um width on M5 and M6.' The most common timing question: 'given a setup path report, calculate the slack.' Practice both until they are automatic.",
+        "xp": 20
+      },
+      {
+        "id": "pd-11-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Top 10 PD commands asked in every interview — Innovus and FC versions.",
+        "keyPoints": [
+          "1. floorPlan / initialize_floorplan",
+          "2. addRing / create_pg_ring",
+          "3. addStripe / create_pg_mesh",
+          "4. place_design / place_opt",
+          "5. ccopt_design / clock_opt",
+          "6. route_design / route_auto",
+          "7. verify_drc / verify_drc",
+          "8. report_timing / report_timing",
+          "9. streamOut / write_gds",
+          "10. optDesign / optimize_routed_design"
+        ],
+        "cadence": "# ── Top 10 Innovus Commands (Interview Reference) ────────\n\n# 1. Floorplan\nfloorPlan -ru 0.70 -aspectRatio 1.0 -coreMarginT 10 -coreMarginB 10 -coreMarginL 10 -coreMarginR 10\n\n# 2. Power ring\naddRing -nets {VDD VSS} -width 10 -spacing 2 -layer {top Metal5 bottom Metal5 left Metal6 right Metal6}\n\n# 3. Power straps\naddStripe -nets {VDD VSS} -width 4 -spacing 2 -direction horizontal -layer Metal5 -set_to_set_distance 40\n\n# 4. Placement\nplace_design -timing_driven -congestion_effort high\n\n# 5. CTS\nccopt_design\n\n# 6. Routing\nroute_design -viaOpt -wireOpt\n\n# 7. DRC\nverify_drc -limit 0\n\n# 8. Timing\nreport_timing -max_paths 10 -slack_lesser_than 0\n\n# 9. GDSII export\nstreamOut design.gds -mapFile gds_map.txt\n\n# 10. Post-route optimization\noptDesign -postRoute -setup\noptDesign -postRoute -hold",
+        "synopsys": "# ── Top 10 FC Commands (Interview Reference) ─────────────\n\n# 1. Floorplan\ninitialize_floorplan -utilization 0.70 -aspect_ratio 1.0 -core_offset {10 10 10 10}\n\n# 2. Power ring\ncreate_pg_ring -nets {VDD VSS} -mode core_ring -width 10 -spacing 2 -metal_list {M6 M5}\n\n# 3. Power mesh\ncreate_pg_mesh -nets {VDD VSS} -layer M5 -width 4 -pitch 40 -direction horizontal\n\n# 4. Placement\nplace_opt -effort high\n\n# 5. CTS\nclock_opt\n\n# 6. Routing\nroute_auto\n\n# 7. DRC\nverify_drc -output drc.rpt\n\n# 8. Timing\nreport_timing -max_paths 10 -slack_lesser_than 0\n\n# 9. GDSII export\nwrite_gds -output design.gds\n\n# 10. Post-route optimization\noptimize_routed_design",
+        "xp": 25
+      },
+      {
+        "id": "pd-11-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Classic interview question — read a timing path and identify the problem.",
+        "keyPoints": [
+          "Start by identifying startpoint and endpoint",
+          "Check: is data arrival > required time?",
+          "Find: which segment contributes most delay?",
+          "Check: is the clock path balanced?",
+          "Identify: is this setup or hold violation?",
+          "Propose: what would fix this path?"
+        ],
+        "reportContent": "# Interview Question: Explain this timing path and identify the problem\n\nStartpoint: core/mul_reg[7]/Q\nEndpoint:   core/acc_reg[7]/D\nPath type:  max (setup)\n\nCell/Net                  Delay  Arrival\nmul_reg[7]/CK→Q           0.28    0.28\nU_mul_add1 (FA)           0.45    0.73   <- SLOW\nU_mul_add2 (FA)           0.43    1.16\nU_mul_add3 (FA)           0.44    1.60\nU_mul_add4 (FA)           0.46    2.06   <- SLOW\nwire_net_47 (2.4mm)       1.15    3.21   <- LONG WIRE!\nU_mux_sel (MUX2)          0.31    3.52\nacc_reg[7]/D setup        0.00    3.52\n\nLaunch clock: 1.84ns\nCapture clock: 1.91ns\nClock period: 8.0ns\nSetup time: 0.45ns\n\n# Required = 8.0 + 1.91 - 0.45 = 9.46ns\n# Arrival  = 3.52 + 1.84 = 5.36ns\n# Slack    = 9.46 - 5.36 = +4.10ns  PASS (but barely for 7nm)",
+        "xp": 20
+      },
+      {
+        "id": "pd-11-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write the complete RTL-to-GDSII flow script in Innovus — the interview challenge.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 11A: Complete RTL-to-GDSII Flow in 1 Script\n# This is the classic interview challenge — write the full PD flow\n\nWrite a single Tcl script that executes the complete Innovus flow:\n1. Read MMMC, LEF, netlist, SDC → init_design\n2. Floorplan: 70% util, 1.0 aspect ratio, 10um margins\n3. Power: rings (width=8, M5/M6) + straps (width=3, pitch=40, H=M5, V=M6) + sroute\n4. Placement: timing-driven, high effort\n5. CTS: target_skew=100ps + ccopt_design + fix hold\n6. Routing: viaOpt + wireOpt + fix DRC\n7. Post-route opt: setup + hold\n8. Verify: DRC + connectivity + antenna\n9. Export: GDSII + SPEF + netlist\n10. Save checkpoint + report timing summary\n\nAll in ONE script with proper comments for each stage.",
+          "starterCode": "# Complete Innovus PD Flow Script\n# ================================================\n\n# ── STAGE 1: DESIGN INITIALIZATION ──────────────\n\n# ── STAGE 2: FLOORPLAN ──────────────────────────\n\n# ── STAGE 3: POWER PLANNING ─────────────────────\n\n# ── STAGE 4: PLACEMENT ──────────────────────────\n\n# ── STAGE 5: CLOCK TREE SYNTHESIS ───────────────\n\n# ── STAGE 6: ROUTING ────────────────────────────\n\n# ── STAGE 7: POST-ROUTE OPTIMIZATION ────────────\n\n# ── STAGE 8: VERIFICATION ───────────────────────\n\n# ── STAGE 9: EXPORT ─────────────────────────────\n\n# ── STAGE 10: SAVE AND REPORT ───────────────────\n\nputs \"Flow complete\"",
+          "hints": [
+            "Stage 1: read_mmmc; read_physical -lef; read_netlist; read_sdc; init_design",
+            "Stage 2: floorPlan -ru 0.70 -aspectRatio 1.0 -coreMarginT 10 ...",
+            "Stage 3: addRing + addStripe (H+V) + sroute",
+            "Stage 4: place_design -timing_driven -congestion_effort high",
+            "Stage 5: set_ccopt_property target_skew 0.1; ccopt_design; optDesign -postCTS -hold",
+            "Stage 6: route_design -viaOpt -wireOpt; ecoRoute -fixDRC",
+            "Stage 7: optDesign -postRoute -setup; optDesign -postRoute -hold",
+            "Stage 8: verify_drc; verify_connectivity; verify_antenna",
+            "Stage 9: streamOut design.gds; rcOut -spef; saveNetlist",
+            "Stage 10: saveDesign; report_timing_summary"
+          ],
+          "requiredPatterns": [
+            "init_design",
+            "floorPlan",
+            "addRing",
+            "addStripe",
+            "sroute",
+            "place_design",
+            "ccopt_design",
+            "route_design",
+            "optDesign -postRoute",
+            "verify_drc",
+            "streamOut",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The complete PD flow in one script is the ultimate interview test. Each stage must be in the correct order: init → floor → power → place → cts → route → postRoute → verify → export → save. Missing any stage or wrong order = design failure. This script represents 3-4 weeks of work on a real chip."
+        }
+      },
+      {
+        "id": "pd-11-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write the complete RTL-to-GDSII flow script in FC — the interview challenge.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 11B: Complete RTL-to-GDSII Flow in FC\n# Same challenge — full PD flow in one FC script\n\nWrite a single FC Tcl script for the complete flow:\n1. create_lib + read_verilog + link_block + read_sdc\n2. Floorplan: utilization=0.70, core_offset=10um all sides\n3. Power: create_pg_ring + create_pg_mesh (H+V) + connect_pg_net + create_pg_vias\n4. place_coarse + place_opt\n5. clock_opt + hold_fixing\n6. route_global + route_track + route_detail\n7. route_opt\n8. verify_drc + verify_lvs\n9. write_gds + write_verilog + write_sdc\n10. report_qor + save_block as `final_gdsii`",
+          "starterCode": "# Complete FC PD Flow Script\n# ================================================\n\n# ── STAGE 1: DESIGN INITIALIZATION ──────────────\n\n# ── STAGE 2: FLOORPLAN ──────────────────────────\n\n# ── STAGE 3: POWER PLANNING ─────────────────────\n\n# ── STAGE 4: PLACEMENT ──────────────────────────\n\n# ── STAGE 5: CLOCK TREE SYNTHESIS ───────────────\n\n# ── STAGE 6: ROUTING ────────────────────────────\n\n# ── STAGE 7: POST-ROUTE OPTIMIZATION ────────────\n\n# ── STAGE 8: VERIFICATION ───────────────────────\n\n# ── STAGE 9: EXPORT ─────────────────────────────\n\n# ── STAGE 10: QOR AND SAVE ──────────────────────\n\nputs \"FC Flow complete\"",
+          "hints": [
+            "Stage 1: create_lib -technology -ref_libs; read_verilog; link_block; read_sdc",
+            "Stage 2: initialize_floorplan -utilization 0.70 -core_offset {10 10 10 10}",
+            "Stage 3: create_pg_ring + create_pg_mesh(H) + create_pg_mesh(V) + connect_pg_net + create_pg_vias",
+            "Stage 4: place_coarse; place_opt -effort high",
+            "Stage 5: clock_opt; hold_fixing",
+            "Stage 6: route_global; route_track; route_detail",
+            "Stage 7: route_opt",
+            "Stage 8: verify_drc; verify_lvs",
+            "Stage 9: write_gds; write_verilog; write_sdc",
+            "Stage 10: report_qor; save_block -as final_gdsii"
+          ],
+          "requiredPatterns": [
+            "create_lib",
+            "link_block",
+            "initialize_floorplan",
+            "create_pg_ring",
+            "create_pg_mesh",
+            "place_opt",
+            "clock_opt",
+            "route_global",
+            "route_detail",
+            "route_opt",
+            "verify_drc",
+            "write_gds",
+            "report_qor",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The complete FC flow parallels Innovus but with different commands. FC splits routing into global → track → detail for granular control. verify_lvs replaces verify_connectivity. write_gds + write_verilog + write_sdc is the tapeout package. report_qor at the end gives the final design health summary for sign-off documentation."
+        }
+      },
+      {
+        "id": "pd-11-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Solve 5 classic PD interview questions.",
+        "xp": 25,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 11C: Classic PD Interview Questions\n\nSolve each question with a Tcl command or calculation:\n\nQ1: Floorplan with 800um die, 60% utilization, 15um margins.\n    Write both Innovus and FC commands.\n\nQ2: Clock period=10ns, input_delay=3ns, output_delay=2ns, Tsetup=0.5ns\n    Tcq=0.3ns. What is the max allowed logic delay from input to FF?\n\nQ3: IR drop is 120mV on 1.0V VDD. Is this acceptable?\n    If not, write the Innovus command to add more straps with pitch=25um.\n\nQ4: CTS shows global skew=450ps, target=100ps. What do you do?\n    Write the command to re-run CTS with tighter target.\n\nQ5: 5 DRC violations remain at signoff (M2_spacing x5).\n    Write the Innovus and FC commands to fix them.",
+          "hints": [
+            "Q1 Innovus: floorPlan -ru 0.60 -aspectRatio 1.0 -coreMarginT 15 -coreMarginB 15 -coreMarginL 15 -coreMarginR 15",
+            "Q1 FC: initialize_floorplan -utilization 0.60 -core_offset {15 15 15 15}",
+            "Q2: MaxLogic = Tclk - Tinput - Tcq - Tsetup = 10-3-0.3-0.5 = 6.2ns",
+            "Q3: 120mV/1000mV = 12% > 10% limit — VIOLATION. addStripe -nets {VDD VSS} -width 4 -spacing 2 -direction horizontal -layer Metal5 -set_to_set_distance 25",
+            "Q4: set_ccopt_property target_skew 0.050; ccopt_design  (tighten to 50ps)",
+            "Q5 Innovus: ecoRoute -fixDRC; Q5 FC: route_opt -effort high"
+          ],
+          "requiredPatterns": [
+            "floorPlan",
+            "initialize_floorplan",
+            "addStripe",
+            "set_ccopt_property",
+            "ccopt_design",
+            "ecoRoute"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Q1: Both tools floorplan commands with 60% util and 15um margins. Q2: 10-3-0.3-0.5=6.2ns. Q3: 12% > 10% = violation, add straps at 25um pitch. Q4: Re-run CTS with 50ps target. Q5: ECO route for DRC fix. These 5 questions cover the most common interview scenarios in PD roles."
+        }
+      },
+      {
+        "id": "pd-11-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "PD interview-style questions.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Most common PD interview coding question:", "options": ["Write a Python script", "Write complete Innovus/FC flow script from init to GDSII export", "Write a UVM testbench", "Implement an ALU"], "answer": 1 },
+          { "q": "If setup slack is -0.15ns at 10ns clock, minimum clock period is:", "options": ["9.85ns", "10.15ns", "10.30ns", "9.70ns"], "answer": 1 },
+          { "q": "verify_drc -limit 0 means:", "options": ["Allow up to 0 violations", "Stop immediately if any DRC violation found", "Skip DRC check", "Check 0 layers"], "answer": 1 },
+          { "q": "The correct order of PD stages is:", "options": ["Route → Place → CTS → Floorplan", "Floorplan → Power → Place → CTS → Route → Signoff", "CTS → Place → Route → Floorplan", "Signoff → Route → Place → Floorplan"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 12,
+    "bonusXp": 500,
+    "badge": "Physical Design Architect",
+    "subLevels": [
+      {
+        "id": "pd-12-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Complete RTL-to-GDSII — the final boss challenge.",
+        "keyPoints": [
+          "Full chip integration: multiple blocks assembled at top level",
+          "Top-level routing: connecting block I/Os through global router",
+          "Hierarchical PD: each block done separately, then assembled",
+          "Chip finishing: I/O ring, pad cells, power bump array (for flip-chip)",
+          "Timing closure at top level: interface timing between blocks",
+          "Final GDSII: merge all block GDS files into one master layout",
+          "Tapeout package: GDS + netlist + SDC + documentation → foundry"
+        ],
+        "content": "The final boss of physical design is completing a full chip from RTL to GDSII with clean timing, zero DRC, and clean LVS. In industry, this involves a hierarchical flow where each block (CPU, memory controller, I/O subsystem) is designed independently and then assembled at the chip level. Top-level routing connects the blocks. Timing is verified at all interfaces. The chip finisher adds power bump arrays (for flip-chip packaging), I/O pad rings, and filler cells. The final GDSII merges all GDS files — block-level and top-level — into one complete layout submitted to the foundry.",
+        "xp": 30
+      },
+      {
+        "id": "pd-12-tools",
+        "type": "tool_commands",
+        "title": "Tool Commands",
+        "icon": "🔧",
+        "summary": "Top-level integration and chip finishing commands.",
+        "keyPoints": [
+          "Hierarchical assembly: read block .enc/.dlib and assemble at top",
+          "Top-level routing: connects interface signals between blocks",
+          "addFiller: inserts filler cells to complete power rails (Innovus)",
+          "create_stdcell_filler: FC equivalent",
+          "streamMerge: merges multiple GDS files (Innovus)",
+          "Bump/pad ring: special handling for I/O and power pads",
+          "merge_lib: merges multiple design databases (FC)"
+        ],
+        "cadence": "# ── Top-Level Integration — Cadence Innovus ─────────────\n\n# Read assembled top-level design\nread_mmmc top_mmmc.view\nread_physical -lef {tech.lef stdcell.lef io_pad.lef}\nread_netlist top_chip.v\nread_sdc top_constraints.sdc\ninit_design\n\n# Place I/O pads\nplacePad -row TOP   -inst {pad_clk pad_rst pad_data[0]}\nplacePad -row RIGHT -inst {pad_vdd pad_vss}\n\n# Finish floorplan (fill corners etc)\nplaceIoFiller -prefix IOFILL \\\n              -cell {IOFILL8 IOFILL4 IOFILL2 IOFILL1}\n\n# Top-level routing (connect blocks)\nroute_design -globalDetail\n\n# Insert standard cell fillers\naddFiller -cell {FILL8 FILL4 FILL2 FILL1} \\\n          -prefix FILL\n\n# Final DRC and GDSII\nverify_drc -limit 0\nstreamOut ./tapeout/top_chip_final.gds \\\n          -mapFile gds_map.txt \\\n          -merge {cpu.gds memory.gds io.gds stdcell.gds}",
+        "synopsys": "# ── Top-Level Integration — Synopsys Fusion Compiler ──────\n\n# Create top-level library and load blocks\ncreate_lib -technology tech.tf \\\n           -ref_libs {cpu.dlib memory.dlib stdcell.ndm io.ndm} \\\n           top_chip.dlib\nread_verilog top_chip.v\nlink_block\nread_sdc top_constraints.sdc\n\n# Initialize chip floorplan\ninitialize_floorplan -die_area {0 0 3000 3000} \\\n                     -core_area {200 200 2800 2800}\n\n# Place I/O pads\nplace_io\n\n# Create filler cells for I/O ring\ncreate_io_filler -prefix IOFILL \\\n                 -reference {IOFILL8 IOFILL4}\n\n# Top-level routing\nroute_auto\n\n# Insert standard cell fillers\ncreate_stdcell_filler -filler_cells {FILL8 FILL4 FILL2 FILL1} \\\n                      -prefix FILL\n\n# Final checks and export\nverify_drc -output ./tapeout/top_drc.rpt\nwrite_gds -output ./tapeout/top_chip_final.gds",
+        "xp": 30
+      },
+      {
+        "id": "pd-12-report",
+        "type": "report_reading",
+        "title": "Report Reading",
+        "icon": "👀",
+        "summary": "Read the final tapeout package checklist for a complete SoC.",
+        "keyPoints": [
+          "All blocks must have zero DRC and LVS violations",
+          "Top-level timing must close across all block interfaces",
+          "Power integrity must be verified at chip level",
+          "Filler cells must be complete — no gaps in power rails",
+          "Documentation: design spec, flow log, signoff report",
+          "Foundry delivery: GDS + PDK version + process selection"
+        ],
+        "reportContent": "# Final SoC Tapeout Package Checklist\n# Design: MY_SOC_v1.0\n# Technology: TSMC 7nm FinFET (N7)\n# Target: Mass Production\n=====================================================\n  BLOCK SIGNOFF STATUS\n  Block         DRC   LVS   Setup  Hold  IR\n  CPU Core      PASS  PASS  PASS   PASS  PASS\n  Cache L2      PASS  PASS  PASS   PASS  PASS\n  DDR Ctrl      PASS  PASS  PASS   PASS  PASS\n  USB 3.1       PASS  PASS  PASS   PASS  PASS\n  AI Accel      PASS  PASS  PASS   PASS  PASS\n=====================================================\n  TOP-LEVEL SIGNOFF\n  Top DRC (Calibre):    PASS  (0 violations)\n  Top LVS (Calibre):    PASS  (0 mismatches)\n  Top Timing Setup:     PASS  WNS = +0.021ns\n  Top Timing Hold:      PASS  WNS = +0.055ns\n  Top IR Drop:          PASS  Max=89mV (8.9%)\n=====================================================\n  DELIVERABLES\n  [x] Final GDSII      (top_soc_v1.gds, 4.7GB)\n  [x] Final Netlist    (top_soc_v1.v)\n  [x] Final SDC        (top_soc_v1.sdc)\n  [x] SPEF files       (all corners)\n  [x] PG netlist       (power grid)\n  [x] Design spec      (v2.3)\n  [x] Signoff report   (all checks passed)\n=====================================================\n  >> TAPEOUT APPROVED — SUBMITTED TO TSMC <<\n=====================================================",
+        "xp": 30
+      },
+      {
+        "id": "pd-12-lab1",
+        "type": "lab_cadence",
+        "title": "Lab 1 — Cadence",
+        "icon": "🔵",
+        "summary": "Write the complete top-level chip integration and finishing script in Innovus.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 12A: FINAL BOSS — Innovus Chip Integration\n\nWrite the complete chip-level finishing script:\n1. Initialize design (MMMC, LEF, netlist, SDC, init_design)\n2. Assemble blocks using already-placed block abstracts\n3. Top-level floorplan: 3000x3000um, 200um margins\n4. Top-level power: rings (width=20, M8/M9) + straps (width=8, pitch=100, M7/M8)\n5. Top-level routing: `route_design -globalDetail`\n6. Insert fillers: `addFiller -cell {FILL8 FILL4 FILL2 FILL1} -prefix FILL`\n7. Final DRC with zero tolerance\n8. Export merged GDSII merging: cpu.gds, cache.gds, ddr.gds, stdcell.gds\n9. Export SPEF for all corners (ss, tt, ff)\n10. Export final netlist and SDC\n11. Print tapeout completion message\n12. Save final design state",
+          "starterCode": "# Lab 12A: Innovus Chip Integration — FINAL BOSS\n\n# 1. Initialize\n\n# 2. Top floorplan\n\n# 3. Top power (rings + straps)\n\n# 4. Top routing\n\n# 5. Insert fillers\n\n# 6. Final DRC (zero tolerance)\n\n# 7. Export merged GDSII\n\n# 8. Export SPEF (3 corners)\n\n# 9. Export netlist\n\n# 10. Export SDC\n\n# 11. Print completion\nputs \"== TAPEOUT PACKAGE COMPLETE ==\"\n\n# 12. Save\n",
+          "hints": [
+            "read_mmmc top_mmmc.view; read_physical -lef {tech.lef stdcell.lef}; read_netlist top.v; read_sdc top.sdc; init_design",
+            "floorPlan -d 3000 3000 200 200 200 200",
+            "addRing -nets {VDD VSS} -width 20 -spacing 5 -layer {top Metal8 bottom Metal8 left Metal9 right Metal9}",
+            "addStripe -nets {VDD VSS} -width 8 -spacing 4 -direction horizontal -layer Metal7 -set_to_set_distance 100",
+            "addStripe -nets {VDD VSS} -width 8 -spacing 4 -direction vertical -layer Metal8 -set_to_set_distance 100",
+            "route_design -globalDetail",
+            "addFiller -cell {FILL8 FILL4 FILL2 FILL1} -prefix FILL",
+            "verify_drc -limit 0 -report ./tapeout/top_drc.rpt",
+            "streamOut ./tapeout/top_final.gds -mapFile gds_map.txt -merge {cpu.gds cache.gds ddr.gds stdcell.gds}",
+            "rcOut -spef ./tapeout/top_ss.spef -corner ss",
+            "rcOut -spef ./tapeout/top_tt.spef -corner tt",
+            "rcOut -spef ./tapeout/top_ff.spef -corner ff",
+            "saveNetlist ./tapeout/top_final.v",
+            "saveDesign ./tapeout/top_tapeout.enc"
+          ],
+          "requiredPatterns": [
+            "init_design",
+            "floorPlan",
+            "addRing",
+            "addStripe",
+            "route_design",
+            "addFiller",
+            "verify_drc -limit 0",
+            "streamOut",
+            "rcOut -spef",
+            "saveNetlist",
+            "TAPEOUT",
+            "saveDesign"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Chip-level integration uses wider power structures (M8/M9 for chip-level power, M7/M8 for straps). addFiller ensures continuous power rails — gaps = disconnected cells. streamOut merges all block GDS into one top-level file. Three SPEF files (ss/tt/ff) cover all timing corners for PrimeTime signoff. This is the complete tapeout package."
+        }
+      },
+      {
+        "id": "pd-12-lab2",
+        "type": "lab_synopsys",
+        "title": "Lab 2 — Synopsys",
+        "icon": "🟠",
+        "summary": "Write the complete top-level chip integration and finishing script in FC.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 12B: FINAL BOSS — FC Chip Integration\n\nWrite the complete FC chip-level script:\n1. Create library with all block NDMs: {cpu.ndm cache.ndm ddr.ndm stdcell.ndm io.ndm}\n2. Read top netlist and SDC\n3. Initialize floorplan: die={0 0 3000 3000}, core={200 200 2800 2800}\n4. Top power: ring (width=20, M9/M8) + mesh H (M7, width=8, pitch=100) + mesh V (M8, width=8, pitch=100)\n5. Connect all PG nets and create via stacks M1-M9\n6. Place top-level cells: `place_opt -effort high`\n7. Clock optimization: `clock_opt`\n8. Route: route_global + route_track + route_detail\n9. Post-route: route_opt\n10. Insert fillers: `create_stdcell_filler -filler_cells {FILL8 FILL4 FILL2 FILL1}`\n11. Final DRC and LVS\n12. Export GDSII + netlist + SDC\n13. Final QOR report\n14. Save as `top_chip_tapeout`",
+          "starterCode": "# Lab 12B: FC Chip Integration — FINAL BOSS\n\n# 1. Create library with all blocks\n\n# 2. Read top netlist and SDC\n\n# 3. Floorplan\n\n# 4. Power network\n\n# 5. Connect PG nets\n\n# 6. Placement\n\n# 7. CTS\n\n# 8. Routing (3 stages)\n\n# 9. Post-route optimization\n\n# 10. Fillers\n\n# 11. DRC and LVS\n\n# 12. Export GDS + netlist + SDC\n\n# 13. QOR report\n\n# 14. Save tapeout block\nputs \"== FC TAPEOUT COMPLETE ==\"",
+          "hints": [
+            "create_lib -technology tech.tf -ref_libs {cpu.ndm cache.ndm ddr.ndm stdcell.ndm io.ndm} top_chip.dlib",
+            "read_verilog top_chip.v; link_block; read_sdc top.sdc",
+            "initialize_floorplan -die_area {0 0 3000 3000} -core_area {200 200 2800 2800}",
+            "create_pg_ring -nets {VDD VSS} -mode core_ring -width 20 -spacing 5 -metal_list {M9 M8}",
+            "create_pg_mesh -nets {VDD VSS} -layer M7 -width 8 -pitch 100 -direction horizontal",
+            "create_pg_mesh -nets {VDD VSS} -layer M8 -width 8 -pitch 100 -direction vertical",
+            "connect_pg_net -net VDD [get_pins -hierarchical */VDD]",
+            "connect_pg_net -net VSS [get_pins -hierarchical */VSS]",
+            "create_pg_vias -nets {VDD VSS} -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}",
+            "place_opt -effort high; clock_opt",
+            "route_global; route_track; route_detail; route_opt",
+            "create_stdcell_filler -filler_cells {FILL8 FILL4 FILL2 FILL1} -prefix FILL",
+            "verify_drc -output ./tapeout/top_drc.rpt; verify_lvs",
+            "write_gds -output ./tapeout/top_chip_final.gds",
+            "write_verilog -output ./tapeout/top_final.v",
+            "write_sdc -output ./tapeout/top_final.sdc",
+            "report_qor -scenarios [all_scenarios]",
+            "save_block -as top_chip_tapeout"
+          ],
+          "requiredPatterns": [
+            "create_lib",
+            "link_block",
+            "initialize_floorplan",
+            "create_pg_ring",
+            "create_pg_mesh",
+            "connect_pg_net",
+            "create_pg_vias",
+            "place_opt",
+            "clock_opt",
+            "route_global",
+            "route_detail",
+            "route_opt",
+            "create_stdcell_filler",
+            "verify_drc",
+            "verify_lvs",
+            "write_gds",
+            "write_verilog",
+            "write_sdc",
+            "report_qor",
+            "save_block"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The complete FC chip integration flow represents the pinnacle of physical design skill. Via stacks M1-M9 ensure power delivery from top metal to every cell. create_stdcell_filler ensures no gaps in power rails. The tapeout deliverable — GDS + netlist + SDC + QOR report — is submitted to the foundry. This is the industry standard flow at TSMC, Samsung, and Intel foundries."
+        }
+      },
+      {
+        "id": "pd-12-lab3",
+        "type": "lab_analysis",
+        "title": "Lab 3 — Analysis",
+        "icon": "📊",
+        "summary": "Final boss analysis — complete tapeout readiness assessment.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "tcl",
+          "instructions": "# Lab 12C: FINAL BOSS — Tapeout Readiness Assessment\n\nGiven this final signoff status:\n```\nCPU Block:    DRC=0, LVS=0, WNS=+0.12, Hold=+0.08, IR=78mV\nCache Block:  DRC=0, LVS=0, WNS=+0.05, Hold=+0.11, IR=82mV  \nDDR Block:    DRC=2, LVS=0, WNS=-0.03, Hold=+0.07, IR=91mV\nAI Block:     DRC=0, LVS=1, WNS=+0.18, Hold=+0.04, IR=88mV\nTop Level:    DRC=0, LVS=0, WNS=+0.09, Hold=+0.15, IR=95mV\n```\n\nFor each issue:\n1. Identify which blocks are NOT ready for tapeout and why\n2. DDR: write both Innovus and FC commands to fix DRC\n3. DDR: WNS=-0.03ns — write both tools' timing fix command\n4. AI: LVS has 1 mismatch — what does this mean and how to debug?\n5. Top IR=95mV on 1.0V VDD — is this passing? Calculate percentage\n6. Write the final tapeout approval criteria check as Tcl proc\n7. When all fixes are done, what are the 3 files sent to foundry?",
+          "hints": [
+            "NOT ready: DDR (DRC=2, WNS<0) and AI (LVS=1 mismatch)",
+            "DDR DRC fix Innovus: ecoRoute -fixDRC",
+            "DDR DRC fix FC: route_opt -effort high",
+            "DDR timing fix Innovus: optDesign -postRoute -setup",
+            "DDR timing fix FC: optimize_routed_design",
+            "AI LVS mismatch = layout doesn't match netlist — a net is missing or extra in layout",
+            "Top IR: 95/1000 = 9.5% < 10% PASSING (barely!)",
+            "3 files to foundry: GDSII, Netlist, Technology/DRC deck"
+          ],
+          "requiredPatterns": [
+            "ecoRoute",
+            "route_opt",
+            "optDesign",
+            "optimize_routed_design"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Tapeout readiness: DDR (DRC=2 violations, WNS=-0.03) = NOT READY. AI (LVS=1 mismatch) = NOT READY. CPU, Cache, Top = READY. LVS mismatch means a net in the layout doesn't match the netlist — debug by running Calibre LVS with verbose mode to find the exact mismatch. Top IR=9.5% is passing. The 3 deliverables to foundry: GDS layout, Verilog netlist (for verification), and process DRC rule deck compliance report."
+        }
+      },
+      {
+        "id": "pd-12-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Final boss quiz — complete physical design architect knowledge.",
+        "xp": 30,
+        "quiz": [
+          { "q": "addFiller / create_stdcell_filler is used to:", "options": ["Add timing cells", "Fill gaps in standard cell rows to complete power rail continuity", "Add clock buffers", "Fix DRC violations"], "answer": 1 },
+          { "q": "streamOut -merge in Innovus:", "options": ["Merges timing reports", "Merges multiple GDSII files from different blocks into one chip-level GDS", "Merges constraint files", "Merges netlist files"], "answer": 1 },
+          { "q": "LVS mismatch at chip level means:", "options": ["Timing is wrong", "Physical layout has a net/cell discrepancy vs the netlist — must fix before tapeout", "IR drop is high", "DRC violations exist"], "answer": 1 },
+          { "q": "The 3 mandatory deliverables to the foundry for tapeout are:", "options": ["GDS + timing report + power report", "GDS + netlist (Verilog) + SDC constraints", "GDS + DRC report + LVS report", "Netlist + SDC + LEF"], "answer": 1 }
+        ]
+      }
+    ]
+  }
+]

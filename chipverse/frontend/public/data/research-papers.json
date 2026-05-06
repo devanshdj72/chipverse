@@ -1,0 +1,418 @@
+{
+  "1": [
+    {
+      "title": "Some Semiconductor Device Physics Considerations and Clarifications",
+      "link": "https://ieeexplore.ieee.org/document/6203399",
+      "access": "IEEE"
+    },
+    {
+      "title": "The Physics of Semiconductor Devices",
+      "link": "https://ieeexplore.ieee.org/document/1069942",
+      "access": "IEEE"
+    },
+    {
+      "title": "Semiconductor Device Scaling",
+      "link": "https://ieeexplore.ieee.org/document/1717125",
+      "access": "IEEE"
+    },
+    {
+      "title": "Ultra Short Channel MOSFET Devices",
+      "link": "https://ieeexplore.ieee.org/document/235433",
+      "access": "IEEE"
+    },
+    {
+      "title": "Short-Channel Effects MOSFET",
+      "link": "https://ieeexplore.ieee.org/document/8214242",
+      "access": "IEEE"
+    },
+    {
+      "title": "Semiconductors at IBM",
+      "link": "https://ieeexplore.ieee.org/document/5390609",
+      "access": "IEEE"
+    },
+    {
+      "title": "FinFET Review",
+      "link": "https://ieeexplore.ieee.org/document/10592992",
+      "access": "IEEE"
+    },
+    {
+      "title": "SEMIDV Simulator",
+      "link": "https://arxiv.org/abs/2504.00214",
+      "access": "Free"
+    },
+    {
+      "title": "Device Model Methodologies",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12848222",
+      "access": "Free"
+    },
+    {
+      "title": "FinFET Comprehensive Review",
+      "link": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11509352",
+      "access": "Free"
+    }
+  ],
+  "0": [
+    {
+      "title": "VLSI Design Automation",
+      "link": "https://ieeexplore.ieee.org/document/1456791",
+      "access": "IEEE"
+    },
+    {
+      "title": "VLSI Layout",
+      "link": "https://ieeexplore.ieee.org/document/9792835",
+      "access": "IEEE"
+    },
+    {
+      "title": "Design Automation Research",
+      "link": "https://ieeexplore.ieee.org/document/4069660",
+      "access": "IEEE"
+    },
+    {
+      "title": "CAD Algorithms",
+      "link": "https://ieeexplore.ieee.org/document/898826",
+      "access": "IEEE"
+    },
+    {
+      "title": "VLSI Challenges",
+      "link": "https://ieeexplore.ieee.org/document/6367975",
+      "access": "IEEE"
+    },
+    {
+      "title": "Moore's Law Future",
+      "link": "https://ieeexplore.ieee.org/document/9073539",
+      "access": "IEEE"
+    },
+    {
+      "title": "Nano-scale VLSI",
+      "link": "https://ieeexplore.ieee.org/document/1500005",
+      "access": "IEEE"
+    },
+    {
+      "title": "CMOS Scaling Trends",
+      "link": "https://ieeexplore.ieee.org/document/8119702",
+      "access": "IEEE"
+    },
+    {
+      "title": "Physical Design",
+      "link": "https://arxiv.org/pdf/2409.04726",
+      "access": "Free"
+    },
+    {
+      "title": "5nm CMOS",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11123950",
+      "access": "Free"
+    }
+  ],
+  "2": [
+    {
+      "title": "CMOS Design Limits",
+      "link": "https://ieeexplore.ieee.org/document/5389000",
+      "access": "IEEE"
+    },
+    {
+      "title": "FinFET Scaling Limits",
+      "link": "https://ieeexplore.ieee.org/document/8850339",
+      "access": "IEEE"
+    },
+    {
+      "title": "Scaling Beyond 32nm",
+      "link": "https://ieeexplore.ieee.org/document/5227135",
+      "access": "IEEE"
+    },
+    {
+      "title": "CMOS Trends",
+      "link": "https://ieeexplore.ieee.org/document/8119702",
+      "access": "IEEE"
+    },
+    {
+      "title": "Moore's Law",
+      "link": "https://ieeexplore.ieee.org/document/9073539",
+      "access": "IEEE"
+    },
+    {
+      "title": "Beyond-CMOS Devices",
+      "link": "https://ieeexplore.ieee.org/document/7459273",
+      "access": "IEEE"
+    },
+    {
+      "title": "Design Challenges",
+      "link": "https://ieeexplore.ieee.org/document/5715133",
+      "access": "IEEE"
+    },
+    {
+      "title": "Beyond CMOS Architectures",
+      "link": "https://ieeexplore.ieee.org/document/8277427",
+      "access": "IEEE"
+    },
+    {
+      "title": "Sub-20nm CMOS",
+      "link": "https://arxiv.org/pdf/1509.00885",
+      "access": "Free"
+    },
+    {
+      "title": "5nm Scaling",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11123950",
+      "access": "Free"
+    }
+  ],
+  "3": [
+    {
+      "title": "GAA Nanosheet",
+      "link": "https://ieeexplore.ieee.org/document/7998183",
+      "access": "IEEE"
+    },
+    {
+      "title": "3nm Scaling Devices",
+      "link": "https://ieeexplore.ieee.org/document/9078841",
+      "access": "IEEE"
+    },
+    {
+      "title": "FinFET vs GAA",
+      "link": "https://ieeexplore.ieee.org/document/9790887",
+      "access": "IEEE"
+    },
+    {
+      "title": "Sub-5nm FinFET",
+      "link": "https://ieeexplore.ieee.org/document/1705215",
+      "access": "IEEE"
+    },
+    {
+      "title": "5nm/3nm Nodes",
+      "link": "https://ieeexplore.ieee.org/document/7947509",
+      "access": "IEEE"
+    },
+    {
+      "title": "FinFlex Platform",
+      "link": "https://ieeexplore.ieee.org/document/10019498",
+      "access": "IEEE"
+    },
+    {
+      "title": "Power Aware FinFET",
+      "link": "https://ieeexplore.ieee.org/document/8268429",
+      "access": "IEEE"
+    },
+    {
+      "title": "Sub 3nm Cells",
+      "link": "https://ieeexplore.ieee.org/document/9684021",
+      "access": "IEEE"
+    },
+    {
+      "title": "Negative Capacitance",
+      "link": "https://arxiv.org/pdf/2007.14448",
+      "access": "Free"
+    },
+    {
+      "title": "FinFET Review",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11509352",
+      "access": "Free"
+    }
+  ],
+  "5": [
+    {
+      "title": "TCAD Devices",
+      "link": "https://ieeexplore.ieee.org/document/9620465",
+      "access": "IEEE"
+    },
+    {
+      "title": "TCAD Design",
+      "link": "https://ieeexplore.ieee.org/document/681127",
+      "access": "IEEE"
+    },
+    {
+      "title": "Discretization TCAD",
+      "link": "https://ieeexplore.ieee.org/document/9491929",
+      "access": "IEEE"
+    },
+    {
+      "title": "Variability Simulation",
+      "link": "https://ieeexplore.ieee.org/document/7097662",
+      "access": "IEEE"
+    },
+    {
+      "title": "TCAD Tools",
+      "link": "https://ieeexplore.ieee.org/document/9583330",
+      "access": "IEEE"
+    },
+    {
+      "title": "3D Simulation",
+      "link": "https://ieeexplore.ieee.org/document/4286350",
+      "access": "IEEE"
+    },
+    {
+      "title": "Calibration",
+      "link": "https://ieeexplore.ieee.org/document/6417137",
+      "access": "IEEE"
+    },
+    {
+      "title": "Failure Analysis",
+      "link": "https://ieeexplore.ieee.org/document/9617254",
+      "access": "IEEE"
+    },
+    {
+      "title": "TCAD + GNN",
+      "link": "https://arxiv.org/pdf/2308.11624",
+      "access": "Free"
+    },
+    {
+      "title": "Radiation TCAD",
+      "link": "https://arxiv.org/pdf/2202.13769",
+      "access": "Free"
+    }
+  ],
+  "7": [
+    {
+      "title": "NN Accelerators",
+      "link": "https://ieeexplore.ieee.org/document/10472723",
+      "access": "IEEE"
+    },
+    {
+      "title": "CNN Accelerator",
+      "link": "https://ieeexplore.ieee.org/document/8925182",
+      "access": "IEEE"
+    },
+    {
+      "title": "DL Hardware",
+      "link": "https://ieeexplore.ieee.org/document/8991720",
+      "access": "IEEE"
+    },
+    {
+      "title": "On-chip Training",
+      "link": "https://ieeexplore.ieee.org/document/10051716",
+      "access": "IEEE"
+    },
+    {
+      "title": "Reconfigurable AI",
+      "link": "https://ieeexplore.ieee.org/document/9291854",
+      "access": "IEEE"
+    },
+    {
+      "title": "Neuromorphic CIM",
+      "link": "https://ieeexplore.ieee.org/document/10117704",
+      "access": "IEEE"
+    },
+    {
+      "title": "Neuromorphic AI",
+      "link": "https://arxiv.org/pdf/2604.04727",
+      "access": "Free"
+    },
+    {
+      "title": "NeuRRAM",
+      "link": "https://arxiv.org/pdf/2108.07879",
+      "access": "Free"
+    },
+    {
+      "title": "RRAM CIM",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9385482",
+      "access": "Free"
+    },
+    {
+      "title": "Analog AI",
+      "link": "https://arxiv.org/pdf/2502.04524",
+      "access": "Free"
+    }
+  ],
+  "8": [
+    {
+      "title": "Chiplet Packaging",
+      "link": "https://ieeexplore.ieee.org/document/9492335",
+      "access": "IEEE"
+    },
+    {
+      "title": "SoIC",
+      "link": "https://ieeexplore.ieee.org/document/8811194",
+      "access": "IEEE"
+    },
+    {
+      "title": "3D Integration",
+      "link": "https://ieeexplore.ieee.org/document/9816667",
+      "access": "IEEE"
+    },
+    {
+      "title": "Multi-Chiplet",
+      "link": "https://ieeexplore.ieee.org/document/10185396",
+      "access": "IEEE"
+    },
+    {
+      "title": "Platforms",
+      "link": "https://ieeexplore.ieee.org/document/10019534",
+      "access": "IEEE"
+    },
+    {
+      "title": "Packaging Trends",
+      "link": "https://ieeexplore.ieee.org/document/9684894",
+      "access": "IEEE"
+    },
+    {
+      "title": "TSV",
+      "link": "https://ieeexplore.ieee.org/document/6410399",
+      "access": "IEEE"
+    },
+    {
+      "title": "Deep TSV",
+      "link": "https://ieeexplore.ieee.org/document/5074158",
+      "access": "IEEE"
+    },
+    {
+      "title": "TSV Review",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5247381",
+      "access": "Free"
+    },
+    {
+      "title": "3D TSV Review",
+      "link": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10744783",
+      "access": "Free"
+    }
+  ],
+  "9": [
+    {
+      "title": "IEEE TED",
+      "link": "https://eds.ieee.org/publications/transactions-on-electron-devices",
+      "access": "Free"
+    },
+    {
+      "title": "IEEE TVLSI",
+      "link": "https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=92",
+      "access": "Free"
+    },
+    {
+      "title": "IEEE TSM",
+      "link": "https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=66",
+      "access": "Free"
+    },
+    {
+      "title": "VLSI Symposium",
+      "link": "https://www.vlsisymposium.org",
+      "access": "Free"
+    },
+    {
+      "title": "IEDM",
+      "link": "https://www.ieee-iedm.org",
+      "access": "Free"
+    },
+    {
+      "title": "DAC",
+      "link": "https://www.dac.com",
+      "access": "Free"
+    },
+    {
+      "title": "ISSCC",
+      "link": "https://www.isscc.org",
+      "access": "Free"
+    },
+    {
+      "title": "Nature Electronics",
+      "link": "https://www.nature.com/natelectron",
+      "access": "Free"
+    },
+    {
+      "title": "GLSVLSI",
+      "link": "https://www.glsvlsi.org",
+      "access": "Free"
+    },
+    {
+      "title": "IEEE JEDS",
+      "link": "https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=6245494",
+      "access": "Free"
+    }
+  ]
+}

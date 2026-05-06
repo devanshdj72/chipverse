@@ -9,7 +9,6 @@ import Leaderboard from "@/pages/Leaderboard";
 import BattleField from "@/pages/BattleField";
 import BattleRoom from "@/pages/BattleRoom";
 import RTLPath from "@/pages/paths/RTLPath";
-import VerificationPath from "@/pages/paths/VerificationPath";
 import PhysicalDesignPath from "@/pages/paths/PhysicalDesignPath";
 import AnalogPath from "@/pages/paths/AnalogPath";
 import FPGAPath from "@/pages/paths/FPGAPath";
@@ -22,6 +21,7 @@ import Achievements from "@/pages/Achievements";
 import Placement from "@/pages/Placement";
 import Messages from "@/pages/Messages";
 import AIAssistant from "@/components/AIAssistant";
+import VerificationPath from "@/pages/paths/VerificationPath";
 
 export default function App() {
   return (
@@ -48,6 +48,7 @@ export default function App() {
           <Route path="/achievements" component={Achievements} />
           <Route path="/placement" component={Placement} />
           <Route path="/profile" component={Profile} />
+          <Route path="/path/verification" component={VerificationPath} />
           <Route path="/messages" component={Messages} />
           <Route component={NotFound} />
         </Switch>

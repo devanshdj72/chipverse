@@ -1,0 +1,1399 @@
+[
+  {
+    "levelId": 0,
+    "bonusXp": 80,
+    "badge": "Analog Initiate",
+    "subLevels": [
+      {
+        "id": "analog-0-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What analog IC design is and why it still matters in an all-digital world.",
+        "keyPoints": [
+          "Every digital chip needs analog: power management, clocking, I/O drivers",
+          "ADC/DAC: bridge between analog real world and digital processing",
+          "PLL: generates stable clock frequencies from a reference",
+          "LDO: provides clean, regulated supply voltage to sensitive circuits",
+          "Analog design requires: SPICE simulation, layout, mismatch awareness",
+          "CMOS analog: uses MOSFETs in saturation as amplifying devices",
+          "Key challenge: process/voltage/temperature (PVT) variation"
+        ],
+        "content": "Analog IC design deals with continuous signals — voltages and currents that can take any value, not just 0 or 1. Every modern SoC has significant analog content: power management ICs regulate supply voltages, PLLs generate clocks, ADCs digitize sensor inputs, and I/O drivers interface with the outside world. Analog design requires deep understanding of MOSFET physics, circuit theory, and the ability to think about noise, mismatch, and PVT variation simultaneously.",
+        "xp": 20
+      },
+      {
+        "id": "analog-0-syntax",
+        "type": "syntax",
+        "title": "Key Concepts",
+        "icon": "🔤",
+        "summary": "Essential analog IC terminology and fundamental relationships.",
+        "keyPoints": [
+          "gm: transconductance — how much drain current changes per gate voltage change",
+          "ro: output resistance — models channel length modulation",
+          "Av: voltage gain = -gm × ro (for common-source amplifier)",
+          "VGS: gate-to-source voltage — controls drain current",
+          "VDS: drain-to-source voltage — must exceed VGS-VT for saturation",
+          "VT: threshold voltage — gate voltage to turn on the transistor",
+          "ID = (1/2) × μCox × (W/L) × (VGS - VT)²  (saturation)"
+        ],
+        "content": "// Key MOSFET equations:\n// Saturation region (VDS > VGS - VT):\n// ID = (μCox/2) × (W/L) × (VGS - VT)²\n//\n// Small-signal parameters:\n// gm = ∂ID/∂VGS = μCox × (W/L) × (VGS - VT)\n//    = √(2 × μCox × (W/L) × ID)\n//    = 2×ID / (VGS - VT)\n//\n// ro = 1 / (λ × ID)   where λ = channel length modulation\n//\n// Intrinsic gain: A0 = gm × ro = gm / (λ × ID)\n//\n// Example: ID=100μA, VGS-VT=0.2V\n// gm = 2×100μA / 0.2V = 1 mA/V\n// If λ=0.1V⁻¹: ro = 1/(0.1×100μA) = 100kΩ\n// Av = -gm×ro = -1mA/V × 100kΩ = -100 V/V",
+        "xp": 20
+      },
+      {
+        "id": "analog-0-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through MOSFET operating regions and identify saturation.",
+        "keyPoints": [
+          "Cutoff: VGS < VT → ID ≈ 0 (transistor OFF)",
+          "Linear/Triode: VDS < VGS - VT → ID depends on both VGS and VDS",
+          "Saturation: VDS ≥ VGS - VT → ID depends mainly on VGS",
+          "Analog circuits operate in saturation — current source behavior",
+          "Digital circuits switch between cutoff and triode",
+          "Overdrive voltage: VOD = VGS - VT (key design parameter)"
+        ],
+        "content": "// MOSFET Region Identification\n// Given: VT = 0.5V, VGS = 0.9V, VDS = 0.6V\n\n// Step 1: Is transistor ON?\n// VGS = 0.9V > VT = 0.5V → YES, transistor is ON\n\n// Step 2: Which region?\n// VOD = VGS - VT = 0.9 - 0.5 = 0.4V (overdrive)\n// Compare VDS vs VOD:\n// VDS = 0.6V > VOD = 0.4V → SATURATION ✓\n\n// Step 3: Calculate drain current\n// Assume: μCox × W/L = 500 μA/V²\n// ID = (500μA/V²/2) × (0.4V)² = 40 μA\n\n// Step 4: Small-signal parameters\n// gm = 2×ID/VOD = 2×40μA/0.4V = 200 μA/V\n// If λ=0.05V⁻¹: ro = 1/(0.05×40μA) = 500 kΩ\n// Av = -gm×ro = -200μA/V × 500kΩ = -100 V/V",
+        "xp": 20
+      },
+      {
+        "id": "analog-0-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Calculate MOSFET operating point and small-signal parameters.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 0: MOSFET Operating Point Analysis\n\nGiven NMOS transistor parameters:\n- VT = 0.4V\n- μCox × W/L = 2 mA/V²\n- λ = 0.1 V⁻¹\n- VGS = 0.8V\n- VDS = 1.0V\n\n**Solve:**\n1. Determine the operating region (show comparison of VDS vs VOD)\n2. Calculate drain current ID\n3. Calculate transconductance gm\n4. Calculate output resistance ro\n5. Calculate intrinsic voltage gain |Av| = gm × ro\n6. Is this transistor suitable as an amplifier? Why?\n\n**Show all work with units.**",
+          "starterCode": "// Lab 0: MOSFET Operating Point\n// Fill in your calculations below\n\n// Given:\nVT = 0.4V\nμCox_WL = 2e-3  // A/V² (2 mA/V²)\nlambda = 0.1     // V⁻¹\nVGS = 0.8V\nVDS = 1.0V\n\n// Step 1: Operating Region\nVOD = VGS - VT = ___V\n// VDS = ___ vs VOD = ___ → Region: ___\n\n// Step 2: Drain Current\n// ID = (μCox_WL / 2) × VOD²\nID = ___ × ___² = ___A = ___ μA\n\n// Step 3: Transconductance\n// gm = 2 × ID / VOD\ngm = 2 × ___ / ___ = ___ A/V = ___ mA/V\n\n// Step 4: Output Resistance\n// ro = 1 / (λ × ID)\nro = 1 / (___ × ___) = ___ Ω = ___ kΩ\n\n// Step 5: Intrinsic Gain\n// |Av| = gm × ro\nAv = ___ × ___ = ___V/V\n\n// Step 6: Amplifier suitability?\n// Answer: ___",
+          "hints": [
+            "VOD = VGS - VT = 0.8 - 0.4 = 0.4V",
+            "Since VDS=1.0V > VOD=0.4V → SATURATION",
+            "ID = (2mA/V² / 2) × (0.4)² = 1mA/V² × 0.16V² = 160μA",
+            "gm = 2×160μA / 0.4V = 800 μA/V = 0.8 mA/V",
+            "ro = 1/(0.1 × 160μA) = 1/16μA/V... wait: ro = 1/(0.1 × 160e-6) = 62.5kΩ",
+            "Av = 0.8mA/V × 62.5kΩ = 50 V/V"
+          ],
+          "requiredPatterns": [
+            "VOD",
+            "0.4",
+            "Saturation",
+            "160",
+            "0.8",
+            "62.5",
+            "50"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "VOD=0.4V, VDS=1.0V>VOD → Saturation. ID=160μA. gm=0.8mA/V. ro=62.5kΩ. Av=50V/V. This transistor is in saturation and suitable as an amplifier — it has significant gain and operates as a controlled current source."
+        }
+      },
+      {
+        "id": "analog-0-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your analog IC fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "For analog amplification, MOSFET must be in:", "options": ["Cutoff region", "Linear/Triode region", "Saturation region", "Breakdown region"], "answer": 2 },
+          { "q": "Transconductance gm represents:", "options": ["Gate-to-drain resistance", "Change in drain current per change in gate voltage", "Threshold voltage sensitivity", "Output conductance"], "answer": 1 },
+          { "q": "Channel length modulation parameter λ affects:", "options": ["Threshold voltage", "Output resistance ro = 1/(λ·ID)", "Transconductance gm", "Gate capacitance"], "answer": 1 },
+          { "q": "Overdrive voltage VOD is:", "options": ["VGS alone", "VDS alone", "VGS - VT — voltage above threshold", "VGS + VT"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 1,
+    "bonusXp": 90,
+    "badge": "Circuit Analyst",
+    "subLevels": [
+      {
+        "id": "analog-1-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Circuit fundamentals — KCL, KVL, RC filters, and frequency response.",
+        "keyPoints": [
+          "KCL: sum of currents entering a node = sum leaving (∑I = 0)",
+          "KVL: sum of voltages around any loop = 0 (∑V = 0)",
+          "RC low-pass filter: passes low frequencies, attenuates high",
+          "Pole frequency: f_p = 1/(2π×RC) — -3dB point",
+          "Transfer function: H(s) = Vout/Vin expressed in s-domain",
+          "Bode plot: magnitude (dB) and phase vs log frequency",
+          "-20dB/decade slope after each pole"
+        ],
+        "content": "KCL and KVL are the foundation of all circuit analysis. RC filters are the simplest frequency-selective networks — an RC low-pass filter has H(jω) = 1/(1+jωRC). At ω=1/RC (the pole), gain drops by 3dB (0.707×) and phase is -45°. Above this frequency, gain falls at -20dB/decade. Every analog circuit can be analyzed as a network of such poles and zeros.",
+        "xp": 20
+      },
+      {
+        "id": "analog-1-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "RC filter, transfer functions, and impedance calculations.",
+        "keyPoints": [
+          "Capacitor impedance: ZC = 1/(jωC) = 1/(sC)",
+          "Inductor impedance: ZL = jωL = sL",
+          "RC low-pass: H(s) = 1/(1 + sRC) = ωp/(s + ωp)",
+          "Pole frequency: ωp = 1/RC → fp = 1/(2πRC)",
+          "Gain at DC (s=0): H(0) = 1 (unity for RC LPF)",
+          "Gain at pole: |H(jωp)| = 1/√2 = -3.01 dB",
+          "Phase at pole: ∠H(jωp) = -45°"
+        ],
+        "content": "// RC Low-Pass Filter Analysis\n// Circuit: Vin → R → Vout, C from Vout to GND\n//\n// Using voltage divider:\n// H(s) = ZC/(R + ZC) = (1/sC)/(R + 1/sC)\n//       = 1/(1 + sRC)\n//\n// Pole at: s = -1/RC → ωp = 1/RC\n//\n// Example: R=10kΩ, C=100pF\n// ωp = 1/(10kΩ × 100pF) = 1/(1μs) = 1 Mrad/s\n// fp = ωp/(2π) = 159 kHz\n//\n// At f = 159kHz: gain = -3dB, phase = -45°\n// At f = 1.59MHz (10× pole): gain = -20dB, phase = -84°\n// At f = 15.9kHz (0.1× pole): gain = -0.04dB, phase = -5.7°",
+        "xp": 20
+      },
+      {
+        "id": "analog-1-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Derive the transfer function and Bode plot for an RC high-pass filter.",
+        "keyPoints": [
+          "RC HPF: C in series, R to ground",
+          "H(s) = R/(R + 1/sC) = sRC/(1 + sRC)",
+          "Zero at s=0 (DC is blocked)",
+          "Pole at s=-1/RC (same as LPF)",
+          "At high frequency: H→1 (unity gain)",
+          "Slope: +20dB/decade below pole"
+        ],
+        "content": "// RC High-Pass Filter: Vin → C → Vout, R to GND\n//\n// Step 1: Voltage divider\n// H(s) = R / (1/sC + R)\n//       = sRC / (1 + sRC)\n//\n// Step 2: Identify poles and zeros\n// Zero: numerator=0 → s=0 (at DC)\n// Pole: denominator=0 → s=-1/RC → ωp=1/RC\n//\n// Step 3: Bode plot behavior\n// ω << ωp: H ≈ jωRC → +20dB/dec, +90° phase\n// ω = ωp: |H| = 1/√2 = -3dB, phase = +45°\n// ω >> ωp: H ≈ 1 → 0dB, phase ≈ 0°\n//\n// Example: R=10kΩ, C=100pF → fp=159kHz\n// At 1kHz (<<fp): gain = 20log(1k/159k) = -44dB\n// At 159kHz (=fp): gain = -3dB\n// At 1MHz (>>fp): gain ≈ 0dB",
+        "xp": 20
+      },
+      {
+        "id": "analog-1-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Design an RC low-pass filter and calculate its frequency response.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 1: RC Filter Design\n\nDesign a low-pass RC filter for an anti-aliasing application:\n- Required -3dB frequency: 100 kHz\n- Available capacitor: C = 10 pF\n\n**Tasks:**\n1. Calculate required R for fp = 100 kHz\n2. Write the transfer function H(s)\n3. Calculate |H| (in dB) at: 10kHz, 100kHz, 1MHz, 10MHz\n4. Calculate phase ∠H at the same frequencies\n5. How many decades above fp is the 1MHz point? What is the expected attenuation?\n\n**Show all calculations with units.**",
+          "starterCode": "// Lab 1: RC Low-Pass Filter Design\n// Target: fp = 100kHz, C = 10pF\n\n// Step 1: Find R\n// fp = 1/(2π × R × C)\n// R = 1/(2π × fp × C)\nR = 1 / (2π × ___ × ___) = ___ Ω ≈ ___ kΩ\n\n// Step 2: Transfer function\n// H(s) = 1 / (1 + s×R×C)\n// ωp = 1/(R×C) = ___ rad/s\n// H(s) = ___ / (s + ___)\n\n// Step 3: Gain at each frequency\n// |H(jω)| = 1/√(1+(f/fp)²)\n// At 10kHz:   f/fp = ___, |H| = ___ = ___ dB\n// At 100kHz:  f/fp = ___, |H| = ___ = -3dB ✓\n// At 1MHz:    f/fp = ___, |H| = ___ = ___ dB\n// At 10MHz:   f/fp = ___, |H| = ___ = ___ dB\n\n// Step 4: Phase at each frequency\n// ∠H = -arctan(f/fp)\n// At 10kHz:  ∠H = -arctan(___) = ___°\n// At 100kHz: ∠H = -arctan(1) = -45°\n// At 1MHz:   ∠H = -arctan(___) = ___°\n\n// Step 5: Decades above fp and attenuation\n// 1MHz is ___ decades above 100kHz\n// Expected: -20dB × ___ decades = ___ dB",
+          "hints": [
+            "R = 1/(2π × 100e3 × 10e-12) = 1/(6.28×100e3×10e-12) = 159kΩ",
+            "|H| = 1/√(1+(f/fp)²) → at 10×fp: |H|=1/√(1+100)≈1/10 → -20dB",
+            "Phase: ∠H = -arctan(f/fp) → at 10×fp: -arctan(10) ≈ -84°",
+            "1MHz / 100kHz = 10× = 1 decade → -20dB attenuation"
+          ],
+          "requiredPatterns": [
+            "159",
+            "100kHz",
+            "-3dB",
+            "-20dB",
+            "1 decade",
+            "arctan",
+            "-45"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "R=159kΩ gives fp=100kHz. At 1MHz (10×fp=1 decade above): attenuation=-20dB. At 10MHz (100×fp=2 decades): -40dB. Phase at 1MHz≈-84°. The -20dB/decade roll-off above the pole is the key characteristic of a single-pole RC filter."
+        }
+      },
+      {
+        "id": "analog-1-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your circuit fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "RC low-pass filter pole frequency is:", "options": ["2πRC", "RC", "1/(2πRC)", "1/RC"], "answer": 2 },
+          { "q": "At the pole frequency, gain drops by:", "options": ["-6dB", "-3dB", "-20dB", "-1dB"], "answer": 1 },
+          { "q": "Above the pole, RC LPF rolls off at:", "options": ["-40dB/decade", "-20dB/decade", "-6dB/octave", "Both B and C are correct"], "answer": 3 },
+          { "q": "Phase of RC LPF at the pole frequency:", "options": ["0°", "+45°", "-45°", "-90°"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 2,
+    "bonusXp": 100,
+    "badge": "MOSFET Expert",
+    "subLevels": [
+      {
+        "id": "analog-2-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "MOSFET deep dive — IV characteristics, small-signal model, and body effect.",
+        "keyPoints": [
+          "NMOS: threshold voltage VTN > 0, enhanced by positive VGS",
+          "PMOS: threshold voltage VTP < 0, enhanced by negative VGS",
+          "Body effect: VSB increases VT → VT = VT0 + γ(√(2φF+VSB) - √(2φF))",
+          "Channel length modulation: ID ≈ (μCox/2)(W/L)(VGS-VT)²(1+λVDS)",
+          "Short-channel effects: below 100nm, simple square law breaks down",
+          "Small-signal model: gmVgs current source + ro + Cgs + Cgd",
+          "Unity gain frequency: fT = gm/(2π(Cgs+Cgd))"
+        ],
+        "content": "The MOSFET small-signal model is essential for amplifier analysis. Replace the MOSFET with: a voltage-controlled current source gmVgs (between drain and source), output resistance ro (drain to source), gate capacitance Cgs, and feedback capacitance Cgd (Miller effect). Body effect increases threshold voltage when source is not at the same potential as bulk — common in CMOS analog circuits where transistors are stacked.",
+        "xp": 20
+      },
+      {
+        "id": "analog-2-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "MOSFET model equations, body effect, and unity gain frequency.",
+        "keyPoints": [
+          "ID(sat) = (μnCox/2)(W/L)(VGS-VT)²(1+λVDS)",
+          "gm = √(2μnCox(W/L)ID) = 2ID/(VGS-VT)",
+          "gbs = gmb = gm × η where η = γ/(2√(2φF+VSB)) ≈ 0.1-0.2",
+          "fT = gm/(2π × Cgs) (ignoring Cgd for simplicity)",
+          "Cgs ≈ (2/3)WLCox + WCov (gate-source capacitance)",
+          "Miller effect: Cgd appears as Cgd(1+Av) at input",
+          "gm ∝ √(W/L × ID) — increase W/L or ID to increase gm"
+        ],
+        "content": "// Body Effect Example\n// NMOS: VT0=0.5V, γ=0.4V^0.5, φF=0.3V\n// VSB changes from 0 to 1V\n\n// At VSB=0:\n// VT = VT0 = 0.5V\n\n// At VSB=1V:\n// VT = 0.5 + 0.4×(√(0.6+1) - √(0.6))\n//    = 0.5 + 0.4×(√1.6 - √0.6)\n//    = 0.5 + 0.4×(1.265 - 0.775)\n//    = 0.5 + 0.4×0.49\n//    = 0.5 + 0.196 = 0.696V\n// Body effect increases VT by 0.196V\n\n// Unity gain frequency:\n// fT = gm/(2π×Cgs)\n// Example: gm=1mA/V, Cgs=100fF\n// fT = 1e-3/(2π×100e-15) = 1.59 GHz",
+        "xp": 20
+      },
+      {
+        "id": "analog-2-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Draw and analyze the complete small-signal model of a common-source amplifier.",
+        "keyPoints": [
+          "CS amplifier: input at gate, output at drain, source grounded",
+          "Small-signal: replace MOSFET with gmVgs + ro",
+          "Load resistor RD in parallel with ro",
+          "Av = -gm × (ro || RD)",
+          "Input resistance: Rin = ∞ (gate is insulated)",
+          "Output resistance: Rout = ro || RD"
+        ],
+        "content": "// Common-Source Amplifier Small-Signal Analysis\n// Circuit: VDD → RD → Vout (drain), Vin at gate, source to GND\n\n// Replace MOSFET with small-signal model:\n// - Gate: Vgs = Vin (gate tied to input)\n// - Drain: current source gm×Vgs flows from drain to source\n//          ro connects drain to source\n//          RD connects drain to AC ground (VDD is AC ground)\n\n// KCL at drain node (Vout):\n// Current through RD: (0 - Vout)/RD = Vout downward\n// Current through ro: (0 - Vout)/ro\n// Current from source: gm×Vgs = gm×Vin\n//\n// gm×Vin + Vout/RD + Vout/ro = 0\n// gm×Vin = -Vout×(1/RD + 1/ro)\n// Av = Vout/Vin = -gm / (1/RD + 1/ro)\n//             = -gm × (RD || ro)\n//\n// Example: gm=1mA/V, ro=100kΩ, RD=10kΩ\n// RD||ro = 10k||100k = 9.09kΩ\n// Av = -1mA/V × 9.09kΩ = -9.09 V/V",
+        "xp": 20
+      },
+      {
+        "id": "analog-2-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Analyze a common-source amplifier — find gain, bandwidth, and fT.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 2: Common-Source Amplifier Analysis\n\nNMOS CS amplifier with:\n- μnCox = 200 μA/V², W/L = 20\n- VT = 0.5V, λ = 0.05 V⁻¹\n- Bias: ID = 200 μA\n- RD = 20 kΩ\n- Cgs = 50 fF, Cgd = 10 fF\n\n**Solve:**\n1. Find VGS for the given ID (use ID = (μnCox/2)(W/L)(VGS-VT)²)\n2. Calculate gm and ro\n3. Calculate midband voltage gain Av = -gm(ro||RD)\n4. Miller capacitance at input: CM = Cgd(1+|Av|)\n5. Input pole frequency: fin = 1/(2πRsig×Cin) where Rsig=1kΩ, Cin=Cgs+CM\n6. Unity gain frequency fT",
+          "starterCode": "// Lab 2: CS Amplifier Analysis\n\n// Given:\nμnCox = 200e-6  // A/V²\nWL = 20\nVT = 0.5\nlambda = 0.05   // V⁻¹\nID = 200e-6     // A\nRD = 20e3       // Ω\nCgs = 50e-15    // F\nCgd = 10e-15    // F\nRsig = 1e3      // Ω (source resistance)\n\n// Step 1: Find VGS\n// ID = (μnCox/2)(W/L)(VGS-VT)²\n// VOD² = 2×ID / (μnCox×W/L)\nVOD_sq = 2 × ___ / (___ × ___) = ___\nVOD = √___ = ___V\nVGS = VT + VOD = ___ + ___ = ___V\n\n// Step 2: gm and ro\n// gm = 2×ID / VOD\ngm = 2 × ___ / ___ = ___ A/V = ___ mA/V\n// ro = 1/(λ×ID)\nro = 1/(___ × ___) = ___ Ω = ___ kΩ\n\n// Step 3: Voltage gain\n// Rout = ro || RD\nRout = (___ × ___) / (___ + ___) = ___ kΩ\nAv = -gm × Rout = -___ × ___ = ___ V/V\n\n// Step 4: Miller capacitance\n// CM = Cgd × (1 + |Av|)\nCM = ___ × (1 + ___) = ___ F = ___ fF\n\n// Step 5: Input pole\n// Cin = Cgs + CM\nCin = ___ + ___ = ___ F\n// fin = 1/(2π × Rsig × Cin)\nfin = 1/(2π × ___ × ___) = ___ Hz = ___ MHz\n\n// Step 6: Unity gain frequency\n// fT = gm / (2π × Cgs)\nfT = ___ / (2π × ___) = ___ Hz = ___ GHz",
+          "hints": [
+            "VOD² = 2×200μA/(200μA/V² × 20) = 400e-6/4e-3 = 0.1 → VOD=0.316V",
+            "gm = 2×200μA/0.316V = 1.265 mA/V",
+            "ro = 1/(0.05×200μA) = 100kΩ",
+            "RD||ro = 20k||100k = 16.67kΩ → Av = -1.265mA/V × 16.67kΩ = -21.1 V/V",
+            "CM = 10fF × (1+21.1) = 221 fF",
+            "Cin = 50fF + 221fF = 271fF → fin = 1/(2π×1kΩ×271fF) = 587 MHz"
+          ],
+          "requiredPatterns": [
+            "0.316",
+            "1.265",
+            "100",
+            "16.67",
+            "-21",
+            "Miller",
+            "221",
+            "fT"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "VOD=0.316V, gm=1.265mA/V, ro=100kΩ. Gain Av≈-21V/V. Miller effect multiplies Cgd by (1+21)=22× at the input, creating dominant input pole. This Miller multiplication is why cascode amplifiers are used in high-frequency designs — cascode eliminates Miller effect."
+        }
+      },
+      {
+        "id": "analog-2-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your MOSFET deep knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Body effect increases threshold voltage when:", "options": ["VDS increases", "VSB > 0 (source-bulk reverse bias)", "Temperature decreases", "W/L increases"], "answer": 1 },
+          { "q": "Miller effect means Cgd appears at input as:", "options": ["Cgd unchanged", "Cgd × (1 + |Av|) — multiplied by gain", "Cgd / |Av|", "Zero capacitance"], "answer": 1 },
+          { "q": "To increase gm while keeping ID constant:", "options": ["Decrease W/L", "Increase W/L — gm ∝ √(W/L × ID)", "Increase VT", "Increase λ"], "answer": 1 },
+          { "q": "Unity gain frequency fT is limited by:", "options": ["Channel length modulation", "Gate capacitance — fT = gm/(2πCgs)", "Output resistance", "Threshold voltage"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 3,
+    "bonusXp": 110,
+    "badge": "Current Mirror Designer",
+    "subLevels": [
+      {
+        "id": "analog-3-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Current mirrors — the fundamental analog building block for biasing.",
+        "keyPoints": [
+          "Current mirror copies a reference current to one or more outputs",
+          "Basic mirror: diode-connected reference + output transistor",
+          "Accuracy depends on VDS matching — basic mirror has finite ro error",
+          "Cascode mirror: stacks transistors to increase output impedance",
+          "Wilson mirror: feedback improves accuracy significantly",
+          "Current ratio: set by W/L ratios (Iout = Iref × (W/L)out/(W/L)ref)",
+          "Output impedance: basic=ro, cascode=gm×ro², Wilson≈gm×ro²"
+        ],
+        "content": "Current mirrors are used everywhere in analog ICs — they bias amplifiers, set operating points, and implement active loads. The basic NMOS mirror: the reference transistor has its gate connected to its drain (diode-connected), fixing VGS=VGS_ref. The output transistor shares the same VGS, so it carries the same current (if same W/L). The error comes from VDS mismatch — the diode-connected transistor has VDS=VGS, but the output transistor may have different VDS, causing different ID due to channel length modulation.",
+        "xp": 20
+      },
+      {
+        "id": "analog-3-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "Current mirror ratio, output impedance, and systematic error.",
+        "keyPoints": [
+          "Basic mirror: Iout = Iref × (W/L)out/(W/L)ref × (1+λ×ΔVDS)",
+          "Systematic error: ΔI/I = λ×(VDS_out - VDS_ref)",
+          "Basic mirror Rout = ro = 1/(λ×Iout)",
+          "Cascode mirror Rout = gm×ro × ro ≈ gm×ro²",
+          "Minimum output voltage: Vmin = VOD (basic), 2×VOD (cascode)",
+          "High-swing cascode: Vmin = VOD + VDS_sat ≈ 2×VOD",
+          "Current accuracy improves with longer L (smaller λ)"
+        ],
+        "content": "// Basic Current Mirror Analysis\n// NMOS: μnCox=200μA/V², Vref=100μA\n// M1 (reference): W/L=10, M2 (output): W/L=20\n\n// Current ratio:\n// Iout = Iref × (W/L)2/(W/L)1 = 100μA × 20/10 = 200μA\n\n// Find VGS (same for both transistors):\n// Iref = (μnCox/2)(W/L)1×VOD²\n// 100μA = (200μA/V²/2)×10×VOD²\n// VOD² = 100μA/1mA/V² = 0.1V²\n// VOD = 0.316V → VGS = VT + VOD = 0.816V\n\n// Systematic error (λ=0.1, VDS_out=1V, VDS_ref=VGS=0.816V):\n// ΔI/I = λ×(VDS_out - VDS_ref) = 0.1×(1-0.816) = 1.84%\n\n// Output impedance:\n// ro = 1/(λ×Iout) = 1/(0.1×200μA) = 50kΩ",
+        "xp": 20
+      },
+      {
+        "id": "analog-3-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a cascode current mirror with specified output impedance.",
+        "keyPoints": [
+          "Cascode stacks M3 on M1 (reference) and M4 on M2 (output)",
+          "M3 and M4 gates biased at VGS + 2×VOD from supply",
+          "Cascode improves Rout from ro to gm×ro²",
+          "Minimum output voltage = 2×VOD (two saturation stacks)",
+          "Used when high output impedance is needed (current source for diff pair)"
+        ],
+        "content": "// Cascode Current Mirror Design\n// Target: Iout=100μA, Rout>1MΩ\n// μnCox=200μA/V², L=1μm, λ=0.1V⁻¹\n\n// Step 1: Choose W and ID to get needed ro\n// Basic ro = 1/(λ×I) = 1/(0.1×100μA) = 100kΩ\n// Cascode Rout = gm×ro² — need gm\n\n// Step 2: Size transistors for VOD=0.2V\n// ID = (μnCox/2)(W/L)(VOD)²\n// 100μA = (200μA/V²/2)(W/L)(0.04)\n// W/L = 100μA/4μA = 25\n\n// Step 3: Calculate gm and ro\n// gm = 2×ID/VOD = 2×100μA/0.2V = 1 mA/V\n// ro = 1/(λ×ID) = 1/(0.1×100μA) = 100kΩ\n\n// Step 4: Cascode output impedance\n// Rout_cascode = gm×ro² (approximately)\n//              = 1mA/V × (100kΩ)² ... that's too large!\n// More accurate: Rout ≈ gm4×ro4×ro2\n// = 1mA/V × 100kΩ × 100kΩ = 10GΩ (ideal cascode)\n// Practical limit due to signal swing and other effects\n// Realistic: Rout ≈ 5-10 MΩ ✓\n\n// Step 5: Minimum output voltage\n// Vout_min = VGS4 - VT + VDS2_sat = VOD4 + VOD2 = 0.4V",
+        "xp": 20
+      },
+      {
+        "id": "analog-3-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Design a current mirror with specific current ratio and calculate accuracy.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 3: Current Mirror Design\n\nDesign a PMOS current mirror to source 500μA from a 100μA reference.\n\nParameters:\n- μpCox = 100 μA/V², |VTP| = 0.5V, λp = 0.08 V⁻¹\n- Reference transistor M1: W/L = 10\n- VDD = 1.8V\n\n**Tasks:**\n1. Find W/L of output transistor M2 for Iout = 500μA\n2. Calculate |VOD| for M1 (using Iref=100μA)\n3. Calculate |VGS| = |VTP| + |VOD|\n4. Calculate output impedance ro of M2\n5. If VSD_out = 0.8V vs VSD_ref = |VGS|, find systematic error %\n6. What minimum W/L ratio would halve the error (use longer L)?\n\n**Show all work.**",
+          "starterCode": "// Lab 3: PMOS Current Mirror\n// Iref=100μA, Iout=500μA\n\n// Given:\nμpCox = 100e-6   // A/V²\nVTP = -0.5       // V (threshold)\nlambda_p = 0.08  // V⁻¹\nIref = 100e-6    // A\nIout = 500e-6    // A\nWL_M1 = 10\nVDD = 1.8        // V\n\n// Step 1: W/L of M2\n// Current ratio: Iout/Iref = (W/L)2/(W/L)1\n// (W/L)2 = (W/L)1 × Iout/Iref\nWL_M2 = ___ × (___ / ___) = ___\n\n// Step 2: |VOD| for M1\n// Iref = (μpCox/2)(W/L)1 × VOD²\n// VOD² = 2×Iref / (μpCox × W/L)1\nVOD_sq = 2 × ___ / (___ × ___) = ___\nVOD = √___ = ___ V\n\n// Step 3: |VGS| of PMOS\n// |VGS| = |VTP| + |VOD|\nVGS = ___ + ___ = ___ V\n\n// Step 4: ro of M2\n// ro = 1/(λ × Iout)\nro_M2 = 1 / (___ × ___) = ___ Ω = ___ kΩ\n\n// Step 5: Systematic error\n// VSD_ref = |VGS| = ___ V\n// VSD_out = 0.8V\n// ΔI/I = λp × (VSD_out - VSD_ref)\nerror_pct = ___ × (___ - ___) × 100 = ___%\n\n// Step 6: To halve error\n// Error ∝ λ; longer L → smaller λ\n// New λ = λ/2... or double L\n// Answer: ___",
+          "hints": [
+            "WL_M2 = 10 × 500/100 = 50",
+            "VOD² = 2×100μA/(100μA/V²×10) = 0.2V² → VOD=0.447V",
+            "|VGS| = 0.5 + 0.447 = 0.947V",
+            "ro_M2 = 1/(0.08×500μA) = 25kΩ",
+            "Error = 0.08×(0.8-0.947)×100 = -1.18% (Iout is slightly less than ideal)"
+          ],
+          "requiredPatterns": [
+            "50",
+            "0.447",
+            "0.947",
+            "25",
+            "error",
+            "longer L",
+            "lambda"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "WL_M2=50 for 5:1 ratio. VOD=0.447V for M1. ro of M2=25kΩ. The systematic error is -1.18% because VSD_out < VSD_ref. To reduce error: use longer channel length (reduces λ), use cascode mirror, or use Wilson mirror with feedback."
+        }
+      },
+      {
+        "id": "analog-3-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your current mirror knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "In a basic current mirror, the reference transistor is:", "options": ["Common-source configured", "Diode-connected (gate=drain)", "Common-gate configured", "Source follower"], "answer": 1 },
+          { "q": "Current ratio in a mirror is set by:", "options": ["VDD value", "W/L ratios of transistors", "VT values", "Channel length modulation λ"], "answer": 1 },
+          { "q": "Cascode mirror has higher output impedance because:", "options": ["Lower current", "It stacks transistors: Rout ≈ gm×ro²", "Longer channel length", "Higher W/L ratio"], "answer": 1 },
+          { "q": "Minimum output voltage of cascode mirror:", "options": ["VOD", "VGS", "2×VOD", "VGS + VT"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 4,
+    "bonusXp": 120,
+    "badge": "Diff Pair Designer",
+    "subLevels": [
+      {
+        "id": "analog-4-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Differential pair — the core of every op-amp and comparator.",
+        "keyPoints": [
+          "Diff pair: two matched MOSFETs with shared tail current source",
+          "Differential mode: Vdiff = V1 - V2 — amplified",
+          "Common mode: Vcm = (V1+V2)/2 — rejected",
+          "CMRR: Common Mode Rejection Ratio = Adiff/Acm (want high)",
+          "Differential gain: Ad = gm × RD (with resistive load)",
+          "Common-mode gain: Acm = -RD/(2×RSS) (RSS = tail source impedance)",
+          "CMRR = Ad/Acm = gm × RSS (higher tail impedance → better CMRR)"
+        ],
+        "content": "The differential pair is the most important analog building block — it's the input stage of every op-amp, comparator, and sense amplifier. Two matched transistors share a tail current source. When a differential signal is applied, one transistor turns on more while the other turns on less — the difference is amplified. Common-mode signals (both inputs move together) are rejected because the tail current source is a high impedance — it doesn't let the total current change.",
+        "xp": 20
+      },
+      {
+        "id": "analog-4-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "Differential pair gain, CMRR, and input range calculations.",
+        "keyPoints": [
+          "Tail current: ISS splits equally → ID = ISS/2 per transistor",
+          "gm = √(2μnCox(W/L)(ISS/2)) = √(μnCox(W/L)ISS)",
+          "Differential gain: Ad = gm × RD (single-ended output)",
+          "Common-mode gain: Acm ≈ -1/(2gm_tail×RSS)",
+          "CMRR (dB) = 20log|Ad/Acm| = 20log(2gm×RSS)",
+          "Linear input range: |Vid| < √(ISS/(μnCox×W/L))",
+          "Active load (current mirror): doubles differential gain to gm×ro"
+        ],
+        "content": "// NMOS Differential Pair Analysis\n// ISS=200μA, RD=10kΩ, μnCox=200μA/V², W/L=20\n\n// Each transistor bias:\n// ID = ISS/2 = 100μA\n\n// gm of each transistor:\n// gm = √(2×μnCox×(W/L)×ID)\n//    = √(2×200μA/V²×20×100μA)\n//    = √(800μA²/V²) ... wait:\n//    = √(2×200e-6×20×100e-6) = √(800e-9) ... \n// Let's use gm = 2×ID/VOD first\n// VOD² = 2×ID/(μnCox×W/L) = 2×100μA/(200μA/V²×20) = 0.05\n// VOD = 0.224V\n// gm = 2×100μA/0.224V = 0.894 mA/V\n\n// Differential gain:\n// Ad = gm × RD = 0.894mA/V × 10kΩ = 8.94 V/V\n\n// CMRR with RSS=50kΩ (tail source impedance):\n// CMRR = 2×gm×RSS = 2×0.894mA/V×50kΩ = 89.4\n// CMRR_dB = 20log(89.4) = 39dB",
+        "xp": 20
+      },
+      {
+        "id": "analog-4-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Analyze a differential pair with active load (current mirror).",
+        "keyPoints": [
+          "Active load: PMOS current mirror replaces resistors",
+          "One mirror output combines with other diff pair output",
+          "Differential gain doubles: Ad = gm × ro_total",
+          "ro_total = ron || rop (NMOS and PMOS output resistances)",
+          "Ad = gm × (ron || rop) — single-ended output",
+          "This is the core of a two-stage op-amp first stage"
+        ],
+        "content": "// Diff Pair with PMOS Active Load\n// NMOS: ID=100μA, gm=0.894mA/V, ron=100kΩ\n// PMOS mirror: rop=80kΩ\n\n// Without active load (resistor RD=10kΩ):\n// Ad = gm × RD = 0.894 × 10k = 8.94 V/V\n// Output impedance limited by RD\n\n// With active load (current mirror):\n// The mirror current on left combines with NMOS current on right\n// Both signals add at the output node!\n// Ad_active = gm × (ron || rop)\n//           = 0.894mA/V × (100k || 80k)\n//           = 0.894mA/V × 44.4kΩ\n//           = 39.7 V/V  ← ~4x improvement!\n\n// Single-ended output impedance:\n// Rout = ron || rop = 44.4kΩ\n\n// Note: Full differential output (balanced) has Rout = ron || rop on each side\n// Single-ended output (typical op-amp) combines both halves",
+        "xp": 20
+      },
+      {
+        "id": "analog-4-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Design a differential pair with active load meeting gain and CMRR specs.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 4: Differential Pair Design\n\nDesign an NMOS differential pair with PMOS active load:\n- Supply: VDD = 1.8V\n- Tail current: ISS = 400μA\n- μnCox = 200μA/V², μpCox = 100μA/V²\n- λn = 0.05V⁻¹, λp = 0.08V⁻¹\n- Required: |Ad| ≥ 20 V/V\n\n**Tasks:**\n1. Choose W/L for NMOS pair (target VOD = 0.2V)\n2. Calculate gm for NMOS transistors\n3. Calculate ron (NMOS) and rop (PMOS) (use same ID=ISS/2)\n   - For PMOS, use same W/L as NMOS scaled by μn/μp\n4. Calculate Ad = gm × (ron || rop)\n5. Verify Ad ≥ 20 V/V\n6. Calculate CMRR if tail source Rss = 200kΩ",
+          "starterCode": "// Lab 4: Diff Pair with Active Load\nISS = 400e-6     // A\nID_each = ISS/2  // = 200μA per transistor\nμnCox = 200e-6   // A/V²\nμpCox = 100e-6   // A/V²  \nlambda_n = 0.05  // V⁻¹\nlambda_p = 0.08  // V⁻¹\nVOD_target = 0.2 // V\nRss = 200e3      // Ω\n\n// Step 1: NMOS W/L for VOD=0.2V\n// ID = (μnCox/2)(W/L)(VOD²)\n// W/L = 2×ID / (μnCox × VOD²)\nWL_n = 2 × ___ / (___ × ___²) = ___\n\n// Step 2: gm of NMOS\n// gm = 2×ID/VOD\ngm = 2 × ___ / ___ = ___ A/V = ___ mA/V\n\n// Step 3: ron and rop\nron = 1 / (___ × ___) = ___ Ω = ___ kΩ\n\n// PMOS: for same VOD and ID, size by mobility ratio\n// WL_p = WL_n × (μnCox/μpCox)\nWL_p = ___ × (___ / ___) = ___\nrop = 1 / (___ × ___) = ___ Ω = ___ kΩ\n\n// Step 4: Differential gain\nRout = (ron × rop) / (ron + rop) = ___ kΩ\nAd = gm × Rout = ___ × ___ = ___ V/V\n\n// Step 5: Verify\n// Ad = ___ ≥ 20? YES/NO\n\n// Step 6: CMRR\n// CMRR = 2 × gm × Rss\nCMRR = 2 × ___ × ___ = ___\nCMRR_dB = 20 × log10(___) = ___ dB",
+          "hints": [
+            "WL_n = 2×200μA/(200μA/V²×0.04) = 400μA/8μA = 50",
+            "gm = 2×200μA/0.2V = 2 mA/V",
+            "ron = 1/(0.05×200μA) = 100kΩ",
+            "WL_p = 50×(200/100) = 100; rop = 1/(0.08×200μA) = 62.5kΩ",
+            "Rout = 100k||62.5k = 38.5kΩ; Ad = 2mA/V×38.5kΩ = 77 V/V ✓",
+            "CMRR = 2×2mA/V×200kΩ = 800 → 58dB"
+          ],
+          "requiredPatterns": [
+            "50",
+            "2 mA/V",
+            "100",
+            "62.5",
+            "38.5",
+            "77",
+            "58 dB"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "WL_n=50 gives VOD=0.2V. gm=2mA/V. ron=100kΩ, rop=62.5kΩ. Rout=38.5kΩ. Ad=77V/V >> 20V/V target. CMRR=58dB. The active load (current mirror) enables much higher gain than resistive load by presenting high impedance."
+        }
+      },
+      {
+        "id": "analog-4-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your differential pair knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Why does a differential pair reject common-mode signals?", "options": ["Because transistors cancel", "High-impedance tail source prevents total current change", "Low-impedance load absorbs it", "Capacitors block DC"], "answer": 1 },
+          { "q": "CMRR improves when tail source impedance:", "options": ["Decreases", "Increases — CMRR = 2gm×RSS", "Stays constant", "Becomes capacitive"], "answer": 1 },
+          { "q": "Active load (current mirror) replaces resistors to:", "options": ["Save power", "Double the differential gain by combining both sides", "Reduce noise", "Increase bandwidth"], "answer": 1 },
+          { "q": "Each transistor in the diff pair carries:", "options": ["ISS (full tail current)", "ISS/2 (half tail current) at balance", "Zero current", "2×ISS"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 5,
+    "bonusXp": 130,
+    "badge": "Op-Amp Designer",
+    "subLevels": [
+      {
+        "id": "analog-5-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Two-stage CMOS op-amp — the most important analog circuit.",
+        "keyPoints": [
+          "Stage 1: Differential pair with active load → high gain, differential to single-ended",
+          "Stage 2: Common-source amplifier → additional gain and output drive",
+          "Total gain: A = A1 × A2 = (gm1×Rout1) × (gm2×Rout2)",
+          "Compensation: Miller capacitor Cc between stages prevents oscillation",
+          "GBW: Gain-Bandwidth product = gm1/(2π×Cc)",
+          "Phase margin: must be > 45° (typically design for 60°)",
+          "Slew rate: SR = ISS/Cc (how fast output can swing)"
+        ],
+        "content": "The two-stage CMOS op-amp consists of a differential input pair (stage 1) followed by a common-source amplifier (stage 2). Stage 1 converts the differential input to a single-ended signal with gain A1=gm1×Rout1. Stage 2 provides additional gain A2=gm6×Rout2. The total open-loop gain is typically 60-80dB. A Miller compensation capacitor Cc between the gate and drain of the second stage ensures stability — it creates a dominant pole that keeps phase margin positive when the loop is closed.",
+        "xp": 20
+      },
+      {
+        "id": "analog-5-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "Two-stage op-amp design equations — gain, GBW, phase margin, slew rate.",
+        "keyPoints": [
+          "First stage gain: A1 = -gm1 × (ro2 || ro4)",
+          "Second stage gain: A2 = -gm6 × (ro6 || ro7)",
+          "Total DC gain: A0 = A1 × A2",
+          "Dominant pole: ω_p1 = 1/(Cc × gm6 × Rout2) (Miller effect)",
+          "GBW = gm1 / (2π × Cc)",
+          "Second pole: ω_p2 = gm6 / CL (load capacitance pole)",
+          "Phase margin ≈ 90° - arctan(GBW/fp2)"
+        ],
+        "content": "// Two-Stage Op-Amp Design Equations\n// Typical design target: GBW=10MHz, CL=5pF, PM=60°\n\n// Step 1: Choose Cc for stability\n// For PM=60°: fp2 ≥ 2.2 × GBW\n// gm6/CL ≥ 2.2 × gm1/Cc\n// → gm6/gm1 ≥ 2.2 × CL/Cc\n// Typical: Cc = 0.2×CL to 0.5×CL\n\n// Step 2: gm1 from GBW\n// GBW = gm1/(2π×Cc)\n// gm1 = GBW × 2π × Cc\n// Example: GBW=10MHz, Cc=1pF:\n// gm1 = 10e6 × 2π × 1e-12 = 62.8 μA/V\n\n// Step 3: ISS from gm1\n// gm1 = √(2×μnCox×(W/L)1×ID1)\n// ID1 = ISS/2\n// Size M1 for target gm1\n\n// Step 4: Slew rate\n// SR = ISS/Cc = 2×ID1/Cc\n// Example: ISS=100μA, Cc=1pF\n// SR = 100μA/1pF = 100 V/μs",
+        "xp": 20
+      },
+      {
+        "id": "analog-5-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a complete two-stage op-amp meeting spec — step by step.",
+        "keyPoints": [
+          "Spec: GBW=10MHz, PM=60°, CL=5pF, SR≥20V/μs",
+          "Step 1: Choose Cc = 3pF (from CL/1.67)",
+          "Step 2: gm1 = GBW×2π×Cc = 188μA/V",
+          "Step 3: ISS from SR: ISS=SR×Cc=60μA (ISS/2=30μA each)",
+          "Step 4: Verify gm1 is achievable with ISS/2",
+          "Step 5: Size M6 for gm6 ≥ 2.2×GBW×2π×CL"
+        ],
+        "content": "// Two-Stage Op-Amp Complete Design\n// Spec: GBW=10MHz, CL=5pF, PM=60°, SR≥20V/μs\n// Process: μnCox=200μA/V², μpCox=100μA/V²\n\n// Step 1: Cc from PM requirement\n// PM=60°: ωp2 ≥ 2.2×GBW\n// Choose Cc=3pF (compromise between speed and area)\n\n// Step 2: gm1 for GBW\n// gm1 = GBW × 2π × Cc\n//     = 10MHz × 2π × 3pF = 188 μA/V\n\n// Step 3: ISS from slew rate\n// SR = ISS/Cc → ISS = SR × Cc = 20V/μs × 3pF = 60μA\n// Each diff pair transistor: ID = 30μA\n\n// Check gm1: gm = 2×ID/VOD, if VOD=0.3V:\n// gm = 2×30μA/0.3V = 200μA/V > 188μA/V ✓\n\n// Step 4: Size M6 for phase margin\n// ωp2 = gm6/CL ≥ 2.2 × 2π × 10MHz\n// gm6 ≥ 2.2 × 2π × 10MHz × 5pF\n// gm6 ≥ 691 μA/V → use 700μA/V\n\n// Step 5: M6 bias current\n// If VOD6=0.3V: ID6 = gm6×VOD6/2 = 700μA/V×0.3V/2 = 105μA\n\n// Total supply current: ISS + ID6 + mirror ≈ 60+105+60 = 225μA",
+        "xp": 20
+      },
+      {
+        "id": "analog-5-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Calculate key op-amp parameters from given transistor sizing.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 5: Two-Stage Op-Amp Analysis\n\nGiven two-stage CMOS op-amp:\n**Stage 1 (Diff Pair):**\n- M1,M2: NMOS, W/L=50, ISS=200μA, λn=0.05V⁻¹\n- M3,M4: PMOS active load, W/L=25, λp=0.1V⁻¹\n\n**Stage 2:**\n- M6: NMOS, W/L=200, ID6=500μA, λn=0.05V⁻¹\n- M7: PMOS, W/L=100, λp=0.1V⁻¹ (same ID6)\n\n**Compensation:** Cc=3pF, CL=10pF\nμnCox=200μA/V², μpCox=100μA/V²\n\n**Calculate:**\n1. gm1 (Stage 1 diff pair, ID=ISS/2=100μA)\n2. Rout1 = ro2||ro4\n3. A1 = gm1 × Rout1\n4. gm6 (Stage 2, ID6=500μA)\n5. Rout2 = ro6||ro7\n6. A2 = gm6 × Rout2\n7. Total gain A0 = A1 × A2 (in dB)\n8. GBW = gm1/(2π×Cc)\n9. Dominant pole frequency fp1\n10. Slew rate SR = ISS/Cc",
+          "starterCode": "// Lab 5: Two-Stage Op-Amp\n\n// Stage 1 parameters\nID1 = 100e-6    // ISS/2 = 100μA\nWL1_n = 50      // M1,M2 NMOS\nWL1_p = 25      // M3,M4 PMOS (active load)\nlambda_n = 0.05\nlambda_p = 0.10\nμnCox = 200e-6\nμpCox = 100e-6\n\n// Stage 1 gm1\n// VOD1² = 2×ID1/(μnCox×WL1_n)\nVOD1 = √(2×100μA/(200μA/V²×50)) = ___V\ngm1 = 2×ID1/VOD1 = ___ μA/V = ___ mA/V\n\n// Stage 1 output impedance\nro2 = 1/(lambda_n × ID1) = ___ kΩ   // NMOS\nro4 = 1/(lambda_p × ID1) = ___ kΩ   // PMOS\nRout1 = ro2 || ro4 = ___ kΩ\n\n// Stage 1 gain\nA1 = gm1 × Rout1 = ___ V/V\n\n// Stage 2 parameters\nID6 = 500e-6    // 500μA\nWL6_n = 200     // M6 NMOS\nWL7_p = 100     // M7 PMOS\n\n// Stage 2 gm6\nVOD6 = √(2×500μA/(200μA/V²×200)) = ___V\ngm6 = 2×ID6/VOD6 = ___ mA/V\n\n// Stage 2 output impedance\nro6 = 1/(lambda_n × ID6) = ___ kΩ\nro7 = 1/(lambda_p × ID6) = ___ kΩ\nRout2 = ro6||ro7 = ___ kΩ\n\n// Stage 2 gain\nA2 = gm6 × Rout2 = ___ V/V\n\n// Total gain\nA0 = A1 × A2 = ___ V/V\nA0_dB = 20×log10(A0) = ___ dB\n\n// GBW\nCc = 3e-12\nGBW = gm1/(2π×Cc) = ___ MHz\n\n// Dominant pole\n// fp1 = GBW/A0 (approximately)\nfp1 = GBW/A0 = ___ Hz\n\n// Slew Rate\nISS = 200e-6\nSR = ISS/Cc = ___ V/μs",
+          "hints": [
+            "VOD1=√(200e-6/10e-3)=0.141V; gm1=2×100μA/0.141=1.414mA/V",
+            "ro2=1/(0.05×100μA)=200kΩ; ro4=1/(0.1×100μA)=100kΩ; Rout1=66.7kΩ",
+            "A1=1.414mA/V×66.7kΩ=94.3 V/V",
+            "VOD6=√(2×500μA/(200μA/V²×200))=0.158V; gm6=6.32mA/V",
+            "ro6=40kΩ; ro7=20kΩ; Rout2=13.3kΩ; A2=84 V/V",
+            "A0=94.3×84=7921 → 78dB; GBW=1.414mA/V/(2π×3pF)=75MHz"
+          ],
+          "requiredPatterns": [
+            "1.414",
+            "66.7",
+            "94",
+            "6.32",
+            "13.3",
+            "84",
+            "78 dB",
+            "75 MHz",
+            "66.7 V/μs"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Stage1: gm1=1.414mA/V, Rout1=66.7kΩ, A1=94V/V. Stage2: gm6=6.32mA/V, Rout2=13.3kΩ, A2=84V/V. Total A0=7921≈78dB. GBW=75MHz. SR=200μA/3pF=66.7V/μs. These are typical values for a real CMOS op-amp."
+        }
+      },
+      {
+        "id": "analog-5-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your op-amp design knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Miller compensation capacitor Cc ensures stability by:", "options": ["Increasing gain", "Creating dominant pole — pushes other poles to higher frequency", "Increasing bandwidth", "Reducing noise"], "answer": 1 },
+          { "q": "GBW (Gain-Bandwidth Product) = gm1/(2π×Cc) means:", "options": ["Increasing Cc increases GBW", "Increasing gm1 increases GBW while Cc stays same", "GBW is fixed by technology", "Only bandwidth matters"], "answer": 1 },
+          { "q": "Slew rate SR = ISS/Cc is limited by:", "options": ["Output transistor size", "Tail current divided by compensation capacitor", "Load capacitance", "Power supply"], "answer": 1 },
+          { "q": "Phase margin must be > 45° because:", "options": ["It improves gain", "Less PM means ringing or oscillation in closed-loop response", "It increases bandwidth", "It reduces noise"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 6,
+    "bonusXp": 140,
+    "badge": "Noise Expert",
+    "subLevels": [
+      {
+        "id": "analog-6-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Noise in analog circuits — thermal noise, flicker noise, and noise figure.",
+        "keyPoints": [
+          "Thermal noise: v²n = 4kTRΔf (white noise, all frequencies)",
+          "Flicker (1/f) noise: S(f) = Kf/(f×Cox×WL) (decreases with frequency)",
+          "MOSFET drain thermal noise: i²nd = 4kTγgm",
+          "γ = 2/3 for long channel NMOS in saturation",
+          "Input-referred noise: divide all noise by amplifier gain²",
+          "SNR: Signal-to-Noise Ratio — want as high as possible",
+          "Noise figure NF: how much SNR degrades through amplifier"
+        ],
+        "content": "Noise limits the minimum detectable signal in any analog system. Thermal noise arises from random thermal motion of electrons — it's white (flat spectrum) and unavoidable. Flicker noise (1/f noise) arises from carrier trapping at oxide interfaces and dominates at low frequencies. In CMOS analog design, large transistors reduce 1/f noise (larger WL), while bias current and sizing trade noise against power. The input-referred noise voltage of a MOSFET amplifier is vn_in = √(8kTγ/(3gm)) for the dominant thermal noise term.",
+        "xp": 20
+      },
+      {
+        "id": "analog-6-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "Noise equations for resistors, MOSFETs, and amplifier chains.",
+        "keyPoints": [
+          "Resistor thermal noise: Sv = 4kTR (V²/Hz), Si = 4kT/R (A²/Hz)",
+          "MOSFET drain thermal noise: Sid = 4kT×(2/3)×gm",
+          "MOSFET 1/f noise: S1f = Kf/(Cox×W×L×f)",
+          "Input-referred noise voltage: Svin = Sid/gm² = 4kT×(2/3)/gm",
+          "Total input noise: Vn,rms = √(Svin × BW)",
+          "Friis formula: NFtotal = NF1 + (NF2-1)/G1 (first stage dominates)",
+          "Corner frequency: f_c where 1/f = thermal noise"
+        ],
+        "content": "// Noise Analysis Example\n// NMOS: gm=1mA/V, T=300K, BW=10MHz\n// k = 1.38×10⁻²³ J/K\n\n// Input-referred thermal noise power density:\n// Svin = 4kT×(2/3)/gm\n//      = 4 × 1.38e-23 × 300 × 0.667 / 1e-3\n//      = 4 × 1.38e-23 × 300 × 667\n//      = 1.104×10⁻¹⁷ V²/Hz\n//      = 11.04 nV/√Hz\n\n// RMS noise voltage over 10MHz bandwidth:\n// Vn_rms = √(Svin × BW)\n//        = √(1.104e-17 × 10e6)\n//        = √(1.104e-10)\n//        = 10.5 μV rms\n\n// To halve input-referred noise:\n// Double gm → requires 4× current or 4× W/L\n// Trade-off: noise vs power vs area",
+        "xp": 20
+      },
+      {
+        "id": "analog-6-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Calculate noise figure of a two-stage amplifier using Friis formula.",
+        "keyPoints": [
+          "Friis formula: NF_total = NF1 + (NF2-1)/G1",
+          "First stage dominates total noise figure",
+          "High first-stage gain suppresses second-stage noise contribution",
+          "Input matching: maximize power transfer to reduce NF",
+          "Trade-off: high gain first stage may limit linearity"
+        ],
+        "content": "// Friis Formula Example — Two-Stage Amplifier\n// Stage 1: G1=20dB=100, NF1=3dB=2 (linear)\n// Stage 2: G2=10dB=10,  NF2=6dB=4 (linear)\n\n// Total noise factor (linear):\n// F_total = F1 + (F2-1)/G1\n//         = 2 + (4-1)/100\n//         = 2 + 0.03\n//         = 2.03\n\n// Total NF:\n// NF_total = 10×log10(2.03) = 3.07 dB\n// Nearly equal to stage 1 alone (3dB)!\n// Stage 2 contributes only 0.07dB → first stage dominates\n\n// If stage 1 gain is reduced to G1=10dB=10:\n// F_total = 2 + (4-1)/10 = 2 + 0.3 = 2.3\n// NF = 3.62 dB — stage 2 contributes 0.62dB\n\n// Key insight: maximize first-stage gain to minimize NF\n// But: high gain reduces dynamic range and linearity\n// Design trade-off common in RF/sensor amplifiers",
+        "xp": 20
+      },
+      {
+        "id": "analog-6-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Calculate input-referred noise and SNR for a sensor interface amplifier.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 6: Noise Analysis\n\nA sensor interface amplifier has:\n- Input NMOS transistor: gm=2mA/V, γ=2/3\n- Load resistor: RL=10kΩ\n- Bandwidth: BW=1MHz\n- T=300K, k=1.38×10⁻²³ J/K\n- Signal amplitude: Vsig=100μV (peak)\n\n**Tasks:**\n1. Input-referred thermal noise PSD from MOSFET: Svin_MOS = 4kT(2/3)/gm\n2. Input-referred thermal noise PSD from RL: Svin_RL = 4kT×RL/Av² where Av=gm×RL\n3. Total input noise PSD: Svin_total = Svin_MOS + Svin_RL  \n4. RMS input noise voltage: Vn_rms = √(Svin_total × BW)\n5. SNR = 20×log10(Vsig_rms / Vn_rms) in dB\n   where Vsig_rms = Vsig/√2",
+          "starterCode": "// Lab 6: Noise Analysis\n// Constants\nk = 1.38e-23    // J/K\nT = 300         // K\n4kT = 4×k×T = 4 × 1.38e-23 × 300 = ___ J (= ___ ×10⁻²⁰)\n\n// Amplifier params\ngm = 2e-3       // A/V (2mA/V)\nRL = 10e3       // Ω\nAv = gm × RL = ___ V/V\nBW = 1e6        // Hz (1MHz)\ngamma = 2/3\n\n// Step 1: MOSFET input-referred thermal noise PSD\n// Svin_MOS = 4kT × gamma / gm\nSvin_MOS = ___ × ___ / ___ = ___ V²/Hz\n           = ___ nV/√Hz (noise density)\n\n// Step 2: Load resistor input-referred noise\n// Noise from RL: Sv_RL = 4kT×RL\n// Input-referred: divide by Av²\nSv_RL = 4kT × RL = ___ V²/Hz\nSvin_RL = Sv_RL / Av² = ___ / ___² = ___ V²/Hz\n\n// Step 3: Total input noise PSD\nSvin_total = Svin_MOS + Svin_RL = ___ V²/Hz = ___ nV²/Hz\n\n// Step 4: RMS noise voltage\nVn_rms = √(Svin_total × BW) = √(___ × ___) = ___ V = ___ μV\n\n// Step 5: SNR\nVsig_rms = 100e-6 / √2 = ___ μV\nSNR_dB = 20 × log10(Vsig_rms / Vn_rms) = ___ dB",
+          "hints": [
+            "4kT = 4×1.38e-23×300 = 1.656×10⁻²⁰ J",
+            "Svin_MOS = 1.656e-20 × (2/3) / 2e-3 = 5.52e-18 V²/Hz = 2.35 nV/√Hz",
+            "Av = 2mA/V × 10kΩ = 20 V/V",
+            "Sv_RL = 1.656e-20 × 10kΩ = 1.656e-16 V²/Hz; Svin_RL = 1.656e-16/400 = 4.14e-19",
+            "Svin_total = 5.52e-18 + 0.414e-18 = 5.93e-18 V²/Hz",
+            "Vn_rms = √(5.93e-18 × 1e6) = √(5.93e-12) = 2.44μV rms",
+            "Vsig_rms = 70.7μV; SNR = 20log(70.7/2.44) = 29.2dB"
+          ],
+          "requiredPatterns": [
+            "5.52",
+            "2.35 nV",
+            "20 V/V",
+            "4.14",
+            "5.93",
+            "2.44",
+            "29.2 dB"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "MOSFET dominates input noise at 2.35nV/√Hz. RL contributes only 0.64nV/√Hz after input-referral (load noise is suppressed by Av²=400). Total Vn_rms=2.44μV. With 100μV peak signal (70.7μV rms), SNR=29.2dB. To improve: increase gm (quadruples current or doubles W/L for 3dB improvement)."
+        }
+      },
+      {
+        "id": "analog-6-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your noise analysis knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Thermal noise of a resistor scales with:", "options": ["R²", "1/R", "R (proportional)", "√R"], "answer": 2 },
+          { "q": "Flicker (1/f) noise is reduced by:", "options": ["Increasing bias current", "Using larger transistors (bigger WL)", "Higher frequency operation", "Lower temperature"], "answer": 1 },
+          { "q": "Friis formula shows that in a cascade:", "options": ["Last stage noise dominates", "First stage noise dominates total NF", "All stages contribute equally", "NF multiplies between stages"], "answer": 1 },
+          { "q": "To halve input-referred thermal noise of MOSFET:", "options": ["Halve gm", "Double gm — since Svin ∝ 1/gm", "Double the load", "Halve temperature"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 7,
+    "bonusXp": 150,
+    "badge": "Data Converter Expert",
+    "subLevels": [
+      {
+        "id": "analog-7-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "ADC and DAC fundamentals — resolution, speed, and architecture trade-offs.",
+        "keyPoints": [
+          "ADC: converts analog voltage to N-bit digital code",
+          "Resolution: 1 LSB = Vref/(2^N) — voltage per digital step",
+          "INL: Integral Non-Linearity — deviation from ideal transfer curve",
+          "DNL: Differential Non-Linearity — deviation in step size",
+          "SNR (ideal N-bit ADC) = 6.02×N + 1.76 dB",
+          "ENOB: Effective Number of Bits — accounts for real-world non-idealities",
+          "Speed-resolution trade-off: flash ADC is fastest but uses 2^N comparators"
+        ],
+        "content": "ADCs are in every sensing system — they convert the analog world (temperature, pressure, audio, RF signals) into digital numbers for processing. The key specifications are: resolution (N bits → 2^N levels), sampling rate (samples per second), SNR, and power consumption. Different architectures optimize different parameters: Flash ADC is fastest (single clock) but uses 2^N-1 comparators (256 for 8-bit). SAR ADC is efficient (N clocks for N bits) and dominates IoT/sensor applications. Sigma-delta ADC achieves high resolution by oversampling and noise shaping.",
+        "xp": 20
+      },
+      {
+        "id": "analog-7-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "ADC/DAC performance metrics and architecture comparisons.",
+        "keyPoints": [
+          "LSB = Vref / 2^N  (voltage resolution)",
+          "Ideal SNR = 6.02N + 1.76 dB (N-bit ADC)",
+          "ENOB = (SNR_measured - 1.76) / 6.02",
+          "SFDR: Spurious-Free Dynamic Range — largest spur below fundamental",
+          "Nyquist: fsample ≥ 2 × fsignal_max",
+          "Flash: 1 clock, 2^N-1 comparators — area limited",
+          "SAR: N clocks, 1 comparator — area efficient, moderate speed"
+        ],
+        "content": "// ADC Performance Calculation\n// 12-bit SAR ADC, Vref=1.8V, fs=1Msps\n\n// Resolution:\n// 1 LSB = 1.8V / 2^12 = 1.8V / 4096 = 439 μV/LSB\n\n// Ideal SNR (12-bit):\n// SNR = 6.02×12 + 1.76 = 72.24 + 1.76 = 74 dB\n\n// If measured SNR = 70 dB:\n// ENOB = (70 - 1.76)/6.02 = 68.24/6.02 = 11.34 bits\n// ADC behaves like 11.34-bit ideal ADC\n\n// Nyquist limit:\n// Max input frequency = fs/2 = 500 kHz\n\n// Power figure of merit (FoM):\n// FoM = Power / (2^ENOB × fs)  [J/conversion]\n// Lower is better — state-of-art ≈ 1-10 fJ/conv",
+        "xp": 20
+      },
+      {
+        "id": "analog-7-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through a SAR ADC conversion step by step.",
+        "keyPoints": [
+          "SAR = Successive Approximation Register",
+          "Binary search algorithm in hardware",
+          "N steps for N-bit result",
+          "Step 1: Set MSB=1, compare → if Vin>Vref/2, keep; else clear",
+          "Each step halves the search range",
+          "Final register = digital representation of Vin"
+        ],
+        "content": "// 4-bit SAR ADC Conversion\n// Vref=1.6V, Vin=0.9V, LSB=1.6/16=0.1V\n\n// Step 1: Try MSB (bit 3) = 1 → DAC=1.6/2=0.8V\n// Compare: Vin=0.9V > DAC=0.8V → KEEP bit3=1\n// Code so far: 1000 (0.8V)\n\n// Step 2: Try bit 2 = 1 → DAC=0.8+0.4=1.2V\n// Compare: Vin=0.9V < DAC=1.2V → CLEAR bit2=0\n// Code so far: 1000 (0.8V)\n\n// Step 3: Try bit 1 = 1 → DAC=0.8+0.2=1.0V\n// Compare: Vin=0.9V < DAC=1.0V → CLEAR bit1=0\n// Code so far: 1000 (0.8V)\n\n// Step 4: Try bit 0 = 1 → DAC=0.8+0.1=0.9V\n// Compare: Vin=0.9V = DAC=0.9V → KEEP bit0=1\n// Final code: 1001 = 9 decimal\n\n// Verify: 9 × 0.1V/LSB = 0.9V ✓\n// Quantization error = 0.9 - 0.9 = 0V (perfect conversion!)",
+        "xp": 20
+      },
+      {
+        "id": "analog-7-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Design ADC specifications and perform SAR conversion trace.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 7: ADC Design and Analysis\n\n**Part A: ADC Specification**\nFor an audio ADC (CD quality: 16-bit, 44.1kSps):\n1. Calculate 1 LSB voltage (Vref=3.3V)\n2. Calculate ideal SNR in dB\n3. Minimum sampling rate (Nyquist)\n4. If measured SNR = 92dB, find ENOB\n\n**Part B: SAR Conversion**\nTrace a 3-bit SAR ADC conversion:\n- Vref = 8V, Vin = 5.5V\n- LSB = Vref/2^3 = 1V\n\nComplete the binary search table:\n| Step | Bit | DAC | Compare | Decision |\n|------|-----|-----|---------|----------|\n|  1   |  B2 | 4V  | 5.5>4?  | KEEP B2=1 |\n|  2   |  B1 | ?V  | 5.5>?   | ??? |\n|  3   |  B0 | ?V  | 5.5>?   | ??? |\n\nFinal digital code and quantization error.",
+          "starterCode": "// Lab 7: ADC Analysis\n\n// PART A: Audio ADC Specs\nN = 16          // bits\nVref = 3.3      // V\nfs = 44100      // Hz (44.1kSps)\n\n// 1 LSB:\nLSB = Vref / 2^N = 3.3 / ___ = ___ V = ___ μV\n\n// Ideal SNR:\nSNR_ideal = 6.02 × N + 1.76 = ___ + 1.76 = ___ dB\n\n// Nyquist minimum fs:\n// Already given as 44.1kSps — min signal BW = fs/2 = ___Hz\n\n// ENOB from measured SNR=92dB:\nENOB = (SNR_measured - 1.76) / 6.02\n     = (___ - 1.76) / 6.02\n     = ___ / 6.02\n     = ___ bits\n\n// PART B: 3-bit SAR Conversion\n// Vref=8V, Vin=5.5V, LSB=1V\n\n// Step 1: B2 (MSB)\n// DAC = Vref/2 = 4V\n// 5.5 > 4? YES → KEEP B2=1\n// DAC_current = 4V\n\n// Step 2: B1\n// DAC = current + Vref/4 = 4 + ___ = ___V\n// 5.5 > ___? ___ → B1=___\n// DAC_current = ___V\n\n// Step 3: B0\n// DAC = current + Vref/8 = ___ + 1 = ___V\n// 5.5 > ___? ___ → B0=___\n// Final code: B2B1B0 = ___ (decimal = ___)\n\n// Quantization error:\n// Vout = code × LSB = ___ × 1V = ___V\n// Error = Vin - Vout = 5.5 - ___ = ___V\n// Error in LSBs = ___",
+          "hints": [
+            "LSB = 3.3/65536 = 50.4μV",
+            "SNR_ideal = 6.02×16 + 1.76 = 98.1dB",
+            "ENOB = (92-1.76)/6.02 = 14.99 bits ≈ 15 bits",
+            "Step2: DAC=4+2=6V, 5.5>6? NO → B1=0, DAC_current stays at 4V",
+            "Step3: DAC=4+1=5V, 5.5>5? YES → B0=1",
+            "Code=101 binary=5 decimal; Vout=5×1V=5V; Error=0.5V=0.5 LSB"
+          ],
+          "requiredPatterns": [
+            "50.4 μV",
+            "98.1 dB",
+            "15 bits",
+            "B1=0",
+            "B0=1",
+            "101",
+            "0.5 LSB"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Part A: LSB=50.4μV, SNR_ideal=98.1dB, ENOB=15bits (audio quality excellent). Part B: SAR trace: B2=1(4V<5.5), B1=0(6V>5.5), B0=1(5V<5.5) → code=101=5. Vout=5V, quantization error=0.5V=0.5LSB (always <1 LSB for ideal ADC)."
+        }
+      },
+      {
+        "id": "analog-7-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your ADC/DAC knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Ideal SNR of a 10-bit ADC:", "options": ["60.2dB", "61.96dB", "71.76dB", "80dB"], "answer": 1 },
+          { "q": "SAR ADC requires N clock cycles for N bits because:", "options": ["It's slow", "It performs binary search — one bit decided per cycle", "It has N comparators", "It needs N samples"], "answer": 1 },
+          { "q": "Maximum quantization error of an ideal ADC:", "options": ["1 LSB", "0.5 LSB", "2 LSB", "0"], "answer": 1 },
+          { "q": "ENOB < N means:", "options": ["ADC is faulty", "Real-world non-idealities reduce effective resolution below N bits", "Sampling rate too high", "Reference voltage wrong"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 8,
+    "bonusXp": 160,
+    "badge": "PLL Designer",
+    "subLevels": [
+      {
+        "id": "analog-8-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Phase-Locked Loops — frequency synthesis, clock recovery, and jitter.",
+        "keyPoints": [
+          "PLL: feedback system that locks output phase to input reference",
+          "Components: PFD, Charge Pump, Loop Filter, VCO, Divider",
+          "PFD: Phase-Frequency Detector — compares phases of two clocks",
+          "VCO: Voltage-Controlled Oscillator — fout = fvco0 + Kvco×Vc",
+          "Frequency multiplication: N = fout/fref (divider ratio)",
+          "Lock range: range of fref over which PLL can acquire lock",
+          "Jitter: phase noise of output clock — limits system performance"
+        ],
+        "content": "A PLL is a feedback control system that synchronizes an output oscillator to an input reference. The PFD detects phase/frequency error between reference and divided output. The charge pump converts phase error to current pulses. The loop filter integrates these to create a smooth control voltage for the VCO. The VCO generates the high-frequency output. A frequency divider by N multiplies the reference frequency by N at the output. PLLs are in every chip for clock generation, frequency synthesis in cellular radio, and clock recovery in SerDes.",
+        "xp": 20
+      },
+      {
+        "id": "analog-8-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "PLL loop dynamics, VCO gain, and loop filter design.",
+        "keyPoints": [
+          "VCO: ωout = ω0 + Kvco × Vc (Kvco in rad/s/V)",
+          "Open-loop gain: G(s) = Icp×Kvco×Z(s) / (N×s)",
+          "Loop bandwidth ωn: determines lock time and jitter filtering",
+          "Damping factor ζ: affects overshoot (target ζ = 0.7)",
+          "Phase noise: L(Δf) = 10log(S_phase(Δf)/2) in dBc/Hz",
+          "VCO phase noise: ≈ -20dB/decade outside loop bandwidth",
+          "Reference spur: at fref offset — caused by charge pump mismatch"
+        ],
+        "content": "// PLL Parameter Calculations\n// fref=100MHz, N=10 (fout=1GHz)\n// Icp=100μA, Kvco=200 MHz/V=1.257 Grad/s/V\n// Loop filter: R=5kΩ, C1=1nF, C2=200pF\n\n// Natural frequency (simplified 2nd order):\n// ωn = √(Icp×Kvco/(N×C1))\n//    = √(100e-6 × 1.257e9 / (10 × 1e-9))\n//    = √(100e-6 × 1.257e9 / 10e-9)\n//    = √(12570) = 112 krad/s\n// fn = 17.8 kHz loop bandwidth\n\n// Lock time ≈ 4/ωn = 4/112k = 36 μs\n\n// Phase margin (from loop filter zero):\n// ωz = 1/(R×C1) = 1/(5k×1n) = 200 krad/s\n// Increases phase by arctan(ωn/ωz) at crossover",
+        "xp": 20
+      },
+      {
+        "id": "analog-8-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a PLL loop filter for target bandwidth and phase margin.",
+        "keyPoints": [
+          "Target: fn=1MHz, PM=60°, fref=10MHz, N=100, fout=1GHz",
+          "Step 1: Choose ωn = 2π×fn = 6.28 Mrad/s",
+          "Step 2: Size R and C from ωn equation",
+          "Step 3: Verify phase margin from loop filter zero",
+          "Step 4: Check lock time = ~4/ωn",
+          "Step 5: Verify loop BW < fref/10 (stability rule)"
+        ],
+        "content": "// PLL Loop Filter Design\n// Spec: fn=1MHz, PM=60°, N=100, fref=100MHz\n// Icp=200μA, Kvco=500MHz/V=3.14 Grad/s/V\n\n// Step 1: Natural frequency\n// ωn = 2π×1MHz = 6.28 Mrad/s\n\n// Step 2: Main capacitor C1\n// ωn = √(Icp×Kvco/(N×C1))\n// C1 = Icp×Kvco/(N×ωn²)\n//    = 200e-6 × 3.14e9 / (100 × (6.28e6)²)\n//    = 628 / (100 × 39.5e12)\n//    = 628 / (3.95e15) = 159 fF ... too small!\n// Use practical minimum ~500fF, adjust Kvco or Icp\n\n// More practical: C1=1pF\n// Then ωn = √(200e-6 × 3.14e9/(100×1e-12))\n//        = √(6.28e5/1e-10) ... \n// Let's use Icp=50μA, Kvco=100MHz/V, N=10:\n// ωn = √(50e-6×628e6/(10×1e-12)) = √(3.14e4/1e-12) hmm\n\n// Step 3: Zero frequency for PM=60°\n// PM=60°: ωz ≈ 0.2 × ωn (typical rule)\n// ωz = 1/(R×C1)\n// R = 1/(ωz×C1)\n\n// Step 4: Series capacitor C2 = C1/10 for stability",
+        "xp": 20
+      },
+      {
+        "id": "analog-8-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Calculate PLL frequency multiplication and estimate lock time.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 8: PLL Design Analysis\n\nA PLL for 2.4GHz Wi-Fi:\n- Reference: fref = 40MHz\n- Required output: fout = 2400MHz\n- VCO gain: Kvco = 500 MHz/V\n- Charge pump: Icp = 100μA\n- Loop filter: R=10kΩ, C1=500fF\n- Divider: N = fout/fref\n\n**Tasks:**\n1. Calculate divider ratio N\n2. Calculate loop natural frequency ωn using:\n   ωn = √(Icp × Kvco_rad / (N × C1))\n   where Kvco_rad = 2π × Kvco\n3. Calculate lock time ≈ settling_time = 4/ωn\n4. Loop bandwidth fn = ωn/(2π)\n5. Verify fn < fref/10 (stability rule)\n6. Zero frequency fz = 1/(2πRC1). Is fz < fn?",
+          "starterCode": "// Lab 8: PLL Analysis\nfref = 40e6     // Hz (40MHz)\nfout = 2400e6   // Hz (2.4GHz)\nKvco = 500e6    // Hz/V (500MHz/V)\nIcp = 100e-6    // A\nR = 10e3        // Ω\nC1 = 500e-15    // F (500fF)\n\n// Step 1: Divider ratio N\nN = fout / fref = ___ / ___ = ___\n\n// Step 2: Natural frequency\n// Convert Kvco to rad/s/V:\nKvco_rad = 2π × Kvco = 2π × ___ = ___ Grad/s/V\n\n// ωn = √(Icp × Kvco_rad / (N × C1))\nnumerator = Icp × Kvco_rad = ___ × ___ = ___\ndenominator = N × C1 = ___ × ___ = ___\nωn_sq = numerator / denominator = ___\nωn = √(ωn_sq) = ___ Mrad/s\n\n// Step 3: Lock time\nlock_time = 4 / ωn = 4 / ___ = ___ μs\n\n// Step 4: Loop bandwidth\nfn = ωn / (2π) = ___ / (2π) = ___ MHz\n\n// Step 5: Stability check\nfref_10 = fref / 10 = ___ MHz\n// fn = ___ < fref/10 = ___? YES/NO\n\n// Step 6: Zero frequency\nfz = 1 / (2π × R × C1) = 1 / (2π × ___ × ___) = ___ MHz\n// fz < fn? YES/NO (should be fz < fn for stability)",
+          "hints": [
+            "N = 2400/40 = 60",
+            "Kvco_rad = 2π×500e6 = 3.14e9 rad/s/V",
+            "numerator = 100e-6 × 3.14e9 = 3.14e5",
+            "denominator = 60 × 500e-15 = 30e-12",
+            "ωn² = 3.14e5/30e-12 = 1.047e16; ωn = 102 Mrad/s",
+            "fn = 102e6/(2π) = 16.2MHz; fref/10 = 4MHz → fn > fref/10 (UNSTABLE!)",
+            "Need to reduce Icp or increase C1 for stable design"
+          ],
+          "requiredPatterns": [
+            "N = 60",
+            "3.14e9",
+            "102 Mrad/s",
+            "16.2 MHz",
+            "4 MHz",
+            "UNSTABLE",
+            "reduce Icp"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "N=60. ωn=102Mrad/s giving fn=16.2MHz. But fref/10=4MHz stability rule is violated! The design is unstable. Fix: reduce Icp to 10μA or increase C1 to 5pF. This exercise shows why PLL stability analysis is critical — blindly choosing components can lead to unstable designs."
+        }
+      },
+      {
+        "id": "analog-8-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your PLL knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "PLL divider ratio N determines:", "options": ["Loop bandwidth", "Frequency multiplication: fout = N × fref", "Phase noise", "Lock time only"], "answer": 1 },
+          { "q": "VCO gain Kvco is expressed in:", "options": ["V/Hz", "Hz/V — frequency change per volt of control voltage", "rad/s", "dBc/Hz"], "answer": 1 },
+          { "q": "PLL loop bandwidth should be:", "options": ["As wide as possible", "< fref/10 for stability", "> fref for fast locking", "Equal to fout"], "answer": 1 },
+          { "q": "Phase noise of a PLL output is dominated by VCO outside loop bandwidth and:", "options": ["DAC noise inside bandwidth", "Reference/PFD noise inside the loop bandwidth", "Power supply noise always", "Temperature effects"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 9,
+    "bonusXp": 180,
+    "badge": "Power Management Expert",
+    "subLevels": [
+      {
+        "id": "analog-9-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "LDO regulators and bandgap references — essential power management blocks.",
+        "keyPoints": [
+          "LDO: Low Dropout Regulator — provides stable Vout from varying Vin",
+          "Dropout voltage: Vdo = Vin_min - Vout (must be > 0)",
+          "PSRR: Power Supply Rejection Ratio — how well regulator rejects input ripple",
+          "Bandgap reference: generates temperature-independent ~1.25V voltage",
+          "PTAT: Proportional To Absolute Temperature (positive TC)",
+          "CTAT: Complementary To Absolute Temperature (negative TC)",
+          "Bandgap cancels PTAT+CTAT: Vref ≈ VBE + α×VT×ln(n) = 1.25V"
+        ],
+        "content": "LDO regulators are in every mixed-signal chip — they isolate sensitive analog circuits from noisy digital supply. The key specs are: dropout voltage (how close Vin can get to Vout), load regulation (how much Vout changes with load current), and PSRR (how much supply noise appears at output). Bandgap references generate a precise voltage that's independent of temperature and supply — they're used as the reference for LDOs, ADCs, and DACs. The key insight: VBE has -2mV/°C temperature coefficient (CTAT), while the thermal voltage VT=kT/q has +0.085mV/°C (PTAT). Summing them in the right proportion cancels temperature dependence.",
+        "xp": 20
+      },
+      {
+        "id": "analog-9-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "LDO design equations, PSRR, and bandgap reference.",
+        "keyPoints": [
+          "LDO feedback: Vout = Vref × (1 + R1/R2)",
+          "PSRR ≈ -20log(gmp×ro_pass / (gm_error×Rout)) dB",
+          "Load regulation: ΔVout/ΔIload = 1/(gm_pass × loop_gain)",
+          "Bandgap Vref = VBE0 + (kT/q) × α × ln(n) ≈ 1.25V",
+          "TC = dVref/dT ≈ 0 at target temperature",
+          "VBE temperature coefficient: ≈ -2mV/°C",
+          "LDO stability: dominant pole at output with CL and ESR"
+        ],
+        "content": "// LDO Output Voltage Setting\n// Vref=1.0V, target Vout=1.8V\n// R1 and R2 form a resistor divider to feedback pin\n// Vout = Vref × (1 + R1/R2)\n// 1.8 = 1.0 × (1 + R1/R2)\n// R1/R2 = 0.8\n// Choose R2=100kΩ: R1=80kΩ\n\n// PSRR at low frequency:\n// PSRR ≈ A_dc × (ro_error/r_pass)\n// where A_dc = error amplifier DC gain\n// Typical: 60-80dB PSRR at low frequency\n// Falls off above error amplifier bandwidth\n\n// Bandgap reference temperature coefficient:\n// dVBE/dT ≈ -2mV/°C\n// dVT/dT = k/q = 0.0857mV/°C\n// For TC=0: α×ln(n) = 2mV/0.0857mV = 23.3\n// If n=8: ln(8)=2.08, α=11.2 (loop gain of PTAT cell)",
+        "xp": 20
+      },
+      {
+        "id": "analog-9-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a complete LDO regulator — sizing and stability analysis.",
+        "keyPoints": [
+          "Pass transistor: PMOS for low dropout (VGS instead of VSD)",
+          "Size pass transistor for max load current with minimum VGS",
+          "Error amplifier: drives pass FET gate, provides loop gain",
+          "Stability: output capacitor creates dominant pole",
+          "ESR zero: capacitor ESR adds stabilizing zero",
+          "PSRR: error amp gain × ro_pass (limited by bandwidth)"
+        ],
+        "content": "// LDO Design Example\n// Vin=2.5V, Vout=1.8V, Iload_max=50mA\n// Vref=1.0V (bandgap), T=27°C\n\n// Step 1: Pass transistor (PMOS)\n// Dropout = Vin-Vout = 0.7V\n// Need VSD_pass > dropout: VSD=0.7V → need VOD=0.2V\n// W/L of pass FET:\n// ID=50mA, μpCox=100μA/V², VOD=0.2V\n// W/L = 2×ID/(μpCox×VOD²)\n//     = 2×50e-3/(100e-6×0.04)\n//     = 100e-3/4e-6 = 25,000\n// Large W/L expected for power transistor!\n\n// Step 2: Feedback resistors\n// Vout = Vref × (1+R1/R2) = 1.0×(1+R1/R2) = 1.8V\n// R1/R2 = 0.8\n// R2=200kΩ (high impedance to save quiescent current)\n// R1=160kΩ\n\n// Step 3: Stability with CL=10μF\n// Dominant pole at output: fp_out = 1/(2π×Rout×CL)\n// At full load: Rout_load=Vout/Iload=36Ω\n// fp_out = 1/(2π×36×10e-6) = 442 Hz (very low!)\n// Unity gain frequency must be < bandwidth of error amp",
+        "xp": 20
+      },
+      {
+        "id": "analog-9-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Design LDO feedback network and verify stability conditions.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 9: LDO Regulator Design\n\nDesign an LDO regulator:\n- Vin = 3.3V (±10% variation: 2.97V to 3.63V)\n- Target Vout = 2.5V\n- Vref = 1.2V (bandgap)\n- Max load: Iload = 100mA\n- Min load: Iload = 1mA\n- PMOS pass transistor: μpCox=50μA/V², |VTP|=0.5V\n\n**Tasks:**\n1. Calculate R1/R2 ratio for Vout=2.5V\n   (Vout = Vref × (1 + R1/R2))\n2. Choose R2=200kΩ, find R1\n3. Minimum Vin for regulation (Vin_min = Vout + Vdo)\n   where Vdo = |VOD_pass|. Assume |VOD_pass|=0.3V.\n4. Size PMOS pass transistor (W/L) for Iload=100mA with |VOD|=0.3V\n5. Output resistance at max load: Rout = Vout/Iload\n6. Dominant pole frequency with CL=4.7μF: fp = 1/(2π×Rout×CL)",
+          "starterCode": "// Lab 9: LDO Design\nVin_nom = 3.3      // V\nVout = 2.5         // V\nVref = 1.2         // V\nIload_max = 100e-3 // A\nVOD_pass = 0.3     // V (target overdrive)\nμpCox = 50e-6      // A/V²\nR2 = 200e3         // Ω\nCL = 4.7e-6        // F\n\n// Step 1: Feedback ratio\n// Vout = Vref × (1 + R1/R2)\n// 1 + R1/R2 = Vout/Vref = ___\n// R1/R2 = ___ - 1 = ___\nVout_Vref_ratio = ___ / ___ = ___\nR1_R2_ratio = ___ - 1 = ___\n\n// Step 2: R1 value\nR1 = R2 × R1_R2_ratio = ___ × ___ = ___ kΩ\n\n// Step 3: Minimum Vin\n// Vdo = |VOD_pass| = 0.3V\nVin_min = Vout + Vdo = ___ + ___ = ___V\n// Can Vin range (2.97V) support this? YES/NO\n// Margin = Vin_min_supply - Vin_min_regulator = ___V\n\n// Step 4: Pass transistor W/L\n// Iload = (μpCox/2)(W/L)(|VOD|²)\n// W/L = 2×Iload / (μpCox × VOD²)\nWL_pass = 2 × ___ / (___ × ___²)\n        = ___ / ___\n        = ___\n\n// Step 5: Output resistance at max load\nRout = Vout / Iload_max = ___ / ___ = ___ Ω\n\n// Step 6: Dominant pole\nfp = 1 / (2π × Rout × CL)\n   = 1 / (2π × ___ × ___)\n   = ___ Hz",
+          "hints": [
+            "Vout/Vref = 2.5/1.2 = 2.083; R1/R2 = 1.083",
+            "R1 = 200kΩ × 1.083 = 216.7kΩ ≈ 220kΩ (nearest standard)",
+            "Vin_min = 2.5+0.3 = 2.8V; Vin_min_supply=2.97V; margin=0.17V",
+            "WL = 2×100mA/(50μA/V²×0.09) = 200mA/4.5μA = 44,444",
+            "Rout = 2.5V/100mA = 25Ω",
+            "fp = 1/(2π×25×4.7μF) = 1.35kHz"
+          ],
+          "requiredPatterns": [
+            "1.083",
+            "216.7",
+            "2.8V",
+            "44444",
+            "25 Ω",
+            "1.35 kHz"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "R1/R2=1.083 sets Vout=2.5V. R1≈217kΩ. Vin_min=2.8V safely met by 2.97V min supply. Pass transistor W/L=44,444 (typical for high-current LDOs). Output pole at 1.35kHz — very low frequency dominant pole ensures stability but limits PSRR bandwidth."
+        }
+      },
+      {
+        "id": "analog-9-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your power management knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "LDO dropout voltage is:", "options": ["Vout - Vin", "Vin_min - Vout required", "Vref voltage", "Load current × ESR"], "answer": 1 },
+          { "q": "Bandgap reference achieves ~1.25V because:", "options": ["It's the silicon bandgap energy", "PTAT + CTAT voltages cancel temperature dependence at this voltage", "BJT VBE equals 1.25V", "It's a standard defined value"], "answer": 1 },
+          { "q": "PSRR of LDO represents:", "options": ["Output accuracy", "How much input supply noise appears at regulated output (want high rejection)", "Load regulation", "Temperature coefficient"], "answer": 1 },
+          { "q": "LDO pass transistor must have very large W/L because:", "options": ["High voltage requirement", "It must carry full load current with small VGS overdrive (low dropout)", "It needs high threshold voltage", "Noise requirement"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 10,
+    "bonusXp": 200,
+    "badge": "Layout Aware Designer",
+    "subLevels": [
+      {
+        "id": "analog-10-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Analog layout — matching, parasitic awareness, and common-centroid.",
+        "keyPoints": [
+          "Mismatch: random variation in W, L, VT between transistors on same die",
+          "Pelgrom's law: σ(VT) = AVT/√(WL) — larger transistors match better",
+          "Common-centroid: layout technique to cancel linear gradients",
+          "Interdigitation: alternating fingers of matched transistors",
+          "Dummy transistors: at edges to equalize environment",
+          "Well proximity effect: VT shifts near well boundary",
+          "Metal density rules: ensure uniform CMP planarization"
+        ],
+        "content": "Analog layout is as important as circuit design — a perfect schematic with poor layout can perform worse than a modest design with careful layout. Mismatch between transistors causes offset in diff pairs, current mirror error, and DAC nonlinearity. The main causes: random dopant fluctuations (quantum), lithographic variations (systematic), and mechanical stress. Common-centroid placement cancels linear and quadratic gradients. Large transistors match better (Pelgrom's law) but cost area and increase capacitance — designer must balance.",
+        "xp": 20
+      },
+      {
+        "id": "analog-10-syntax",
+        "type": "syntax",
+        "title": "Key Equations",
+        "icon": "🔤",
+        "summary": "Mismatch equations, Pelgrom model, and common-centroid design rules.",
+        "keyPoints": [
+          "σ(ΔVGS) = AVT/√(WL) — threshold mismatch (Pelgrom)",
+          "σ(ΔID/ID) = 2×σ(ΔVGS)/VOD (current mismatch from VT mismatch)",
+          "Also: σ(ΔID/ID) = Aβ/√(WL) (from mobility/Cox mismatch)",
+          "Total: σ(ΔID/ID) ≈ √((2AVT/VOD)² + Aβ²) / √(WL)",
+          "Target mismatch: < 0.1% for DAC, < 1% for mirror, < 5mV offset for diff pair",
+          "Common-centroid requires: symmetric placement around centroid",
+          "Rule: number of fingers per transistor must be even for CC"
+        ],
+        "content": "// Pelgrom Mismatch Example\n// Differential pair: W=10μm, L=1μm\n// Process: AVT=5mV·μm, Aβ=2%·μm\n\n// Step 1: VT mismatch\n// σ(ΔVT) = AVT/√(W×L)\n//         = 5mV·μm / √(10μm × 1μm)\n//         = 5mV·μm / √(10μm²)\n//         = 5mV·μm / 3.16μm\n//         = 1.58 mV (1-sigma)\n\n// Step 2: Current mismatch (VOD=0.2V)\n// σ(ΔID/ID) from VT: 2×1.58mV/200mV = 1.58%\n// σ(ΔID/ID) from β: 2%/3.16 = 0.63%\n// Total: √(1.58²+0.63²)% = √(2.50+0.40)% = 1.70%\n\n// Step 3: Input offset voltage\n// Vos = ΔVT = 1.58mV (1-sigma)\n// 3-sigma: 3 × 1.58mV = 4.7mV\n// Typical spec: < 5mV → marginally OK\n\n// To reduce offset by 2×: quadruple WL\n// New: W=20μm, L=2μm → σ(ΔVT) = 5/√40 = 0.79mV ✓",
+        "xp": 20
+      },
+      {
+        "id": "analog-10-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design common-centroid layout for a differential pair.",
+        "keyPoints": [
+          "Diff pair: M1 and M2 must be matched",
+          "Each transistor split into 2 fingers: M1a, M1b and M2a, M2b",
+          "Common-centroid arrangement: M2a | M1a | M1b | M2b",
+          "This cancels linear gradient across the array",
+          "Add dummy transistors on each end",
+          "All fingers same orientation, same metal routing length"
+        ],
+        "content": "// Common-Centroid Layout for Differential Pair\n//\n// Schematic: M1 and M2 (diff pair), each W=20μm, L=1μm\n// Split each into 2 fingers of 10μm each\n//\n// Bad layout (not common-centroid):\n// [M1_finger1][M1_finger2][M2_finger1][M2_finger2]\n// Gradient affects M1 and M2 differently → mismatch\n//\n// Good layout (common-centroid):\n// [Dummy][M2a][M1a][M1b][M2b][Dummy]\n//         ←──M2──→  ←──M1──→\n// Wait, this isn't symmetric. Correct CC:\n// [Dummy][M1a][M2a][M2b][M1b][Dummy]\n//         ←M1a→ ←──M2──→ ←M1b→\n// M1 = M1a + M1b surrounds M2 → symmetric\n//\n// Better for interdigitation:\n// [D][M2a][M1a][M2b][M1b][D]\n// Centroid of M1 = (M1a_pos + M1b_pos)/2 = center\n// Centroid of M2 = (M2a_pos + M2b_pos)/2 = center\n// Both centroids at same physical location → matched!\n//\n// Additional rules:\n// 1. Same metal routing length for gates, drains, sources\n// 2. Symmetric power rails (both sides)\n// 3. No asymmetric stress (avoid placing near well corners)",
+        "xp": 20
+      },
+      {
+        "id": "analog-10-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Calculate mismatch and determine required transistor sizing for spec.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 10: Mismatch Analysis and Sizing\n\n**Technology:** AVT=4mV·μm, Aβ=1.5%·μm\n\n**Circuit:** 10-bit current DAC unit cell (current mirror)\n- Required current mismatch: σ(ΔI/I) < 0.05% (10-bit accuracy)\n- Bias current per unit cell: ID=10μA\n- VOD = 0.2V\n\n**Tasks:**\n1. Calculate required WL from current mismatch spec:\n   σ(ΔI/I) = √((2AVT/VOD)² + Aβ²) / √(WL) < 0.05%\n\n2. Find minimum WL satisfying the spec\n\n3. If L=1μm, find required W\n\n4. Calculate actual σ(ΔVT) and σ(ΔI/I) for your sizing\n\n5. What is the 3-sigma worst case ΔI/I?\n\n6. For a differential pair with 5mV offset spec, find required WL\n   (use σ(ΔVT) = AVT/√(WL) < 5mV/3 for 3-sigma)",
+          "starterCode": "// Lab 10: Mismatch Sizing\nAVT = 4      // mV·μm\nAbeta = 1.5  // %·μm\nVOD = 0.2    // V\nID = 10e-6   // A\n\n// Step 1: Required WL for < 0.05% current mismatch\n// σ(ΔI/I) = √((2×AVT/VOD/10)² + (Abeta/100)²) / √(WL)\n// Note: convert AVT from mV to V, Abeta from % to fraction\n\n// Coefficient A = √((2×AVT_V/VOD)² + Abeta_frac²)\n// where AVT_V = AVT/1000 = 0.004 V·μm\n//       Abeta_frac = Abeta/100 = 0.015 μm\n\nAVT_V = AVT / 1000 = ___ V·μm\nAbeta_frac = Abeta / 100 = ___ (dimensionless·μm)\n\nterm1 = 2 × AVT_V / VOD = 2 × ___ / ___ = ___ (in μm units... let's track)\n// Actually both terms have units of ·μm, so:\n// A = √(term1² + term2²) in units of μm\nterm1 = 2 × ___ / ___ = ___ V/V × V·μm/V ... = ___\n// Simplify: both are dimensionless × μm units\nterm1_num = 2 × AVT / (VOD × 1000) = 2 × ___ / ___ = ___ (unitless×μm)\nterm2_num = Abeta / 100 = ___ (unitless×μm)\n\nA = √(term1_num² + term2_num²) = √(___² + ___²) = √___ = ___ (×μm)\n\n// Required: A/√(WL) < 0.05/100 = 0.0005\n// √(WL) > A / 0.0005\nsqrt_WL_min = A / 0.0005 = ___ / ___ = ___\nWL_min = sqrt_WL_min² = ___² = ___ μm²\n\n// Step 3: With L=1μm → W\nL = 1  // μm\nW_min = WL_min / L = ___ μm\n\n// Step 4: Verify\nσ_VT = AVT / √(WL_min) = ___ / ___ = ___ mV\nσ_II = A / √(WL_min) × 100 = ___% (should be ≤ 0.05%)\n\n// Step 5: 3-sigma worst case\nworst_case_pct = 3 × σ_II = ___% \n\n// Step 6: Diff pair spec (5mV offset at 3-sigma)\n// σ(ΔVT) < 5mV/3 = 1.67mV\n// AVT/√(WL) < 1.67mV\n// √(WL) > AVT/1.67mV\nsqrt_WL_dp = AVT / 1.67 = ___ / ___ = ___\nWL_dp = sqrt_WL_dp² = ___ μm²",
+          "hints": [
+            "term1_num = 2×4/(0.2×1000) = 8/200 = 0.04 (unit: μm)",
+            "term2_num = 1.5/100 = 0.015 (unit: μm)",
+            "A = √(0.04²+0.015²) = √(0.0016+0.000225) = √0.001825 = 0.04273 μm",
+            "sqrt_WL = 0.04273/0.0005 = 85.5; WL = 85.5² = 7310 μm²",
+            "W = 7310μm with L=1μm (very large! Use shorter L)",
+            "σ(VT) = 4/√7310 = 0.047mV; σ(I/I) = 0.04273/85.5 = 0.05%",
+            "Diff pair: sqrt_WL = 4/1.67 = 2.4; WL = 5.76μm² (much smaller!)"
+          ],
+          "requiredPatterns": [
+            "0.04273",
+            "7310",
+            "0.047 mV",
+            "0.05%",
+            "0.15%",
+            "5.76"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "For 10-bit DAC (0.05% accuracy): WL_min=7310μm² → W=7310μm with L=1μm. This is enormous — in practice use multiple fingers or longer L. For diff pair (5mV/3=1.67mV 1-sigma): WL=5.76μm² (much smaller). The difference shows why precision current sources need far more area than voltage amplifiers."
+        }
+      },
+      {
+        "id": "analog-10-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your analog layout knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Pelgrom's law states σ(ΔVT) ∝:", "options": ["WL (proportional)", "√(WL)", "1/√(WL) — larger transistors match better", "1/(WL)"], "answer": 2 },
+          { "q": "Common-centroid layout cancels:", "options": ["Random mismatch", "Linear and gradient variations across the die", "Noise", "Power consumption"], "answer": 1 },
+          { "q": "Why are dummy transistors placed at array edges?", "options": ["For ESD protection", "To equalize etch and implant environment for all active transistors", "To save routing", "For debugging"], "answer": 1 },
+          { "q": "For a 10-bit DAC unit cell, mismatch requirement is approximately:", "options": ["1%", "0.5%", "< 0.1% (1 LSB = 0.098%)", "10%"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 11,
+    "bonusXp": 220,
+    "badge": "Analog Interview Ready",
+    "subLevels": [
+      {
+        "id": "analog-11-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What analog IC interviews at top companies actually test.",
+        "keyPoints": [
+          "MOSFET analysis: draw IV curves, identify region, calculate gm, ro",
+          "Amplifier design: common-source, cascode, diff pair gain calculations",
+          "Feedback theory: closed-loop gain, stability, phase margin",
+          "Current mirror: sizing, accuracy, output impedance",
+          "Op-amp design: two-stage topology, compensation, GBW",
+          "Companies: TI, Analog Devices, Qualcomm, MediaTek, Apple analog team",
+          "Most common: 'Design an op-amp meeting these specs on the whiteboard'"
+        ],
+        "content": "Analog IC interviews are the most technically demanding in the semiconductor industry. You will be asked to analyze circuits from first principles, derive transfer functions, and design circuits to specifications — all on a whiteboard. You must know MOSFET operating regions cold, be able to draw small-signal models instantly, and reason about noise, stability, and PVT variation. Companies like TI, ADI, and Qualcomm will give you a circuit and ask 'what's wrong with this?' or 'how would you improve this for lower power?'",
+        "xp": 20
+      },
+      {
+        "id": "analog-11-syntax",
+        "type": "syntax",
+        "title": "Common Interview Patterns",
+        "icon": "🔤",
+        "summary": "Top 10 analog circuit analysis patterns asked in every interview.",
+        "keyPoints": [
+          "1. ID, gm, ro from given W/L and ID",
+          "2. CS amplifier gain with and without degeneration",
+          "3. Cascode amplifier — gain and output impedance",
+          "4. Diff pair — common mode vs differential gain",
+          "5. Current mirror — ratio and output impedance",
+          "6. Two-stage op-amp — GBW and phase margin",
+          "7. Feedback: identify topology, find closed-loop gain",
+          "8. PSRR: how does supply noise affect output?",
+          "9. Noise: which transistor dominates?",
+          "10. Stability: where are poles and zeros?"
+        ],
+        "content": "// INTERVIEW REFERENCE: Source Degeneration\n// CS amplifier with Rs in source\n// Gain with degeneration:\n// Av = -gm×RD / (1 + gm×Rs)\n// ≈ -RD/Rs for gm×Rs >> 1\n//\n// Input resistance increases: Rin_eff = (1+gm×Rs)/gm\n// Bandwidth increases (less Miller)\n// Noise figure increases (signal path has gain <1)\n//\n// INTERVIEW REFERENCE: Cascode Amplifier\n// CS (M1) + CG (M2) stacked\n// Gain: Av = -gm1 × Rout_cascode\n// Rout_cascode = gm2×ro2×ro1 (from bottom)\n// High gain due to high output impedance\n// Eliminates Miller effect → higher bandwidth\n//\n// INTERVIEW REFERENCE: Feedback\n// Shunt-shunt feedback (transresistance amp):\n// Rout_closed = Rout_open / (1 + T)\n// Rin_closed = Rin_open / (1 + T)\n// Gain_closed = A/(1+Aβ) ≈ 1/β for Aβ>>1",
+        "xp": 20
+      },
+      {
+        "id": "analog-11-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Solve 5 classic analog interview questions.",
+        "keyPoints": [
+          "Q1: Find the gain of a CS amp with resistive degeneration",
+          "Q2: Why is cascode better than CS for high frequency?",
+          "Q3: How does feedback improve op-amp performance?",
+          "Q4: What limits the GBW of a two-stage op-amp?",
+          "Q5: Design a 1mA current mirror with 1% accuracy"
+        ],
+        "content": "// Q1: CS with degeneration (Rs=1/gm)\n// Av = -gm×RD/(1+gm×Rs) = -gm×RD/(1+1) = -gm×RD/2\n// Gain halved, but bandwidth and linearity improved\n\n// Q2: Cascode eliminates Miller effect\n// CS: Cgd appears as Cgd(1+|Av|) at input → small bandwidth\n// Cascode: M2 presents low impedance at M1 drain\n// Vdrain_M1 is nearly constant → Cgd effect reduced\n// Result: bandwidth ~ 10× higher than CS alone\n\n// Q3: Feedback benefits\n// Closed-loop gain: A_cl = A/(1+Aβ) ≈ 1/β (precise)\n// Output impedance: Rout_cl = Rout/(1+Aβ) (lower)\n// Input impedance: Rin_cl = Rin×(1+Aβ) (higher, for series)\n// Distortion: THD_cl = THD/(1+Aβ) (reduced)\n// Bandwidth: BW_cl = BW×(1+Aβ) (extended)\n\n// Q4: GBW limited by compensation cap Cc\n// GBW = gm1/(2π×Cc)\n// Increasing gm1 (more current): increases GBW but more power\n// Decreasing Cc: increases GBW but reduces phase margin\n// Trade-off: GBW vs PM vs power vs slew rate\n\n// Q5: 1mA mirror with 1% accuracy\n// σ(ΔI/I) = A/√(WL) = 1%\n// If A≈0.05 (μm) from Pelgrom:\n// √(WL) = 0.05/0.01 = 5 → WL = 25μm²\n// Use cascode to reduce systematic error from VDS mismatch",
+        "xp": 20
+      },
+      {
+        "id": "analog-11-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Classic analog interview — design a complete single-stage amplifier.",
+        "xp": 55,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 11: Classic Interview — Complete Amplifier Design\n\nDesign a single-stage CMOS cascode amplifier:\n\n**Specification:**\n- Gain: |Av| ≥ 100 V/V\n- Supply: VDD = 1.8V\n- Power: P ≤ 1mW\n- Load: RD = 10kΩ (resistive)\n- μnCox = 200μA/V², λn = 0.05V⁻¹\n\n**Tasks:**\n1. Max total current from power budget: I_total = P/VDD\n2. Choose ID = 0.4×I_total for main transistor M1 (bottom CS)\n3. Calculate required gm for gain: |Av| = gm×RD (use cascode Rout ≈ gm×ro×ro)\n4. Actually: for resistive load RD, Av = gm×(RD||Rout_cascode)\n   Since Rout_cascode >> RD: Av ≈ gm1×RD\n   Find required gm1 = Av/RD\n5. Find W/L of M1 from gm and ID: W/L = gm²/(2×μnCox×ID)\n6. Calculate VOD: VOD = 2×ID/gm\n7. Verify output swing: Vout_max = VDD - ID×RD, Vout_min = VOD_M1 + VOD_M2 ≈ 2×VOD",
+          "starterCode": "// Lab 11: Cascode Amplifier Design\n// Spec: Av≥100, VDD=1.8V, P≤1mW, RD=10kΩ\n\nVDD = 1.8       // V\nP_max = 1e-3    // W (1mW)\nRD = 10e3       // Ω\nAv_min = 100    // V/V\nμnCox = 200e-6  // A/V²\nlambda_n = 0.05 // V⁻¹\n\n// Step 1: Max total current\nI_total = P_max / VDD = ___ / ___ = ___ mA\n\n// Step 2: Bias M1\nID = 0.4 × I_total = ___ × ___ = ___ mA = ___ μA\n\n// Step 3: Required gm for Av=100\n// Av ≈ gm×RD (since cascode Rout >> RD)\ngm_required = Av_min / RD = ___ / ___ = ___ A/V = ___ mA/V\n\n// Step 4: W/L of M1\n// gm = 2×ID/VOD and gm = √(2×μnCox×(W/L)×ID)\n// So (W/L) = gm² / (2 × μnCox × ID)\nWL_M1 = gm_required² / (2 × μnCox × ID)\n       = ___² / (2 × ___ × ___)\n       = ___ / ___\n       = ___\n\n// Step 5: VOD\nVOD = 2 × ID / gm_required = 2 × ___ / ___ = ___ V\n\n// Step 6: Output swing check\nVout_max = VDD - ID × RD = ___ - ___ × ___ = ___ V\nVout_min = 2 × VOD = 2 × ___ = ___ V  (two cascode stages)\n\n// Verify: Vout_min < Vout_max? YES/NO\n// Swing = Vout_max - Vout_min = ___ V\n\n// Step 7: ro of M1\nro = 1/(lambda_n × ID) = 1/(___ × ___) = ___ kΩ\n\n// Cascode output impedance\n// Rout_cascode ≈ gm×ro×ro (simplified)\n// But limited by RD in this design\n// Effective output: RD || Rout_cascode ≈ RD = 10kΩ\n// Final Av = gm × RD = ___ × ___ = ___ V/V ✓",
+          "hints": [
+            "I_total = 1mW/1.8V = 556μA; ID = 0.4×556=222μA",
+            "gm = 100/10kΩ = 10mA/V",
+            "WL = (10mA/V)²/(2×200μA/V²×222μA) = 100e-6/88.8e-12 = 1126",
+            "VOD = 2×222μA/10mA/V = 0.0444V = 44.4mV (very small!)",
+            "Vout_max = 1.8 - 222μA×10kΩ = 1.8-2.22 = NEGATIVE! Problem!",
+            "Need to reduce RD or ID: ID×RD must be < VDD → ID < 180μA with RD=10kΩ"
+          ],
+          "requiredPatterns": [
+            "556",
+            "222",
+            "10 mA/V",
+            "1126",
+            "44.4 mV",
+            "NEGATIVE",
+            "reduce ID"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The design reveals a constraint violation: ID×RD = 222μA×10kΩ = 2.22V > VDD=1.8V! The transistor would be in triode, not saturation. Fix: reduce ID to 100μA (ID×RD=1V), then gm = 100/10kΩ = 10mA/V, VOD = 20mV (very small — hard to bias stably). Better: use active load instead of resistive RD, or redesign. This is the kind of constraint discovery that good interview answers reveal."
+        }
+      },
+      {
+        "id": "analog-11-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Analog interview-style questions.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Source degeneration in CS amplifier:", "options": ["Increases gain", "Reduces gain but improves bandwidth and linearity", "Has no effect on bandwidth", "Only affects noise"], "answer": 1 },
+          { "q": "Cascode amplifier eliminates Miller effect because:", "options": ["Lower gm", "M2 presents low impedance at M1 drain — Cgd signal swing is small", "Higher supply voltage", "Cascode doesn't use Cgd"], "answer": 1 },
+          { "q": "Most common analog IC interview question:", "options": ["Write Verilog", "Design an op-amp to spec on whiteboard", "Code a PLL in Python", "Draw a transistor cross-section"], "answer": 1 },
+          { "q": "Shunt feedback at output reduces:", "options": ["Gain and increases Rout", "Output impedance and extends bandwidth", "Input impedance only", "Phase margin"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 12,
+    "bonusXp": 500,
+    "badge": "Analog Architect",
+    "subLevels": [
+      {
+        "id": "analog-12-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Complete analog IC system design — the final boss challenge.",
+        "keyPoints": [
+          "Sensor interface chain: sensor → LNA → filter → ADC → digital",
+          "Signal chain design: allocate noise, gain, dynamic range at each stage",
+          "Power-noise trade-off: lower power → higher noise → poorer SNR",
+          "PVT robustness: design must work across all corners",
+          "Calibration: digital correction of analog imperfections",
+          "Mixed-signal co-design: analog and digital must be co-optimized",
+          "Chip-level integration: substrate coupling, power supply integrity"
+        ],
+        "content": "Complete analog IC system design requires integrating all building blocks into a coherent signal chain. A typical IoT sensor interface: the sensor generates microvolts; a low-noise amplifier (LNA) boosts the signal; an anti-aliasing filter removes high-frequency noise; an ADC digitizes the signal. Each stage must be designed with awareness of: how much gain is needed, what noise is acceptable, what dynamic range is required, and how PVT variation affects each stage. The total noise referred to the input is the root-sum-square of all stage contributions (dominated by first stage per Friis).",
+        "xp": 30
+      },
+      {
+        "id": "analog-12-syntax",
+        "type": "syntax",
+        "title": "System Architecture",
+        "icon": "🔤",
+        "summary": "Complete signal chain budget analysis — gain, noise, dynamic range.",
+        "keyPoints": [
+          "SNR budget: distribute across stages for optimal power efficiency",
+          "Gain budget: each stage gain multiplied by remaining chain gain",
+          "Noise budget: input-referred noise = noise1 + noise2/G1² + noise3/(G1G2)²",
+          "Dynamic range: DR = 20log(Vfs/Vn_rms) where Vfs=full scale",
+          "SFDR: determines harmonic distortion floor",
+          "Power distribution: most power to first stage for noise, last for drive",
+          "Area budget: matching transistors dominate area for precision blocks"
+        ],
+        "content": "// Complete Sensor Interface Budget\n// Sensor: generates 10μV signal, bandwidth 0-10kHz\n// Target: SNR = 60dB, total power < 100μW\n\n// Stage 1: LNA (low noise amp)\n// Gain: A1 = 100 V/V (40dB)\n// Input noise: vn1 = 5nV/√Hz\n// Power: 50μW\n\n// Stage 2: Filter (anti-aliasing)\n// Gain: A2 = 1 (0dB)\n// Input noise: vn2 = 20nV/√Hz (after gain-referred)\n// Power: 10μW\n\n// Stage 3: ADC (12-bit SAR)\n// Resolution: LSB = 100mV/4096 = 24.4μV\n// Quantization noise: vq = LSB/√12 = 7.05μV rms\n// Power: 40μW\n\n// Total input-referred noise (over 10kHz):\n// vn_total = √(vn1² + (vn2/A1)² + (vq/A1×A2)²) per root-Hz\n//          = √(5² + (20/100)² + ...) nV/√Hz\n//          = √(25 + 0.04 + ...) = 5.004 nV/√Hz\n// → LNA dominates! (as intended per Friis)\n\n// Total noise in 10kHz BW:\n// vn_rms = 5nV/√Hz × √10kHz = 5e-9 × 100 = 500nV rms\n\n// SNR = 20log(Vsig_rms / vn_total_rms)\n//     = 20log(7.07μV / 500nV) = 23dB → NOT ENOUGH!\n// Need 60dB → increase LNA gain to 10,000 or reduce vn1",
+        "xp": 30
+      },
+      {
+        "id": "analog-12-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Complete two-stage op-amp design meeting all specs.",
+        "keyPoints": [
+          "Spec: GBW=50MHz, PM=65°, CL=2pF, SR≥100V/μs, Av>70dB",
+          "Step 1: Cc from SR: Cc=ISS/SR",
+          "Step 2: gm1 from GBW",
+          "Step 3: Size stage 1 transistors",
+          "Step 4: Stage 2 gm6 for phase margin",
+          "Step 5: Verify all specs"
+        ],
+        "content": "// Complete Two-Stage Op-Amp Design\n// Spec: GBW=50MHz, PM=65°, CL=2pF, SR≥100V/μs\n// Process: μnCox=200μA/V², μpCox=100μA/V², VDD=1.8V\n\n// Step 1: ISS and Cc from SR\n// SR = ISS/Cc → if Cc=0.5pF: ISS = SR×Cc = 100V/μs × 0.5pF = 50μA\n\n// Step 2: gm1 from GBW\n// gm1 = GBW × 2π × Cc = 50MHz × 2π × 0.5pF = 157 μA/V\n\n// Step 3: Size PMOS diff pair (M1,M2)\n// ID1 = ISS/2 = 25μA\n// gm1 = √(2×μpCox×(W/L)1×ID1)\n// (W/L)1 = gm1²/(2×μpCox×ID1) = (157e-6)²/(2×100e-6×25e-6) = 24.6e-9/5e-9 = 4.93 ≈ 5\n\n// Step 4: gm6 for PM=65°\n// PM=65°: fp2 ≥ 3 × GBW\n// gm6/CL ≥ 3×2π×50MHz\n// gm6 ≥ 1.88 mA/V\n// If VOD6=0.25V: ID6 = gm6×VOD6/2 = 1.88e-3×0.25/2 = 235μA\n\n// Step 5: Verify DC gain\n// Rout1 = ron1||rop1 = (1/λn/ID1)||(1/λp/ID1)\n//        ≈ 200kΩ || 200kΩ = 100kΩ (typical)\n// A1 = gm1×Rout1 = 157μA/V × 100kΩ = 15.7\n// Rout2 = ron6||rop7 = 1/(0.05×235μA) || 1/(0.1×235μA) = 85||42.5 = 28.3kΩ\n// A2 = gm6×Rout2 = 1.88mA/V × 28.3kΩ = 53\n// A0 = A1×A2 = 15.7×53 = 832 = 58.4dB → BELOW 70dB SPEC!\n// Fix: increase L to reduce λ, or add cascode",
+        "xp": 30
+      },
+      {
+        "id": "analog-12-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "FINAL BOSS — Design a complete two-stage op-amp meeting all specifications.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "text",
+          "instructions": "# Lab 12: FINAL BOSS — Complete Op-Amp Design\n\n## Specification\n| Parameter | Min | Typ | Max | Unit |\n|-----------|-----|-----|-----|------|\n| DC Gain A0 | 70 | 80 | — | dB |\n| GBW | 20 | — | — | MHz |\n| Phase Margin | 60 | 65 | — | ° |\n| Slew Rate | 50 | — | — | V/μs |\n| CL (given) | — | 5 | — | pF |\n| VDD | — | 1.8 | — | V |\n| Power | — | — | 500 | μW |\n\n**Process:** μnCox=200μA/V², μpCox=100μA/V², λn=0.05V⁻¹, λp=0.1V⁻¹\n\n## Design Steps\n1. **Power budget**: I_total = P/VDD; allocate ISS and ID6\n2. **Choose Cc**: Cc = ISS/SR (from slew rate)\n3. **Calculate gm1**: gm1 = GBW×2π×Cc\n4. **Size M1/M2 (PMOS diff pair)**: W/L from gm1 and ID1=ISS/2\n5. **Size M6 for PM=60°**: gm6/CL ≥ 2.2×GBW×2π\n6. **ID6 from gm6**: ID6 = gm6×VOD6/2 (choose VOD6=0.3V)\n7. **Calculate Rout1, Rout2, A1, A2, A0**\n8. **Verify A0 ≥ 70dB (3162 V/V)**\n9. **If not meeting gain, propose fix**\n\n**Show complete design with all values.**",
+          "starterCode": "// FINAL BOSS: Complete Two-Stage CMOS Op-Amp Design\n// VDD=1.8V, CL=5pF, P≤500μW\n// GBW≥20MHz, PM≥60°, SR≥50V/μs, A0≥70dB\n\n// ===== STEP 1: POWER BUDGET =====\nVDD = 1.8\nP_total = 500e-6     // W\nI_total = P_total/VDD = ___ mA\n\n// Allocate: ISS=30% (diff pair), ID6=60%, bias=10%\nISS = 0.30 × I_total = ___ μA\nID6 = 0.60 × I_total = ___ μA\nID1 = ISS/2 = ___ μA  // each diff pair transistor\n\n// ===== STEP 2: COMPENSATION CAP Cc =====\n// SR = ISS/Cc → Cc = ISS/SR\nSR_target = 50e6     // V/s (50V/μs)\nCc = ISS / SR_target = ___ / ___ = ___ pF\n// Verify Cc < CL (otherwise unstable): Cc=___ < CL=5pF? ___\n\n// ===== STEP 3: gm1 FOR GBW =====\nGBW_target = 20e6    // Hz\ngm1 = GBW_target × 2 × π × Cc\n    = ___ × 2π × ___ = ___ μA/V\n\n// ===== STEP 4: SIZE M1/M2 (PMOS) =====\n// ID1 = ___ μA, gm1 = ___ μA/V\n// W/L from gm = √(2×μpCox×(W/L)×ID)\n// (W/L) = gm1²/(2×μpCox×ID1)\nμpCox = 100e-6\nWL_p = gm1² / (2 × μpCox × ID1)\n     = ___² / (2 × ___ × ___)\n     = ___ / ___ = ___\n\nVOD1 = 2 × ID1 / gm1 = ___ V\n\n// ===== STEP 5: SIZE M6 (NMOS) FOR PM =====\n// PM=60°: gm6/CL ≥ 2.2 × 2π × GBW\nCL = 5e-12\ngm6_min = 2.2 × 2 × π × GBW_target × CL\n        = 2.2 × 2π × ___ × ___ = ___ mA/V\n\n// ===== STEP 6: ID6 =====\n// gm6 = √(2×μnCox×(W/L)6×ID6) OR gm6=2×ID6/VOD6\nVOD6 = 0.3   // V (chosen)\nID6_check = gm6_min × VOD6 / 2 = ___ × ___ / 2 = ___ μA\n// Compare to allocated ID6: ___ μA vs ___ μA — consistent?\n\n// ===== STEP 7: GAIN CALCULATION =====\nμnCox = 200e-6\nlambda_n = 0.05\nlambda_p = 0.10\n\n// Stage 1 output resistance\nron1 = 1/(lambda_n × ID1) = ___ kΩ  // (NMOS from tail mirror)\nrop1 = 1/(lambda_p × ID1) = ___ kΩ  // (PMOS from diff pair)\nRout1 = ron1 × rop1 / (ron1 + rop1) = ___ kΩ\n\n// Stage 1 gain\nA1 = gm1 × Rout1 = ___ × ___ = ___ V/V\n\n// Stage 2 output resistance  \nron6 = 1/(lambda_n × ID6) = ___ kΩ\nrop7 = 1/(lambda_p × ID6) = ___ kΩ\nRout2 = ron6 × rop7 / (ron6 + rop7) = ___ kΩ\n\n// Stage 2 gain\nA2 = gm6_min × Rout2 = ___ × ___ = ___ V/V\n\n// Total gain\nA0 = A1 × A2 = ___ × ___ = ___ V/V\nA0_dB = 20 × log10(A0) = ___ dB\n\n// ===== STEP 8: VERIFY SPECS =====\n// A0 ≥ 70dB? ___\n// GBW = gm1/(2π×Cc) = ___ MHz ≥ 20MHz? ___\n// SR = ISS/Cc = ___ V/μs ≥ 50V/μs? ___\n// Power = (ISS + ID6 + mirrors) × VDD ≈ ___μW ≤ 500μW? ___\n\n// ===== STEP 9: FIX IF NEEDED =====\n// If A0 < 70dB, propose solution:\n// Option A: Increase L (→ smaller λ → higher ro)\n// Option B: Add cascode to stage 1 or 2\n// Option C: Increase current\n// Your recommendation: ___",
+          "hints": [
+            "I_total=500μW/1.8V=278μA; ISS=83μA; ID6=167μA; ID1=41.5μA",
+            "Cc=ISS/SR=83μA/50V/μs=83μA/50e6=1.66pF",
+            "gm1=20MHz×2π×1.66pF=208μA/V",
+            "WL_p=gm1²/(2×μpCox×ID1)=(208e-6)²/(2×100e-6×41.5e-6)=43e-9/8.3e-9=5.2",
+            "gm6_min=2.2×2π×20MHz×5pF=1.38mA/V; ID6_check=1.38mA/V×0.3/2=207μA",
+            "ron1=1/(0.05×41.5μA)=482kΩ; rop1=1/(0.1×41.5μA)=241kΩ; Rout1=161kΩ",
+            "A1=208μA/V×161kΩ=33.5; ron6=119kΩ; rop7=59.9kΩ; Rout2=39.9kΩ; A2=55; A0=1842=65.3dB",
+            "65.3dB < 70dB → need to double L: λ/2 → ro×2 → A0+6dB=71.3dB ✓"
+          ],
+          "requiredPatterns": [
+            "ISS = 83",
+            "Cc = 1.66 pF",
+            "208 μA/V",
+            "W/L",
+            "1.38 mA/V",
+            "161 kΩ",
+            "A1 = 33",
+            "A2 = 55",
+            "65.3 dB",
+            "double L",
+            "71 dB"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Complete design: ISS=83μA, Cc=1.66pF, gm1=208μA/V, WL1_p=5.2. Stage1: A1=33.5V/V. gm6=1.38mA/V, A2=55V/V. Total A0=1842=65.3dB — just below 70dB spec. Fix: double L from 1μm to 2μm → λ halves → ro doubles → A0≈71dB. This is exactly how real op-amp design works: iterate to close the spec. Congratulations — you've completed the Analog IC design path!"
+        }
+      },
+      {
+        "id": "analog-12-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Final boss — complete analog architect knowledge.",
+        "xp": 30,
+        "quiz": [
+          { "q": "In a sensor interface chain, noise is dominated by:", "options": ["Last stage (ADC)", "First stage (LNA) — all later stage noise divided by first stage gain²", "Filter stage", "Power supply"], "answer": 1 },
+          { "q": "If two-stage op-amp gain is below spec, best fix is:", "options": ["Increase power supply", "Double channel length L (halves λ, doubles ro, +6dB gain)", "Use larger Cc", "Increase gm1"], "answer": 1 },
+          { "q": "PVT corners for analog design means:", "options": ["Power, Voltage, Timing", "Process (fast/slow), Voltage (high/low), Temperature (hot/cold) variations", "Physical, Virtual, Thermal", "Placement, Via, Timing"], "answer": 1 },
+          { "q": "Analog Architect role requires:", "options": ["Only circuit simulation", "System-level partitioning + circuit design + layout awareness + verification across PVT", "Only layout skills", "Only digital design"], "answer": 1 }
+        ]
+      }
+    ]
+  }
+]

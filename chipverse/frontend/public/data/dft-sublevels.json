@@ -1,0 +1,1413 @@
+[
+  {
+    "levelId": 0,
+    "bonusXp": 80,
+    "badge": "DFT Initiate",
+    "subLevels": [
+      {
+        "id": "dft-0-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What DFT is, why it matters, and where it fits in the chip design flow.",
+        "keyPoints": [
+          "DFT = Design for Testability — making chips testable after manufacturing",
+          "Without DFT, you cannot know if a fabricated chip works correctly",
+          "Manufacturing defects: open circuits, short circuits, stuck-at faults",
+          "Stuck-at-0: a wire is always 0 regardless of logic; Stuck-at-1: always 1",
+          "Test coverage: % of all possible faults that can be detected",
+          "Industry target: 99%+ fault coverage before tapeout",
+          "DFT adds ~10-15% area overhead but is absolutely mandatory"
+        ],
+        "content": "After a chip is manufactured, it must be tested on Automated Test Equipment (ATE) to confirm it works. Without DFT, internal nodes of the chip are inaccessible — you can only observe outputs. DFT adds structures (scan chains, BIST, JTAG) that make internal flip-flops observable and controllable from external pins. The most common defect model is stuck-at: a wire is permanently stuck at logic 0 or 1 due to a manufacturing defect. Test patterns are vectors applied at the chip inputs that propagate the effect of a fault to an observable output. Fault coverage measures what percentage of all possible stuck-at faults are detected by the test patterns.",
+        "xp": 20
+      },
+      {
+        "id": "dft-0-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Basic DFT RTL attributes — scan enable, test mode, and DFT ports.",
+        "keyPoints": [
+          "scan_en: global scan enable signal — controls scan vs functional mode",
+          "test_mode: puts chip in test mode (disables clock gating etc.)",
+          "In scan mode: flip-flops form a shift register chain",
+          "In functional mode: flip-flops operate normally",
+          "SE (Scan Enable) high → scan shift mode",
+          "SE low → functional/capture mode",
+          "TDI/TDO: test data in/out — serial scan interface"
+        ],
+        "content": "// Basic DFT-aware flip-flop (scan flop)\n// A scan flop has an extra MUX at input:\n// SE=0 → D (functional data)\n// SE=1 → SI (scan input from previous flop)\n\nmodule scan_dff (\n  input  logic clk,\n  input  logic rst_n,\n  input  logic d,        // functional data\n  input  logic si,       // scan in (from previous flop)\n  input  logic se,       // scan enable\n  output logic q,\n  output logic so        // scan out (to next flop)\n);\n  logic d_mux;\n  assign d_mux = se ? si : d;  // scan MUX\n  assign so = q;               // scan out = Q\n\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) q <= 0;\n    else        q <= d_mux;\nendmodule\n\n// In functional mode (se=0): works like a normal DFF\n// In scan mode (se=1): shifts data from SI to Q",
+        "xp": 20
+      },
+      {
+        "id": "dft-0-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through a 4-flop scan chain — how shift and capture works.",
+        "keyPoints": [
+          "Scan chain: flip-flops connected SO→SI in a serial chain",
+          "Shift phase: scan_en=1, clock N times to shift in test pattern",
+          "Capture phase: scan_en=0, clock once to capture response",
+          "Shift-out phase: scan_en=1, clock N times to read out response",
+          "Compare: expected vs actual shift-out data = pass/fail",
+          "One scan chain of N flops needs N shift cycles"
+        ],
+        "content": "// 4-flop scan chain walkthrough\n// Flops: FF0 → FF1 → FF2 → FF3\n// TDI → FF0.SI → FF1.SI → FF2.SI → FF3.SI → TDO\n\n// STEP 1: SHIFT IN test pattern '1010'\n// scan_en = 1\n// Clock 1: TDI=0 → FF0=0, rest shift right\n// Clock 2: TDI=1 → FF0=1, FF1=0\n// Clock 3: TDI=0 → FF0=0, FF1=1, FF2=0\n// Clock 4: TDI=1 → FF0=1, FF1=0, FF2=1, FF3=0\n// After 4 clocks: chain = [1,0,1,0]\n\n// STEP 2: CAPTURE (apply stimulus, observe response)\n// scan_en = 0\n// Clock 1: combinational logic evaluates\n// Each FF captures result of its D input\n// New chain = [response bits]\n\n// STEP 3: SHIFT OUT response\n// scan_en = 1\n// Clock 4 times → read TDO each cycle\n// Compare to expected → PASS or FAIL\n\n// KEY INSIGHT:\n// Without scan: only observe chip outputs\n// With scan: observe EVERY flip-flop in design!",
+        "xp": 20
+      },
+      {
+        "id": "dft-0-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a scan-capable D flip-flop with scan MUX.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 0: Scan-Capable Flip-Flop\n\nImplement a scan-capable flip-flop:\n```\nmodule scan_dff (\n  input  logic clk, rst_n,\n  input  logic d,   // functional data\n  input  logic si,  // scan data in\n  input  logic se,  // scan enable\n  output logic q,\n  output logic so   // scan data out\n);\n```\n\nRequirements:\n1. When `se=1`: flop captures `si` (scan shift mode)\n2. When `se=0`: flop captures `d` (functional mode)\n3. `so` is always connected to `q` (scan out)\n4. Active-low async reset: `rst_n=0` → `q=0`\n5. Write a testbench that:\n   - Shifts in pattern `1011` through scan chain\n   - Verifies `so` matches expected after each clock",
+          "starterCode": "// Lab 0: Scan-Capable Flip-Flop\nmodule scan_dff (\n  input  logic clk, rst_n,\n  input  logic d, si, se,\n  output logic q, so\n);\n  // Your implementation here\n  // Hint: use a MUX on the D input\n\nendmodule\n\n// Testbench\nmodule tb_scan_dff;\n  logic clk=0, rst_n, d, si, se, q, so;\n\n  scan_dff dut(.clk,.rst_n,.d,.si,.se,.q,.so);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; se=0; d=0; si=0;\n    @(posedge clk); rst_n=1;\n\n    // Functional mode test\n    se=0; d=1; @(posedge clk); #1;\n    assert(q==1) else $error(\"Functional FAIL\");\n\n    // Scan mode: shift in 1,0,1,1\n    se=1;\n    si=1; @(posedge clk); #1; assert(q==1);\n    si=0; @(posedge clk); #1; assert(q==0);\n    si=1; @(posedge clk); #1; assert(q==1);\n    si=1; @(posedge clk); #1; assert(q==1);\n\n    $display(\"scan_dff tests PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "logic d_mux; assign d_mux = se ? si : d;",
+            "always_ff @(posedge clk or negedge rst_n) if (!rst_n) q <= 0; else q <= d_mux;",
+            "assign so = q;  // scan out always equals Q"
+          ],
+          "requiredPatterns": [
+            "module scan_dff",
+            "se ?",
+            "si",
+            "always_ff",
+            "rst_n",
+            "assign so",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A scan flop adds a 2:1 MUX before the D input. SE=1 selects SI (scan input) for shifting test patterns. SE=0 selects D (functional data) for normal operation. SO=Q makes the flop's state observable by chaining SO to the next flop's SI."
+        }
+      },
+      {
+        "id": "dft-0-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your DFT fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "What does a stuck-at-1 fault mean?", "options": ["Clock is stuck high", "A net is permanently logic 1 regardless of what drives it", "Flip-flop output is always 1", "Power supply issue"], "answer": 1 },
+          { "q": "Scan enable (SE=1) puts the chip in:", "options": ["Functional mode", "Scan shift mode — flops form a shift register", "Reset mode", "Low power mode"], "answer": 1 },
+          { "q": "Test coverage of 99% means:", "options": ["99% of chip area tested", "99% of all stuck-at faults can be detected", "99% test vectors passed", "99% paths timing-clean"], "answer": 1 },
+          { "q": "In a scan chain, SO of one flop connects to:", "options": ["CLK of next flop", "D of next flop", "SI of next flop", "Q of previous flop"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 1,
+    "bonusXp": 90,
+    "badge": "Scan Chain Engineer",
+    "subLevels": [
+      {
+        "id": "dft-1-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Scan chain insertion — connecting all flip-flops into testable chains.",
+        "keyPoints": [
+          "Scan insertion replaces standard flops with scan flops automatically",
+          "All flip-flops in a design are chained together: FF0→FF1→FF2...→FFn",
+          "Multiple chains: long designs split into parallel chains for speed",
+          "Chain length: number of flops per chain — affects test time",
+          "TDI/TDO: test data input/output pins for each chain",
+          "Scan compression: reduces test time by compressing multiple chains",
+          "EDA tools: Synopsys DFT Compiler, Cadence Encounter DFT"
+        ],
+        "content": "Scan insertion is performed automatically by EDA tools after synthesis. The tool replaces every standard flip-flop (DFF) with a scan flip-flop (SDFF) that has an extra MUX and scan port. All SDFFs are then connected into one or more chains: the SO of flop N connects to the SI of flop N+1. The first chain's SI is connected to the TDI pin; the last chain's SO is TDO. Multiple parallel chains reduce test time — instead of shifting N bits serially, you shift N/M bits in M parallel chains. Chain balancing ensures all chains have roughly equal length for parallel efficiency.",
+        "xp": 20
+      },
+      {
+        "id": "dft-1-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "RTL coding guidelines for scan-friendly design.",
+        "keyPoints": [
+          "Avoid combinational loops — cause hold violations in scan mode",
+          "Avoid gated clocks without scan bypass — blocks scan shifting",
+          "Clock gating cell: add SE to bypass gate when scanning",
+          "Tristate buses: disable during scan (use scan_en to force enable)",
+          "Async sets/resets: must be controllable from test pins",
+          "Avoid mixed-clock flops in same chain — causes timing issues",
+          "Reset all flops to known state before scan shift begins"
+        ],
+        "content": "// DFT-friendly clock gating cell\n// Integrated Clock Gating (ICG) with scan bypass\nmodule icg_cell (\n  input  logic clk,\n  input  logic en,       // functional enable\n  input  logic te,       // test enable (scan bypass)\n  output logic gclk      // gated clock output\n);\n  logic en_latch;\n  // Latch: transparent when clk=0\n  always_latch\n    if (!clk) en_latch = en | te;  // te bypasses gate in test\n\n  assign gclk = clk & en_latch;\nendmodule\n\n// DFT-friendly reset mux\n// Allows test to control reset independently\nmodule design_top (\n  input logic clk,\n  input logic rst_n,\n  input logic test_rst_n,  // test reset\n  input logic test_mode,\n  // ...\n);\n  logic effective_rst_n;\n  // In test mode, use test_rst_n\n  assign effective_rst_n = test_mode ? test_rst_n : rst_n;\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "dft-1-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a scan chain connection for a 3-flop design.",
+        "keyPoints": [
+          "Original design: 3 independent DFFs",
+          "After scan insertion: 3 SDFFs chained",
+          "TDI → FF0.SI → FF1.SI → FF2.SI → TDO",
+          "SE controls all flops simultaneously",
+          "Test time = chain length × (shift + capture cycles)",
+          "Multiple chains run in parallel to reduce test time"
+        ],
+        "content": "// Original design (before scan insertion)\nmodule my_design (input clk, rst_n, a, b, c,\n                   output x, y, z);\n  logic q0, q1, q2;\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin q0<=0; q1<=0; q2<=0; end\n    else begin\n      q0 <= a & b;\n      q1 <= q0 | c;\n      q2 <= q1 ^ a;\n    end\n  end\n  assign x=q0; assign y=q1; assign z=q2;\nendmodule\n\n// After scan insertion (tool adds scan ports)\nmodule my_design_scan (\n  input  clk, rst_n, a, b, c,\n  input  scan_en,  // NEW: scan enable\n  input  tdi,      // NEW: test data in\n  output tdo,      // NEW: test data out\n  output x, y, z\n);\n  logic q0, q1, q2;\n  logic si1, si2;  // internal scan connections\n\n  // Chain: tdi → FF0 → FF1 → FF2 → tdo\n  scan_dff ff0(.clk,.rst_n,.d(a&b), .si(tdi), .se(scan_en),.q(q0),.so(si1));\n  scan_dff ff1(.clk,.rst_n,.d(q0|c),.si(si1), .se(scan_en),.q(q1),.so(si2));\n  scan_dff ff2(.clk,.rst_n,.d(q1^a),.si(si2), .se(scan_en),.q(q2),.so(tdo));\n\n  assign x=q0; assign y=q1; assign z=q2;\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "dft-1-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Build a 4-flop scan chain and verify shift/capture operation.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 1: 4-Flop Scan Chain\n\nBuild a module with 4 scan flip-flops chained together:\n\n```\nmodule scan_chain_4 (\n  input  logic clk, rst_n,\n  input  logic d0, d1, d2, d3,  // functional data\n  input  logic scan_en,\n  input  logic tdi,\n  output logic tdo,\n  output logic q0, q1, q2, q3\n);\n```\n\nChain: tdi → FF0 → FF1 → FF2 → FF3 → tdo\n\nTestbench must:\n1. Reset all flops\n2. Shift in pattern `1101` (MSB first through TDI)\n3. Check q3,q2,q1,q0 = 1,1,0,1 after 4 shift clocks\n4. Capture mode (se=0): apply d0=1,d1=0,d2=1,d3=1, clock once\n5. Shift out and verify TDO sequence",
+          "starterCode": "// Lab 1: 4-Flop Scan Chain\nmodule scan_dff (\n  input  logic clk, rst_n, d, si, se,\n  output logic q, so\n);\n  logic d_mux;\n  assign d_mux = se ? si : d;\n  assign so = q;\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) q <= 0;\n    else        q <= d_mux;\nendmodule\n\nmodule scan_chain_4 (\n  input  logic clk, rst_n,\n  input  logic d0, d1, d2, d3,\n  input  logic scan_en, tdi,\n  output logic tdo,\n  output logic q0, q1, q2, q3\n);\n  logic so0, so1, so2;\n\n  // Connect 4 scan flops in chain\n  // tdi → FF0 → FF1 → FF2 → FF3 → tdo\n  // Your code here\n\nendmodule\n\nmodule tb_scan_chain;\n  logic clk=0, rst_n, scan_en, tdi, tdo;\n  logic d0,d1,d2,d3, q0,q1,q2,q3;\n\n  scan_chain_4 dut(.*);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; scan_en=0; tdi=0;\n    d0=0; d1=0; d2=0; d3=0;\n    repeat(2) @(posedge clk);\n    rst_n=1;\n\n    // Shift in 1101 (FF0 gets last bit shifted in)\n    scan_en=1;\n    tdi=1; @(posedge clk);\n    tdi=1; @(posedge clk);\n    tdi=0; @(posedge clk);\n    tdi=1; @(posedge clk); #1;\n\n    assert({q3,q2,q1,q0}==4'b1101)\n      else $error(\"Shift FAIL: %b\",{q3,q2,q1,q0});\n\n    $display(\"Scan chain PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "scan_dff ff0(.clk,.rst_n,.d(d0),.si(tdi),  .se(scan_en),.q(q0),.so(so0));",
+            "scan_dff ff1(.clk,.rst_n,.d(d1),.si(so0), .se(scan_en),.q(q1),.so(so1));",
+            "scan_dff ff2(.clk,.rst_n,.d(d2),.si(so1), .se(scan_en),.q(q2),.so(so2));",
+            "scan_dff ff3(.clk,.rst_n,.d(d3),.si(so2), .se(scan_en),.q(q3),.so(tdo));"
+          ],
+          "requiredPatterns": [
+            "module scan_chain_4",
+            "scan_dff ff0",
+            "scan_dff ff1",
+            "scan_dff ff2",
+            "scan_dff ff3",
+            "tdi",
+            "tdo",
+            "scan_en",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Each scan flop's SO connects to the next flop's SI, creating a serial chain. TDI enters FF0, and FF3's SO is TDO. During shift (SE=1), data moves one position per clock. After 4 clocks, the 4-bit pattern is loaded. Capture (SE=0) freezes functional data into the chain."
+        }
+      },
+      {
+        "id": "dft-1-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your scan chain knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Why are multiple scan chains used instead of one long chain?", "options": ["To reduce area", "To reduce test time by shifting in parallel", "To avoid clock issues", "To reduce power"], "answer": 1 },
+          { "q": "Clock gating cells need scan bypass because:", "options": ["They consume too much power", "Without TE, the gated clock blocks scan shifting", "They slow down the design", "They cause DRC violations"], "answer": 1 },
+          { "q": "After shift-in, the capture phase uses SE=:", "options": ["1 (scan mode)", "0 (functional mode — captures circuit response)", "X (don't care)", "Changes per flop"], "answer": 1 },
+          { "q": "Scan chain length of N means:", "options": ["N gates in the design", "N flip-flops in that chain — requires N shift clocks", "N test vectors", "N DRC violations"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 2,
+    "bonusXp": 100,
+    "badge": "Fault Model Expert",
+    "subLevels": [
+      {
+        "id": "dft-2-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Fault models — stuck-at, transition, path delay, and bridging faults.",
+        "keyPoints": [
+          "Stuck-at-0 (SA0): net permanently 0 regardless of logic driving it",
+          "Stuck-at-1 (SA1): net permanently 1 regardless of logic driving it",
+          "Transition fault: gate output cannot make a 0→1 or 1→0 transition",
+          "Path delay fault: critical path has additional delay due to defect",
+          "Bridging fault: two adjacent nets are shorted together",
+          "IDDQ testing: detects bridging by measuring quiescent current",
+          "Stuck-at is most common — 80%+ of DFT targets this model"
+        ],
+        "content": "Different manufacturing defects manifest as different fault models. Stuck-at is the classic model — a physical defect (particle contamination, metal void) causes a net to be permanently driven to 0 or 1. Transition faults model slow circuits — a gate can toggle but too slowly, failing at-speed tests. Path delay faults are the hardest to test — they require launching and capturing at full functional speed. Bridging faults occur when two adjacent wires touch (short circuit) — they create a wired-AND or wired-OR depending on the drivers. Cell-aware faults model defects within a standard cell (like a floating gate).",
+        "xp": 20
+      },
+      {
+        "id": "dft-2-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Writing testbench patterns to detect specific stuck-at faults.",
+        "keyPoints": [
+          "To detect SA0 on net N: force N to logic 1, observe at output",
+          "To detect SA1 on net N: force N to logic 0, observe at output",
+          "Sensitization: set all other inputs so fault effect propagates to output",
+          "D-algorithm: classical ATPG method for finding test vectors",
+          "Test vector: {input values} that make a fault visible at output",
+          "Fault simulation: simulates which faults each vector detects",
+          "Untestable fault: fault that cannot be detected by any vector"
+        ],
+        "content": "// Example: detecting SA0 on AND gate output\n// Gate: Y = A & B\n// SA0 on Y: Y always=0 even when A=1,B=1\n//\n// Test vector: A=1, B=1\n//   Fault-free: Y=1\n//   Faulty (SA0): Y=0\n//   → detects SA0!\n//\n// SA1 on A of AND gate:\n//   Need: set A=0, B=1 → Y should be 0\n//   Faulty (A SA1): A=1, B=1 → Y=1 (wrong!)\n//   Test vector: A=0, B=1, expect Y=0\n\n// SystemVerilog fault detection testbench pattern\nmodule tb_fault_detect;\n  logic a, b, y;\n  and_gate dut(.a,.b,.y);\n\n  initial begin\n    // Test SA0 on Y: apply A=1,B=1, expect Y=1\n    a=1; b=1; #5;\n    if (y !== 1)\n      $display(\"SA0 on Y DETECTED: y=%b\", y);\n    else\n      $display(\"No SA0 fault\");\n\n    // Test SA1 on A: apply A=0,B=1, expect Y=0\n    a=0; b=1; #5;\n    if (y !== 0)\n      $display(\"SA1 on A DETECTED: y=%b\", y);\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "dft-2-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Find test vectors for all stuck-at faults on a 2-input OR gate.",
+        "keyPoints": [
+          "OR gate: Y = A | B",
+          "SA0 on Y: need A=1 or B=1 → Y should be 1 but stuck=0",
+          "SA1 on Y: need A=0, B=0 → Y should be 0 but stuck=1",
+          "SA0 on A: need A=1, B=0 → effect propagates through B=0",
+          "SA1 on A: need A=0, B=0 → Y=0 fault-free, Y=1 faulty",
+          "Total faults on 2-input OR: 6 (SA0/SA1 on A, B, Y)",
+          "Some vectors detect multiple faults simultaneously"
+        ],
+        "content": "// OR gate: Y = A | B\n// All stuck-at faults and detecting vectors:\n\n// Fault 1: Y SA0 (output stuck at 0)\n//   Need Y=1 in fault-free: use A=1,B=0\n//   Fault-free: Y=1  Faulty: Y=0  → DETECTED\n\n// Fault 2: Y SA1 (output stuck at 1)\n//   Need Y=0 in fault-free: use A=0,B=0\n//   Fault-free: Y=0  Faulty: Y=1  → DETECTED\n\n// Fault 3: A SA0 (input A stuck at 0)\n//   Need A=1 to matter: use A=1,B=0\n//   Fault-free: Y=1  Faulty: A=0,B=0 → Y=0  → DETECTED\n//   (same vector detects Y SA0 and A SA0!)\n\n// Fault 4: A SA1 (input A stuck at 1)\n//   Need A=0 to matter: use A=0,B=0\n//   Fault-free: Y=0  Faulty: A=1,B=0 → Y=1  → DETECTED\n\n// Fault 5: B SA0: use A=0,B=1 → detects B SA0\n// Fault 6: B SA1: use A=0,B=0 → detects B SA1\n\n// Minimum test set: {A=0,B=0}, {A=1,B=0}, {A=0,B=1}\n// Covers all 6 faults!",
+        "xp": 20
+      },
+      {
+        "id": "dft-2-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write test vectors to detect stuck-at faults on a combinational circuit.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 2: Fault Detection Test Vectors\n\nGiven a 2-level combinational circuit:\n```\n// G1: w1 = A & B  (AND)\n// G2: w2 = B | C  (OR)\n// G3: Y  = w1 ^ w2 (XOR)\n```\n\nWrite a testbench that:\n1. Implements the fault-free circuit\n2. Tests these 4 specific stuck-at faults by applying the correct vector:\n   - SA0 on w1: need w1=1 → A=1,B=1\n   - SA1 on w1: need w1=0 → A=0 or B=0\n   - SA0 on Y: find a vector where Y=1 fault-free\n   - SA1 on w2: need w2=0 → B=0,C=0\n3. For each test, display the inputs, expected output, and whether fault is detectable\n\nModule name: `tb_fault_vectors`",
+          "starterCode": "// Lab 2: Fault Detection Test Vectors\nmodule comb_circuit (input a,b,c, output y);\n  logic w1, w2;\n  assign w1 = a & b;   // AND gate\n  assign w2 = b | c;   // OR gate\n  assign y  = w1 ^ w2; // XOR gate\nendmodule\n\nmodule tb_fault_vectors;\n  logic a, b, c, y;\n  comb_circuit dut(.a,.b,.c,.y);\n\n  task apply_and_check(\n    input logic ta, tb, tc,\n    input logic exp_y,\n    input string fault_name\n  );\n    a=ta; b=tb; c=tc; #5;\n    $display(\"Testing %s: a=%b b=%b c=%b → y=%b (exp=%b) %s\",\n      fault_name, a, b, c, y, exp_y,\n      y==exp_y ? \"FAULT-FREE\" : \"FAULT DETECTED\");\n  endtask\n\n  initial begin\n    // Test 1: SA0 on w1 — apply A=1,B=1,C=0\n    // w1=1, w2=0, Y=1 (fault-free)\n    // If w1 SA0: w1=0, w2=0, Y=0 → detectable!\n    apply_and_check(1,1,0, 1, \"w1_SA0\");\n\n    // Test 2: SA1 on w1 — need w1=0\n    // Apply A=0,B=1,C=0: w1=0, w2=1, Y=1\n    // If w1 SA1: w1=1, w2=1, Y=0 → detectable!\n    apply_and_check(0,1,0, 1, \"w1_SA1\");\n\n    // Test 3: SA0 on Y — need Y=1\n    // Apply A=1,B=1,C=0: Y=1 fault-free\n    // If Y SA0: Y=0 → detectable\n    apply_and_check(1,1,0, 1, \"Y_SA0\");\n\n    // Test 4: SA1 on w2 — need w2=0\n    // Apply A=1,B=0,C=0: w1=0,w2=0,Y=0\n    // If w2 SA1: w2=1, Y=1 → detectable!\n    apply_and_check(1,0,0, 0, \"w2_SA1\");\n\n    $display(\"All fault vectors applied\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "To detect SA0 on net N: the fault-free value of N must be 1",
+            "To detect SA1 on net N: the fault-free value of N must be 0",
+            "The effect must propagate to Y — all other paths must not mask it",
+            "apply_and_check(1,1,0, 1, \"w1_SA0\") tests A=1,B=1,C=0 expecting Y=1"
+          ],
+          "requiredPatterns": [
+            "module tb_fault_vectors",
+            "comb_circuit dut",
+            "task apply_and_check",
+            "w1_SA0",
+            "w1_SA1",
+            "Y_SA0",
+            "w2_SA1",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Detecting SA0 requires the fault-free value to be 1 (so the stuck-at-0 creates a 0→observable difference). Detecting SA1 requires fault-free=0. The effect must propagate through all remaining logic to reach Y — this is called sensitization. Each test vector can detect multiple faults simultaneously."
+        }
+      },
+      {
+        "id": "dft-2-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your fault model knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "To detect SA0 on a net, the test vector must make that net:", "options": ["Logic 0 (same as fault)", "Logic 1 (opposite of fault) so the difference is observable", "High impedance", "Unknown (X)"], "answer": 1 },
+          { "q": "Transition faults model:", "options": ["Wires permanently at 0 or 1", "Circuits that can toggle but too slowly at speed", "Power supply variations", "Clock jitter"], "answer": 1 },
+          { "q": "Bridging faults occur when:", "options": ["Two flip-flops have the same data", "Two adjacent wires are shorted together", "Clock and data arrive at same time", "A gate has too many fanouts"], "answer": 1 },
+          { "q": "The most commonly targeted fault model in DFT is:", "options": ["Path delay", "Bridging", "Stuck-at (SA0/SA1)", "IDDQ current fault"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 3,
+    "bonusXp": 110,
+    "badge": "ATPG Specialist",
+    "subLevels": [
+      {
+        "id": "dft-3-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "ATPG — Automatic Test Pattern Generation for maximum fault coverage.",
+        "keyPoints": [
+          "ATPG automatically generates test vectors to detect stuck-at faults",
+          "D-algorithm: classic ATPG algorithm — places D (fault value) at fault site",
+          "PODEM: Path-Oriented Decision Making — more efficient than D-algorithm",
+          "Fault simulation: determines which faults each pattern detects",
+          "Redundant faults: logically impossible to detect — circuit structure issue",
+          "Tools: Synopsys TetraMAX, Cadence Encounter Test",
+          "Output: .stil or .wgl test pattern files for ATE"
+        ],
+        "content": "ATPG tools automatically find input vectors that detect each fault in the design. The tool uses algorithms like PODEM or Fulls to: (1) activate the fault (set the net to opposite of stuck value), (2) propagate the fault effect to an observable output (scan chain or primary output), and (3) justify all required signal values backward through the circuit. Fault simulation then runs all generated patterns against all faults to compute coverage. Patterns are then optimized (compacted) to remove redundant vectors. The final output is a test program loaded onto ATE that tests actual silicon.",
+        "xp": 20
+      },
+      {
+        "id": "dft-3-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "ATPG concepts — D-notation, fault activation, and propagation.",
+        "keyPoints": [
+          "D notation: D=1 fault-free, 0 faulty; D̄=0 fault-free, 1 faulty",
+          "Fault activation: set fault site to opposite of stuck value",
+          "Fault propagation: route D through sensitized path to output",
+          "Justification: backward implication to set required values",
+          "X (don't-care): input not needed — ATPG sets to reduce conflicts",
+          "Test cube: partial assignment {A=1, B=X, C=0} before full specification",
+          "Compaction: merge patterns with compatible X values to reduce count"
+        ],
+        "content": "// ATPG D-algorithm example for AND gate\n// Gate: Y = A & B\n// Fault: SA0 on Y\n\n// Step 1: Activate fault\n// Need Y=1 fault-free: set A=1, B=1\n// Now Y=D (fault-free=1, faulty=0)\n\n// Step 2: Propagate D to primary output\n// Y is directly observable → propagation complete\n// Test vector: A=1, B=1, expect Y=1 (fault-free)\n//              A=1, B=1, get   Y=0 (faulty → detected!)\n\n// ATPG with scan chain:\n// Fault: SA0 on internal flop Q3\n// 1. Initialize: shift in values so Q3 gets activated\n// 2. Capture: clock once (SE=0), observe Q3 output\n// 3. Shift out: read TDO, compare to expected\n\n// STIL format (Standard Test Interface Language)\n// Pattern {Force A 1; Force B 1; Measure Y H;}\n// H = expect logic high\n// L = expect logic low\n// X = don't care\n\n// TetraMAX command (industry ATPG tool):\n// run_atpg -effort high\n// report_statistics   → shows coverage\n// write_patterns test.stil -format stil",
+        "xp": 20
+      },
+      {
+        "id": "dft-3-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Run ATPG step by step on a small 3-gate circuit.",
+        "keyPoints": [
+          "Circuit: Y = (A & B) | C",
+          "Target fault: SA0 on node w1 (A & B output)",
+          "Step 1: Activate w1=1 → set A=1, B=1",
+          "Step 2: Propagate w1=D through OR gate → set C=0",
+          "Step 3: Y=D (fault-free=1, faulty=0) — observable!",
+          "Final test vector: A=1, B=1, C=0, expect Y=1",
+          "Fault simulation confirms: SA0 on w1 detected by this vector"
+        ],
+        "content": "// Circuit: Y = (A & B) | C\n// Gate structure:\n//   G1: w1 = A & B  (AND)\n//   G2: Y  = w1 | C (OR)\n\n// TARGET: Detect SA0 on w1\n\n// Step 1: ACTIVATE\n// SA0 on w1: fault-free w1=1 needed\n// Need A=1 AND B=1\n// Set A=1, B=1 → w1=D (1 FF, 0 faulty)\n\n// Step 2: PROPAGATE through G2 (OR gate)\n// w1=D, need C=0 to propagate D\n// OR(D, 0) = D → Y=D ✓ observable!\n\n// Step 3: JUSTIFY (backward implication)\n// A=1 ← primary input ✓\n// B=1 ← primary input ✓\n// C=0 ← primary input ✓\n// All inputs justified!\n\n// FINAL TEST VECTOR:\n// A=1, B=1, C=0\n// Expected Y = 1 (fault-free)\n// Faulty Y   = 0 (w1 stuck at 0)\n// FAULT DETECTED ✓\n\n// Fault coverage impact:\n// This one vector detects:\n// - w1 SA0, A SA0 (same activation)\n// - Y SA0 (if Y=0 expected 1)\n// Multiple faults detected per vector = efficient!",
+        "xp": 20
+      },
+      {
+        "id": "dft-3-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement manual ATPG — find and verify test vectors for a circuit.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 3: Manual ATPG\n\nFor the circuit: `Y = (A XNOR B) & (B | C)`\n\nDecomposed:\n```\nw1 = A ~^ B  (XNOR)\nw2 = B | C   (OR)\nY  = w1 & w2 (AND)\n```\n\nWrite a testbench that:\n1. Implements the circuit\n2. Finds and applies test vectors for these 6 faults:\n   - SA0 on w1, SA1 on w1\n   - SA0 on w2, SA1 on w2  \n   - SA0 on Y,  SA1 on Y\n3. For each fault, apply the correct detection vector\n4. Print: which vector detects which fault\n5. Count total faults detected\n\nModule name: `tb_atpg_manual`",
+          "starterCode": "// Lab 3: Manual ATPG\nmodule circuit_atpg (input a,b,c, output y);\n  logic w1, w2;\n  assign w1 = ~(a ^ b);  // XNOR\n  assign w2 = b | c;     // OR\n  assign y  = w1 & w2;   // AND\nendmodule\n\nmodule tb_atpg_manual;\n  logic a, b, c, y;\n  int detected = 0;\n  circuit_atpg dut(.a,.b,.c,.y);\n\n  // Task: apply vector and check if fault detectable\n  task test_vector(\n    input logic ta,tb,tc,\n    input logic expected_y,\n    input string fault_name\n  );\n    a=ta; b=tb; c=tc; #5;\n    if (y === expected_y) begin\n      $display(\"OK  [%s] A=%b B=%b C=%b Y=%b\",\n               fault_name,a,b,c,y);\n      detected++;\n    end else\n      $display(\"ERR [%s] Got Y=%b, exp=%b\",fault_name,y,expected_y);\n  endtask\n\n  initial begin\n    // w1 = XNOR(A,B): w1=1 when A==B, w1=0 when A!=B\n    // w2 = OR(B,C):   w2=0 only when B=0,C=0\n    // Y  = AND(w1,w2)\n\n    // Detect w1 SA0: need w1=1 → A=B, use A=1,B=1,C=1\n    // w1=1,w2=1,Y=1 fault-free\n    test_vector(1,1,1, 1, \"w1_SA0\");\n\n    // Detect w1 SA1: need w1=0 → A!=B, use A=0,B=1,C=1\n    // w1=0,w2=1,Y=0 fault-free\n    test_vector(0,1,1, 0, \"w1_SA1\");\n\n    // Detect w2 SA0: need w2=1 AND w1=1\n    // Use A=1,B=1,C=1: w2=1,w1=1,Y=1\n    test_vector(1,1,1, 1, \"w2_SA0\");\n\n    // Detect w2 SA1: need w2=0 → B=0,C=0, keep w1=1 (A=0,B=0)\n    // w1=1,w2=0,Y=0 fault-free\n    test_vector(0,0,0, 0, \"w2_SA1\");\n\n    // Detect Y SA0: need Y=1 fault-free\n    test_vector(1,1,1, 1, \"Y_SA0\");\n\n    // Detect Y SA1: need Y=0 fault-free\n    test_vector(0,1,1, 0, \"Y_SA1\");\n\n    $display(\"Faults detected: %0d/6\", detected);\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "XNOR: output=1 when both inputs equal; output=0 when inputs differ",
+            "w1 SA0 detection: need w1=1 in fault-free → A=B (e.g., A=1,B=1)",
+            "w1 SA1 detection: need w1=0 in fault-free → A≠B (e.g., A=0,B=1)",
+            "For AND output Y=1: both inputs must be 1"
+          ],
+          "requiredPatterns": [
+            "module tb_atpg_manual",
+            "circuit_atpg dut",
+            "task test_vector",
+            "w1_SA0",
+            "w1_SA1",
+            "w2_SA0",
+            "w2_SA1",
+            "detected",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Manual ATPG applies the D-algorithm principles: activate (set fault site to opposite value), propagate (route D to observable output), justify (set all required inputs). Notice how some vectors detect multiple faults — this is fault collapsing, which makes ATPG efficient."
+        }
+      },
+      {
+        "id": "dft-3-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your ATPG knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "ATPG stands for:", "options": ["Automated Test Program Generator", "Automatic Test Pattern Generation", "Advanced Timing Path Generator", "Analog Test Protocol Guide"], "answer": 1 },
+          { "q": "A redundant fault in ATPG is:", "options": ["A fault that occurs twice", "A fault logically impossible to detect — the circuit is overdesigned", "A fault caught by multiple vectors", "A timing fault"], "answer": 1 },
+          { "q": "Fault simulation determines:", "options": ["Which faults exist in silicon", "Which faults each test pattern detects", "How to fix faults", "The speed of the ATPG algorithm"], "answer": 1 },
+          { "q": "STIL format is:", "options": ["A hardware description language", "Standard Test Interface Language — format for ATE test programs", "A fault model format", "A synthesis script format"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 4,
+    "bonusXp": 120,
+    "badge": "MBIST Designer",
+    "subLevels": [
+      {
+        "id": "dft-4-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "MBIST — Memory Built-In Self-Test for SRAMs and ROMs.",
+        "keyPoints": [
+          "MBIST tests embedded memories without external ATE memory patterns",
+          "Memories cannot be tested by scan chains — need special algorithm",
+          "March algorithm: writes/reads patterns in specific sequences",
+          "March C-: most popular, detects stuck-at and coupling faults",
+          "Fault models: stuck-at, transition, coupling (two cells interact)",
+          "MBIST controller: on-chip FSM that runs march tests automatically",
+          "Pass/Fail signal: single output tells ATE if memory is good"
+        ],
+        "content": "Embedded SRAMs and ROMs make up 60-70% of modern SoC area. They cannot be tested by conventional scan ATPG because their internal structure is a regular array, not random logic. MBIST inserts a controller that runs march algorithms — sequences of write and read operations that detect all stuck-at and coupling faults. The March C- algorithm: (↕W0)(↑R0W1)(↑R1W0)(↓R0W1)(↓R1W0)(↕R0). Each element means: go up/down the address space, write/read specific values. A BIST controller is a small FSM that generates these sequences and compares read data to expected — all on-chip, no ATE memory patterns needed.",
+        "xp": 20
+      },
+      {
+        "id": "dft-4-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "March algorithm patterns and MBIST controller state machine.",
+        "keyPoints": [
+          "M0: ↕W0 — write 0 to all addresses (up or down order)",
+          "M1: ↑R0W1 — read 0 then write 1, ascending addresses",
+          "M2: ↑R1W0 — read 1 then write 0, ascending addresses",
+          "M3: ↓R0W1 — read 0 then write 1, descending addresses",
+          "M4: ↓R1W0 — read 1 then write 0, descending addresses",
+          "M5: ↕R0 — read 0 from all addresses",
+          "Total operations: 6N reads/writes for N-cell memory"
+        ],
+        "content": "// MBIST Controller State Machine (simplified)\ntypedef enum logic [2:0] {\n  IDLE    = 3'b000,\n  MARCH0  = 3'b001,  // Write 0 to all\n  MARCH1  = 3'b010,  // Read 0, Write 1 ascending\n  MARCH2  = 3'b011,  // Read 1, Write 0 ascending\n  MARCH3  = 3'b100,  // Read 0, Write 1 descending\n  MARCH4  = 3'b101,  // Read 1, Write 0 descending\n  MARCH5  = 3'b110,  // Read 0 from all\n  PASS    = 3'b111\n} march_state_t;\n\nmodule mbist_ctrl #(parameter DEPTH=256, AW=8) (\n  input  logic clk, rst_n,\n  input  logic bist_en,       // start BIST\n  output logic bist_done,\n  output logic bist_pass,\n  // Memory interface\n  output logic [AW-1:0] mem_addr,\n  output logic          mem_we,\n  output logic          mem_wdata,\n  input  logic          mem_rdata\n);\n  march_state_t state, next;\n  logic [AW-1:0] addr_cnt;\n  logic fail_flag;\n  // ... state machine logic\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "dft-4-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through March C- algorithm on a 4-cell memory.",
+        "keyPoints": [
+          "4-cell memory: addr 0,1,2,3",
+          "M0: Write 0 to all → [0,0,0,0]",
+          "M1 ascending: R0,W1 at each addr → [1,1,1,1]",
+          "M2 ascending: R1,W0 at each addr → [0,0,0,0]",
+          "M3 descending: R0,W1 → [1,1,1,1]",
+          "M4 descending: R1,W0 → [0,0,0,0]",
+          "M5: Read all, expect 0 — any mismatch = fail"
+        ],
+        "content": "// March C- on 4-cell memory\n// Memory state shown after each march element\n// Initial: [X, X, X, X] (unknown)\n\n// M0: ↕W0 — write 0 to all addresses\n// addr=0: W0; addr=1: W0; addr=2: W0; addr=3: W0\n// Memory: [0, 0, 0, 0]\n\n// M1: ↑R0W1 — ascending, read 0 then write 1\n// addr=0: R→0(OK), W1;  addr=1: R→0(OK), W1\n// addr=2: R→0(OK), W1;  addr=3: R→0(OK), W1\n// Memory: [1, 1, 1, 1]\n// If any read returns 1 instead of 0 → SA1 detected!\n\n// M2: ↑R1W0 — ascending, read 1 then write 0\n// addr=0: R→1(OK), W0;  ... all reads must be 1\n// Memory: [0, 0, 0, 0]\n// SA0 on any cell detected here!\n\n// M3: ↓R0W1 — descending order\n// addr=3: R→0(OK), W1; addr=2: R→0, W1; ...\n// Memory: [1, 1, 1, 1]\n\n// M4: ↓R1W0 — descending order\n// Memory: [0, 0, 0, 0]\n\n// M5: ↕R0 — read all, expect 0\n// All reads must be 0 → PASS\n// Any read=1 → FAIL (stuck-at-1 fault)\n\n$display(\"March C- PASSED — memory is fault-free\");",
+        "xp": 20
+      },
+      {
+        "id": "dft-4-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a simple March-C MBIST controller for a small memory.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 4: MBIST Controller\n\nImplement a simplified MBIST controller for an 8-cell memory:\n\n```\nmodule mbist_simple #(parameter DEPTH=8, AW=3) (\n  input  logic clk, rst_n,\n  input  logic bist_en,\n  output logic bist_done,\n  output logic bist_pass,\n  output logic [AW-1:0] mem_addr,\n  output logic          mem_we,\n  output logic          mem_wdata,\n  input  logic          mem_rdata\n);\n```\n\nImplement 3-element simplified march:\n1. **M0**: Write 0 to addresses 0..7 (ascending)\n2. **M1**: Read (expect 0), Write 1 to addresses 0..7 (ascending) — fail if read≠0\n3. **M2**: Read (expect 1) from addresses 0..7 — fail if read≠1\n4. Set `bist_done=1` and `bist_pass=1` if no failures, `bist_pass=0` if any failure",
+          "starterCode": "// Lab 4: Simplified MBIST Controller\nmodule mbist_simple #(parameter DEPTH=8, AW=3) (\n  input  logic clk, rst_n,\n  input  logic bist_en,\n  output logic bist_done,\n  output logic bist_pass,\n  output logic [AW-1:0] mem_addr,\n  output logic          mem_we,\n  output logic          mem_wdata,\n  input  logic          mem_rdata\n);\n  typedef enum logic [1:0] {\n    IDLE=0, M0_WRITE0=1, M1_RD0_WR1=2, M2_READ1=3\n  } state_t;\n\n  state_t state;\n  logic [AW-1:0] addr;\n  logic fail;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      state<=IDLE; addr<=0; fail<=0;\n      bist_done<=0; bist_pass<=0;\n      mem_we<=0; mem_wdata<=0; mem_addr<=0;\n    end else begin\n      case (state)\n        IDLE: begin\n          if (bist_en) begin\n            state <= M0_WRITE0;\n            addr  <= 0; fail <= 0;\n            bist_done <= 0;\n          end\n        end\n\n        M0_WRITE0: begin\n          // Write 0 to all addresses\n          mem_addr  <= addr;\n          mem_we    <= 1;\n          mem_wdata <= 0;\n          if (addr == DEPTH-1) begin\n            state <= M1_RD0_WR1;\n            addr  <= 0;\n          end else addr <= addr + 1;\n        end\n\n        M1_RD0_WR1: begin\n          // Read expect 0, then write 1\n          mem_addr  <= addr;\n          mem_we    <= 0; // read first\n          // Check read data\n          if (mem_rdata !== 1'b0) fail <= 1;\n          // Then write 1 next cycle\n          // (simplified: write 1 same cycle)\n          mem_we    <= 1;\n          mem_wdata <= 1;\n          if (addr == DEPTH-1) begin\n            state <= M2_READ1;\n            addr  <= 0;\n          end else addr <= addr + 1;\n        end\n\n        M2_READ1: begin\n          // Read expect 1\n          mem_addr <= addr;\n          mem_we   <= 0;\n          if (mem_rdata !== 1'b1) fail <= 1;\n          if (addr == DEPTH-1) begin\n            bist_done <= 1;\n            bist_pass <= ~fail;\n            state <= IDLE;\n          end else addr <= addr + 1;\n        end\n      endcase\n    end\n  end\nendmodule\n\n// Simple 8-cell memory model\nmodule mem8 (input clk, we, input [2:0] addr, input wdata, output logic rdata);\n  logic [7:0] mem;\n  always_ff @(posedge clk)\n    if (we) mem[addr] <= wdata;\n  assign rdata = mem[addr];\nendmodule\n\n// Testbench\nmodule tb_mbist;\n  logic clk=0, rst_n, bist_en, bist_done, bist_pass;\n  logic [2:0] mem_addr;\n  logic mem_we, mem_wdata, mem_rdata;\n\n  mbist_simple dut(.clk,.rst_n,.bist_en,.bist_done,.bist_pass,\n                   .mem_addr,.mem_we,.mem_wdata,.mem_rdata);\n  mem8 memory(.clk,.we(mem_we),.addr(mem_addr),\n               .wdata(mem_wdata),.rdata(mem_rdata));\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; bist_en=0;\n    repeat(2) @(posedge clk); rst_n=1;\n    @(posedge clk); bist_en=1;\n    @(posedge clk); bist_en=0;\n    // Wait for BIST to complete\n    wait(bist_done==1);\n    #1;\n    $display(\"MBIST %s\", bist_pass ? \"PASSED\" : \"FAILED\");\n    assert(bist_pass==1) else $error(\"BIST should pass on good memory\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "The state machine cycles: IDLE→M0_WRITE0→M1_RD0_WR1→M2_READ1→IDLE",
+            "In M1: read mem_rdata, if not 0 set fail=1, then write 1",
+            "In M2: read mem_rdata, if not 1 set fail=1",
+            "bist_pass = ~fail at the end of M2"
+          ],
+          "requiredPatterns": [
+            "module mbist_simple",
+            "typedef enum",
+            "M0_WRITE0",
+            "M1_RD0_WR1",
+            "M2_READ1",
+            "bist_done",
+            "bist_pass",
+            "fail",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The MBIST controller is a simple FSM that sequences through march elements. Each element writes a known pattern and reads back to verify. Any mismatch sets a fail flag. The pass/fail output is readable by ATE with just one pin — much simpler than providing full memory test patterns externally."
+        }
+      },
+      {
+        "id": "dft-4-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your MBIST knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Why can't scan chains test embedded SRAMs?", "options": ["SRAMs are too fast", "SRAM internal array is not made of standard scan flip-flops", "SRAMs don't have clocks", "Scan chains are too short"], "answer": 1 },
+          { "q": "March C- algorithm detects:", "options": ["Only stuck-at faults", "Stuck-at and coupling faults between memory cells", "Only timing faults", "Power supply issues"], "answer": 1 },
+          { "q": "MBIST bist_pass output tells ATE:", "options": ["How many faults were found", "Pass or fail — single bit indicating memory health", "Which addresses failed", "The repair address"], "answer": 1 },
+          { "q": "↑R0W1 in March notation means:", "options": ["Read 1 write 0 going down", "Read expecting 0 then write 1, ascending addresses", "Reset then write", "Random read/write"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 5,
+    "bonusXp": 130,
+    "badge": "LBIST Expert",
+    "subLevels": [
+      {
+        "id": "dft-5-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "LBIST — Logic Built-In Self-Test using LFSR and MISR.",
+        "keyPoints": [
+          "LBIST tests combinational logic on-chip without ATE patterns",
+          "LFSR: Linear Feedback Shift Register — generates pseudo-random patterns",
+          "MISR: Multiple-Input Signature Register — compresses responses",
+          "Signature: compressed output of MISR after N patterns",
+          "Compare signature to golden reference → pass or fail",
+          "LBIST is slower than scan ATPG but works in the field",
+          "Used for periodic self-test in safety-critical chips (automotive)"
+        ],
+        "content": "LBIST uses two key components: an LFSR as a pseudo-random pattern generator (PRPG) and a MISR as a signature analyzer. The LFSR automatically generates a sequence of pseudo-random test patterns without external ATE memory. These patterns are applied to the circuit under test (CUT) through the scan chain. Circuit responses are compressed by the MISR into a signature — a short fingerprint of all responses. After N patterns, the signature is compared to a pre-computed golden signature. A match means pass; mismatch means a defect was detected. LBIST is ideal for field testing (automotive, aerospace) where chips must self-test periodically during operation.",
+        "xp": 20
+      },
+      {
+        "id": "dft-5-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "LFSR and MISR implementation patterns in SystemVerilog.",
+        "keyPoints": [
+          "LFSR: XOR feedback taps defined by primitive polynomial",
+          "4-bit LFSR: x^4 + x^3 + 1 → taps at bits 4 and 3",
+          "LFSR generates 2^N - 1 unique states (maximal length)",
+          "MISR: like LFSR but with additional XOR inputs from CUT",
+          "Aliasing: different faults producing the same signature (rare)",
+          "Aliasing probability: ~2^(-N) for N-bit MISR",
+          "Seed: initial LFSR value determines pattern sequence"
+        ],
+        "content": "// 4-bit LFSR (polynomial: x^4 + x^3 + 1)\n// Taps at positions 4 and 3\nmodule lfsr4 (\n  input  logic clk, rst_n, en,\n  output logic [3:0] out\n);\n  logic [3:0] lfsr_reg;\n  logic feedback;\n\n  assign feedback = lfsr_reg[3] ^ lfsr_reg[2]; // taps 4,3\n  assign out = lfsr_reg;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) lfsr_reg <= 4'b1001; // non-zero seed\n    else if (en)\n      lfsr_reg <= {lfsr_reg[2:0], feedback}; // shift left\n  end\nendmodule\n\n// 4-bit MISR (signature analyzer)\n// Compresses CUT responses into a signature\nmodule misr4 (\n  input  logic clk, rst_n, en,\n  input  logic [3:0] data_in,  // from CUT output\n  output logic [3:0] signature\n);\n  logic [3:0] misr_reg;\n  logic feedback;\n\n  assign feedback  = misr_reg[3] ^ misr_reg[2];\n  assign signature = misr_reg;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) misr_reg <= 4'b0000;\n    else if (en)\n      // Shift with XOR of incoming data\n      misr_reg <= {misr_reg[2:0], feedback} ^ data_in;\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "dft-5-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace 4 LFSR patterns and compute the MISR signature.",
+        "keyPoints": [
+          "LFSR seed = 4'b1001",
+          "Pattern 1: 1001 → Pattern 2: 0011 → Pattern 3: 0110 → Pattern 4: 1101",
+          "Each pattern applied to CUT, response captured",
+          "MISR XORs each response into running signature",
+          "Final signature compared to golden value",
+          "Fault changes even one response → different signature → detected"
+        ],
+        "content": "// 4-bit LFSR sequence (taps at 4,3)\n// Seed: 4'b1001\n// Feedback = bit[3] ^ bit[2]\n\n// Cycle 1: 1001, fb = 1^0 = 1 → next = {0,0,1,1} = 0011\n// Cycle 2: 0011, fb = 0^0 = 0 → next = {0,1,1,0} = 0110\n// Cycle 3: 0110, fb = 0^1 = 1 → next = {1,1,0,1} = 1101\n// Cycle 4: 1101, fb = 1^1 = 0 → next = {1,0,1,0} = 1010\n// Patterns: 1001, 0011, 0110, 1101\n\n// Assume CUT responses (fault-free):\n// Pattern 1: response = 0110\n// Pattern 2: response = 1010\n// Pattern 3: response = 0001\n// Pattern 4: response = 1100\n\n// MISR computation:\n// Init: 0000\n// After resp 0110: shift+XOR → some value\n// After resp 1010: accumulates\n// After resp 0001: accumulates\n// After resp 1100: FINAL SIGNATURE = golden\n\n// Store golden signature in ROM or hardcode in comparator\n// At end of LBIST: compare MISR output to golden\n// Match → PASS, Mismatch → FAIL (fault detected)\n$display(\"LBIST complete: signature = %h\", misr_out);\nif (misr_out == GOLDEN_SIG) $display(\"LBIST PASS\");\nelse $display(\"LBIST FAIL — defect detected\");",
+        "xp": 20
+      },
+      {
+        "id": "dft-5-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a 4-bit LFSR and verify the pseudo-random sequence.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 5: LFSR Pattern Generator\n\nImplement a 4-bit maximal-length LFSR:\n- Polynomial: x^4 + x^3 + 1 (taps at bits 3 and 2, 0-indexed)\n- Feedback = out[3] XOR out[2]\n- Shift left: {out[2:0], feedback}\n- Seed: 4'b1001\n\n```\nmodule lfsr4 (\n  input  logic clk, rst_n, en,\n  output logic [3:0] out\n);\n```\n\nTestbench must:\n1. Run LFSR for 15 cycles (2^4-1 = 15 unique states)\n2. Verify no state repeats (all 15 states unique)\n3. Verify sequence starts: 1001 → 0011 → 0110 → 1101\n4. Verify state never becomes 4'b0000 (illegal state)\n5. Print each state\n\nModule name: `tb_lfsr4`",
+          "starterCode": "// Lab 5: 4-bit LFSR\nmodule lfsr4 (\n  input  logic clk, rst_n, en,\n  output logic [3:0] out\n);\n  logic [3:0] lfsr_reg;\n  logic feedback;\n\n  // Feedback: XOR of taps (bits 3 and 2)\n  assign feedback = lfsr_reg[3] ^ lfsr_reg[2];\n  assign out = lfsr_reg;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) lfsr_reg <= 4'b1001;  // seed\n    else if (en)\n      lfsr_reg <= {lfsr_reg[2:0], feedback}; // shift left\n  end\nendmodule\n\nmodule tb_lfsr4;\n  logic clk=0, rst_n, en;\n  logic [3:0] out;\n  logic [3:0] seen [15]; // store all states\n  int unique_count = 0;\n\n  lfsr4 dut(.clk,.rst_n,.en,.out);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; en=0;\n    @(posedge clk); rst_n=1; en=1;\n\n    // Run for 15 cycles and collect states\n    repeat(15) begin\n      @(posedge clk); #1;\n      $display(\"State: %b (%0d)\", out, out);\n      // Check not zero\n      assert(out != 4'b0000)\n        else $error(\"LFSR entered illegal zero state!\");\n      seen[unique_count] = out;\n      unique_count++;\n    end\n\n    // Verify first 4 states\n    // Reset and check\n    rst_n=0; @(posedge clk); rst_n=1;\n    @(posedge clk); #1; assert(out==4'b1001) else $error(\"State1 FAIL\");\n    @(posedge clk); #1; assert(out==4'b0011) else $error(\"State2 FAIL\");\n    @(posedge clk); #1; assert(out==4'b0110) else $error(\"State3 FAIL\");\n    @(posedge clk); #1; assert(out==4'b1101) else $error(\"State4 FAIL\");\n\n    $display(\"LFSR4 test PASSED — %0d unique states\", unique_count);\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "feedback = lfsr_reg[3] ^ lfsr_reg[2]",
+            "lfsr_reg <= {lfsr_reg[2:0], feedback}  // shift left, insert feedback at LSB",
+            "Seed must be non-zero: 4'b1001 gives maximal sequence",
+            "15 unique states for 4-bit LFSR (excludes all-zeros)"
+          ],
+          "requiredPatterns": [
+            "module lfsr4",
+            "feedback",
+            "lfsr_reg[3] ^ lfsr_reg[2]",
+            "4'b1001",
+            "module tb_lfsr4",
+            "assert(out==4'b1001)",
+            "assert(out==4'b0011)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A maximal-length LFSR visits 2^N-1 states before repeating. The polynomial x^4+x^3+1 gives feedback=bit[3] XOR bit[2]. Shifting left and inserting feedback at LSB gives the sequence. The all-zeros state is forbidden (feedback=0, stays at zero forever). Seed 1001 gives sequence: 1001→0011→0110→1101→1010→..."
+        }
+      },
+      {
+        "id": "dft-5-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your LBIST knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "LFSR in LBIST is used as:", "options": ["A memory", "A pseudo-random pattern generator for test inputs", "A clock divider", "An error corrector"], "answer": 1 },
+          { "q": "MISR compresses test responses into:", "options": ["A full test log", "A short signature (fingerprint) for pass/fail comparison", "Individual bit errors", "A waveform"], "answer": 1 },
+          { "q": "LBIST aliasing means:", "options": ["LFSR has two identical states", "Different faults produce the same signature — fault not detected", "MISR overflows", "Scan chain has two TDOs"], "answer": 1 },
+          { "q": "LBIST is preferred for automotive chips because:", "options": ["It is faster than ATPG", "It enables periodic self-test in the field without ATE", "It uses less area", "It detects more faults"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 6,
+    "bonusXp": 140,
+    "badge": "JTAG Master",
+    "subLevels": [
+      {
+        "id": "dft-6-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "JTAG IEEE 1149.1 — Boundary Scan for board-level testing.",
+        "keyPoints": [
+          "JTAG = Joint Test Action Group, now IEEE 1149.1 standard",
+          "4 mandatory pins: TCK, TMS, TDI, TDO (plus optional TRST)",
+          "TAP: Test Access Port — the JTAG controller state machine",
+          "Boundary scan: flip-flops at every I/O pin for board-level test",
+          "Instructions: BYPASS, SAMPLE/PRELOAD, EXTEST, IDCODE",
+          "BSDL: Boundary Scan Description Language — describes device",
+          "Used for: board-level interconnect test, chip programming, debug"
+        ],
+        "content": "JTAG (IEEE 1149.1) defines a standard test interface used on virtually every modern chip. The TAP (Test Access Port) controller is a 16-state FSM controlled by TCK (test clock) and TMS (test mode select). TDI/TDO form a serial data path. Boundary scan cells are placed at every I/O pin — they allow the chip to drive/sense its own pins for board-level interconnect testing (finding open/short circuits on PCB traces between chips). The IDCODE instruction reads a 32-bit device identifier. BYPASS creates a 1-bit shift path through the chip. EXTEST drives the pins from boundary scan cells. JTAG is also used for FPGA programming and CPU debug (via JTAG-based debuggers).",
+        "xp": 20
+      },
+      {
+        "id": "dft-6-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "TAP controller states and JTAG protocol sequences.",
+        "keyPoints": [
+          "TAP states: Test-Logic-Reset, Run-Test/Idle, Shift-DR, Shift-IR...",
+          "TMS=1: moves toward reset; TMS=0: moves into active states",
+          "To enter Shift-DR: TMS sequence = 0,1,0,0 from Run-Test/Idle",
+          "IR length: typically 4-8 bits, defines which register to access",
+          "BYPASS register: 1-bit, always present, minimum path",
+          "IDCODE register: 32-bit, manufacturers' device identifier",
+          "Daisy-chain: multiple chips TDO→TDI for board scan"
+        ],
+        "content": "// TAP Controller (16-state FSM, simplified)\ntypedef enum logic [3:0] {\n  TEST_RESET  = 4'h0,\n  RUN_IDLE    = 4'h1,\n  SELECT_DR   = 4'h2,\n  CAPTURE_DR  = 4'h3,\n  SHIFT_DR    = 4'h4,\n  EXIT1_DR    = 4'h5,\n  PAUSE_DR    = 4'h6,\n  EXIT2_DR    = 4'h7,\n  UPDATE_DR   = 4'h8,\n  SELECT_IR   = 4'h9,\n  CAPTURE_IR  = 4'hA,\n  SHIFT_IR    = 4'hB,\n  EXIT1_IR    = 4'hC,\n  PAUSE_IR    = 4'hD,\n  EXIT2_IR    = 4'hE,\n  UPDATE_IR   = 4'hF\n} tap_state_t;\n\n// TMS sequence to reach SHIFT_DR from RUN_IDLE:\n// TMS: 1 0 0 (SELECT_DR → CAPTURE_DR → SHIFT_DR)\n\n// JTAG IDCODE read sequence:\n// 1. Reset TAP (TMS=1 five times)\n// 2. Load IDCODE instruction into IR\n// 3. Shift 32 bits from DR on TDO\n// 4. Parse manufacturer ID, part number, version",
+        "xp": 20
+      },
+      {
+        "id": "dft-6-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through a JTAG IDCODE read transaction step by step.",
+        "keyPoints": [
+          "Step 1: Reset TAP — TMS=1 for 5 TCK cycles",
+          "Step 2: Go to Shift-IR — TMS=0,1,1,0,0",
+          "Step 3: Shift in IDCODE instruction (e.g., 4'b0001)",
+          "Step 4: Go to Shift-DR — TMS=1,1,0,0",
+          "Step 5: Shift 32 TCK cycles — read TDO each cycle",
+          "Step 6: Parse 32-bit IDCODE",
+          "IDCODE format: [31:28]=version, [27:12]=part, [11:1]=manufacturer, [0]=1"
+        ],
+        "content": "// JTAG IDCODE Read — cycle by cycle\n\n// STEP 1: RESET\n// TCK: 1 2 3 4 5\n// TMS: 1 1 1 1 1  → enters Test-Logic-Reset\n\n// STEP 2: NAVIGATE TO SHIFT-IR\n// TMS: 0    → Run-Test/Idle\n// TMS: 1    → Select-DR-Scan\n// TMS: 1    → Select-IR-Scan\n// TMS: 0    → Capture-IR\n// TMS: 0    → Shift-IR\n\n// STEP 3: SHIFT IDCODE INSTRUCTION (4-bit IR)\n// Instruction IDCODE = 4'b0001 (LSB first)\n// TDI: 1,0,0,0  (shift LSB first)\n// After 4 TCK: TMS=1 → Exit1-IR, TMS=1 → Update-IR\n\n// STEP 4: NAVIGATE TO SHIFT-DR\n// TMS: 1    → Select-DR-Scan\n// TMS: 0    → Capture-DR (loads IDCODE into DR)\n// TMS: 0    → Shift-DR\n\n// STEP 5: SHIFT OUT 32-BIT IDCODE\n// Clock 32 TCK cycles with TMS=0\n// Read TDO each cycle (LSB first)\n// Example IDCODE: 32'h0A35_0093\n// [31:28]=0000 version\n// [27:12]=1010_0011_0101_0000 part number\n// [11:1] =0000_0100_1001 manufacturer (MIPS=0x49<<1)\n// [0]    =1 (mandatory)\n\n$display(\"IDCODE read: %h\", idcode_shift_out);",
+        "xp": 20
+      },
+      {
+        "id": "dft-6-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a TAP controller FSM with BYPASS and IDCODE support.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 6: TAP Controller (Simplified)\n\nImplement a simplified TAP controller with 6 key states:\n```\nmodule tap_ctrl (\n  input  logic tck, tms, tdi, trst_n,\n  output logic tdo,\n  output logic shift_dr, shift_ir,\n  output logic update_dr, update_ir,\n  output logic capture_dr\n);\n```\n\nStates needed: TEST_RESET, RUN_IDLE, SELECT_DR, CAPTURE_DR, SHIFT_DR, UPDATE_DR\n\nState transitions (TMS=0/1):\n- TEST_RESET: TMS=0→RUN_IDLE, TMS=1→TEST_RESET\n- RUN_IDLE: TMS=0→RUN_IDLE, TMS=1→SELECT_DR\n- SELECT_DR: TMS=0→CAPTURE_DR, TMS=1→TEST_RESET\n- CAPTURE_DR: TMS=0→SHIFT_DR, TMS=1→UPDATE_DR\n- SHIFT_DR: TMS=0→SHIFT_DR, TMS=1→UPDATE_DR\n- UPDATE_DR: TMS=0→RUN_IDLE, TMS=1→SELECT_DR\n\nAssert output signals based on current state.\nWrite testbench to verify RESET→RUN_IDLE→SELECT_DR→CAPTURE_DR→SHIFT_DR sequence.",
+          "starterCode": "// Lab 6: Simplified TAP Controller\nmodule tap_ctrl (\n  input  logic tck, tms, tdi, trst_n,\n  output logic tdo,\n  output logic shift_dr, update_dr, capture_dr\n);\n  typedef enum logic [2:0] {\n    TEST_RESET = 3'd0,\n    RUN_IDLE   = 3'd1,\n    SELECT_DR  = 3'd2,\n    CAPTURE_DR = 3'd3,\n    SHIFT_DR   = 3'd4,\n    UPDATE_DR  = 3'd5\n  } tap_state_t;\n\n  tap_state_t state, next_state;\n\n  // State register\n  always_ff @(posedge tck or negedge trst_n) begin\n    if (!trst_n) state <= TEST_RESET;\n    else         state <= next_state;\n  end\n\n  // Next state logic\n  always_comb begin\n    case (state)\n      TEST_RESET: next_state = tms ? TEST_RESET : RUN_IDLE;\n      RUN_IDLE:   next_state = tms ? SELECT_DR  : RUN_IDLE;\n      SELECT_DR:  next_state = tms ? TEST_RESET : CAPTURE_DR;\n      CAPTURE_DR: next_state = tms ? UPDATE_DR  : SHIFT_DR;\n      SHIFT_DR:   next_state = tms ? UPDATE_DR  : SHIFT_DR;\n      UPDATE_DR:  next_state = tms ? SELECT_DR  : RUN_IDLE;\n      default:    next_state = TEST_RESET;\n    endcase\n  end\n\n  // Output signals\n  assign shift_dr   = (state == SHIFT_DR);\n  assign capture_dr = (state == CAPTURE_DR);\n  assign update_dr  = (state == UPDATE_DR);\n  assign tdo        = tdi; // bypass mode\n\nendmodule\n\nmodule tb_tap;\n  logic tck=0, tms, tdi=0, trst_n;\n  logic tdo, shift_dr, update_dr, capture_dr;\n\n  tap_ctrl dut(.*);\n  always #5 tck = ~tck;\n\n  task send_tms(input logic t);\n    tms = t; @(posedge tck); #1;\n  endtask\n\n  initial begin\n    trst_n=0; tms=1;\n    @(posedge tck); trst_n=1;\n\n    // Navigate: RESET→IDLE→SELECT_DR→CAPTURE_DR→SHIFT_DR\n    send_tms(0); // → RUN_IDLE\n    send_tms(1); // → SELECT_DR\n    assert(shift_dr==0 && capture_dr==0)\n      else $error(\"Should be in SELECT_DR\");\n    send_tms(0); // → CAPTURE_DR\n    assert(capture_dr==1)\n      else $error(\"Should be in CAPTURE_DR\");\n    send_tms(0); // → SHIFT_DR\n    assert(shift_dr==1)\n      else $error(\"Should be in SHIFT_DR\");\n\n    // Stay in SHIFT_DR for 4 cycles (TMS=0)\n    repeat(4) send_tms(0);\n    assert(shift_dr==1) else $error(\"Should stay in SHIFT_DR\");\n\n    // Exit: TMS=1 → UPDATE_DR\n    send_tms(1);\n    assert(update_dr==1) else $error(\"Should be in UPDATE_DR\");\n\n    $display(\"TAP controller PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "State transitions follow TMS: 0→lower state, 1→higher/reset",
+            "shift_dr = (state == SHIFT_DR)",
+            "capture_dr = (state == CAPTURE_DR)",
+            "send_tms(0) from RUN_IDLE stays in RUN_IDLE",
+            "send_tms(1) from RUN_IDLE goes to SELECT_DR"
+          ],
+          "requiredPatterns": [
+            "module tap_ctrl",
+            "typedef enum",
+            "TEST_RESET",
+            "SHIFT_DR",
+            "CAPTURE_DR",
+            "UPDATE_DR",
+            "assign shift_dr",
+            "assign capture_dr",
+            "module tb_tap",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The TAP controller is a 16-state (simplified to 6 here) FSM clocked by TCK. TMS controls state transitions. SHIFT_DR is the state where test data is shifted in/out via TDI/TDO. The controller drives shift_dr, capture_dr, update_dr signals that control data registers (BYPASS, IDCODE, boundary scan). This exact FSM is in every JTAG-compliant chip."
+        }
+      },
+      {
+        "id": "dft-6-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your JTAG knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "The 4 mandatory JTAG pins are:", "options": ["TDI, TDO, TMS, TRST", "TDI, TDO, TMS, TCK", "TCK, TMS, TDI, RESET", "TDI, TDO, CLK, EN"], "answer": 1 },
+          { "q": "BYPASS instruction in JTAG:", "options": ["Bypasses all testing", "Creates a 1-bit shift path through the chip to minimize chain length", "Resets the TAP controller", "Reads the IDCODE"], "answer": 1 },
+          { "q": "Boundary scan cells are placed:", "options": ["Inside the core logic", "At every I/O pin of the chip to control/observe pin states", "In the clock tree", "In the power grid"], "answer": 1 },
+          { "q": "TMS=1 for 5+ TCK cycles always causes:", "options": ["Shift-DR state", "Test-Logic-Reset — the TAP controller always resets", "Update-IR state", "Capture-DR state"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 7,
+    "bonusXp": 150,
+    "badge": "Compression Expert",
+    "subLevels": [
+      {
+        "id": "dft-7-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Scan compression — reducing test time while maintaining fault coverage.",
+        "keyPoints": [
+          "Scan compression reduces test time by 10x-100x without losing coverage",
+          "Decompressor: expands a small number of ATE channels to many scan chains",
+          "Compactor: compresses many chain outputs back to few ATE channels",
+          "X-tolerance: handles don't-care (X) values from multiple chains",
+          "EDT: Embedded Deterministic Test — Mentor's compression technology",
+          "DFTMAX: Synopsys compression technology",
+          "Compression ratio: internal_chains / external_channels"
+        ],
+        "content": "Modern chips have millions of flip-flops requiring thousands of scan chains. ATE has limited channels and tester memory. Scan compression solves this: a decompressor (XOR network) expands a small ATE pattern into a much larger internal pattern that fills all chains simultaneously. The compactor (another XOR network) compresses all chain responses back to the few ATE channels. The key enabler is don't-care (X) values — ATPG patterns typically specify only 1-5% of bits; the remaining 95%+ are X. The decompressor fills X positions with pseudo-random values, allowing multiple chains to be tested simultaneously with deterministic patterns for the critical bits.",
+        "xp": 20
+      },
+      {
+        "id": "dft-7-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "XOR decompressor and spatial compactor design patterns.",
+        "keyPoints": [
+          "Decompressor: XOR tree expanding N inputs to M outputs (M >> N)",
+          "Each output = XOR of a subset of inputs (defined by matrix)",
+          "Compactor: XOR tree combining M outputs into N outputs",
+          "Compression ratio = M/N (internal/external channels)",
+          "EDT ratio: typically 8:1 to 64:1",
+          "X-filling: ATPG assigns X values to avoid conflicts in decompressor",
+          "Phase shifter: ensures different scan chains get different patterns"
+        ],
+        "content": "// Simple 2-to-4 XOR Decompressor\n// 2 external channels → 4 internal scan chain inputs\n// Encoding matrix defines which channels XOR to each output\nmodule decompressor_2to4 (\n  input  logic [1:0] ext_in,   // 2 ATE channels\n  output logic [3:0] chain_in  // 4 internal chains\n);\n  // Each chain_in = XOR of specific ext_in bits\n  // Encoding matrix (H):\n  // chain0 = ext0 ^ ext1\n  // chain1 = ext0\n  // chain2 = ext1\n  // chain3 = ext0 ^ ext1  (same as chain0 — OK for compression)\n  assign chain_in[0] = ext_in[0] ^ ext_in[1];\n  assign chain_in[1] = ext_in[0];\n  assign chain_in[2] = ext_in[1];\n  assign chain_in[3] = ext_in[0] ^ ext_in[1];\nendmodule\n\n// Simple 4-to-2 XOR Spatial Compactor\n// 4 internal chain outputs → 2 ATE channels\nmodule compactor_4to2 (\n  input  logic [3:0] chain_out, // 4 internal chains\n  output logic [1:0] ext_out    // 2 ATE channels\n);\n  assign ext_out[0] = chain_out[0] ^ chain_out[1];\n  assign ext_out[1] = chain_out[2] ^ chain_out[3];\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "dft-7-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace a 4:1 compression scenario — shift, capture, compact.",
+        "keyPoints": [
+          "4 internal chains, 1 external channel → 4:1 compression",
+          "Decompressor generates different patterns for each chain from 1 input",
+          "4 chains shift simultaneously — test time = longest chain length",
+          "4 chain responses XOR-compressed to 1 channel",
+          "ATE reads 1/4 the data of uncompressed scan",
+          "Compression ratio 4:1 = 4x faster test or 4x less ATE memory"
+        ],
+        "content": "// 4:1 compression example\n// 1 external channel drives 4 internal chains via decompressor\n\n// DECOMPRESSOR (1→4, using phase shifter):\n// chain0 = ext_in\n// chain1 = ext_in (delayed 1 bit — phase shift)\n// chain2 = ext_in (delayed 2 bits)\n// chain3 = ext_in (delayed 3 bits)\n// → 4 different-phase patterns from 1 channel\n\n// EXAMPLE SHIFT CYCLE:\n// ext_in sequence: 1,0,1,1,0,0,1 (ATE provides 7 bits)\n// chain0 sees: 1,0,1,1,0,0,1\n// chain1 sees: X,1,0,1,1,0,0  (1-bit delayed)\n// chain2 sees: X,X,1,0,1,1,0  (2-bit delayed)\n// chain3 sees: X,X,X,1,0,1,1  (3-bit delayed)\n// X = don't care — ATPG handles these\n\n// AFTER CAPTURE:\n// Read 4 chain responses simultaneously\n// COMPACTOR XORs them: response = R0^R1^R2^R3\n// ATE observes only 1 bit per cycle\n// But it encodes information from all 4 chains!\n\n// RESULT:\n// Without compression: shift 4N bits (4 chains × N flops)\n// With compression: shift N bits (1 channel × N cycles)\n// → 4x test time reduction!",
+        "xp": 20
+      },
+      {
+        "id": "dft-7-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a 2-to-4 XOR decompressor and 4-to-2 compactor.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 7: Scan Compression — Decompressor and Compactor\n\nImplement a 2:1 compression system:\n\n**Decompressor** (2 inputs → 4 outputs):\n- chain[0] = in[0] ^ in[1]\n- chain[1] = in[0]\n- chain[2] = in[1]\n- chain[3] = in[0] ^ in[1]\n\n**Compactor** (4 inputs → 2 outputs):\n- out[0] = chain[0] ^ chain[2]\n- out[1] = chain[1] ^ chain[3]\n\nTestbench must:\n1. Apply all 4 input combinations (00,01,10,11)\n2. Print decompressor outputs for each\n3. Feed decompressor output directly to compactor\n4. Verify compactor doesn't lose fault information:\n   - Apply in=2'b01 → decompressor→compactor → check out\n   - Apply in=2'b10 → check different out\n5. Verify in=2'b00 gives out=2'b00 (no fault = no signal)\n\nModule: `tb_compression`",
+          "starterCode": "// Lab 7: Decompressor + Compactor\nmodule decompressor_2to4 (\n  input  logic [1:0] ext_in,\n  output logic [3:0] chain_in\n);\n  assign chain_in[0] = ext_in[0] ^ ext_in[1];\n  assign chain_in[1] = ext_in[0];\n  assign chain_in[2] = ext_in[1];\n  assign chain_in[3] = ext_in[0] ^ ext_in[1];\nendmodule\n\nmodule compactor_4to2 (\n  input  logic [3:0] chain_out,\n  output logic [1:0] ext_out\n);\n  // Your implementation here:\n  // out[0] = chain[0] ^ chain[2]\n  // out[1] = chain[1] ^ chain[3]\nendmodule\n\nmodule tb_compression;\n  logic [1:0] ext_in, ext_out;\n  logic [3:0] chain;\n\n  decompressor_2to4 decomp(.ext_in,.chain_in(chain));\n  compactor_4to2    comp  (.chain_out(chain),.ext_out);\n\n  initial begin\n    // Test all 4 input combinations\n    for (int i=0; i<4; i++) begin\n      ext_in = i; #5;\n      $display(\"in=%b → chain=%b → out=%b\",\n               ext_in, chain, ext_out);\n    end\n\n    // Verify pass-through: in=00 → out=00\n    ext_in=2'b00; #5;\n    assert(ext_out==2'b00)\n      else $error(\"Zero input should give zero output\");\n\n    // Verify non-zero propagates\n    ext_in=2'b01; #5;\n    assert(ext_out!=2'b00)\n      else $error(\"Non-zero should propagate through\");\n\n    $display(\"Compression system PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "assign ext_out[0] = chain_out[0] ^ chain_out[2];",
+            "assign ext_out[1] = chain_out[1] ^ chain_out[3];",
+            "For ext_in=2'b00: all chain_in=0, all chain_out=0, ext_out=0",
+            "For ext_in=2'b01: chain={0,1,0,0}, out={0^0, 1^0}={0,1}"
+          ],
+          "requiredPatterns": [
+            "module decompressor_2to4",
+            "module compactor_4to2",
+            "chain_in[0] = ext_in[0] ^ ext_in[1]",
+            "ext_out[0]",
+            "ext_out[1]",
+            "module tb_compression",
+            "assert(ext_out==2'b00)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The decompressor expands 2 ATE channels to 4 internal chains using XOR combinations. The compactor compresses 4 chain responses back to 2 ATE channels. Zero input → zero output ensures no false failures. Non-zero (fault) input propagates through — any fault in any chain creates non-zero output. This is the core of Mentor EDT and Synopsys DFTMAX compression architectures."
+        }
+      },
+      {
+        "id": "dft-7-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your scan compression knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A compression ratio of 32:1 means:", "options": ["32 chains with 1 flop each", "32 internal chains driven by 1 external ATE channel", "32x slower test", "32 ATE channels for 1 chain"], "answer": 1 },
+          { "q": "Don't-care (X) values in ATPG enable compression because:", "options": ["X values are faster to test", "X bits can be filled by decompressor without creating conflicts", "X values skip faults", "X means the bit is untestable"], "answer": 1 },
+          { "q": "The decompressor in scan compression:", "options": ["Compresses chain outputs to ATE", "Expands few ATE channels to many internal scan chains", "Detects faults directly", "Replaces scan flops"], "answer": 1 },
+          { "q": "EDT stands for:", "options": ["Extended Design Test", "Embedded Deterministic Test — Mentor's compression technology", "External Data Transfer", "Enhanced DFT Tool"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 8,
+    "bonusXp": 160,
+    "badge": "At-Speed Test Expert",
+    "subLevels": [
+      {
+        "id": "dft-8-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "At-speed testing — detecting timing defects at functional frequency.",
+        "keyPoints": [
+          "At-speed testing runs capture at full functional clock speed",
+          "Detects: resistive opens, resistive shorts, crosstalk-induced delays",
+          "Launch-on-shift (LOS): last shift clock launches the capture",
+          "Launch-on-capture (LOC): dedicated launch cycle before capture",
+          "Transition fault: gate cannot make 0→1 or 1→0 within one cycle",
+          "Skewed-load technique: allows at-speed capture in scan chains",
+          "LBIST at-speed: runs BIST patterns at functional frequency"
+        ],
+        "content": "Static stuck-at ATPG finds permanent defects (opens, shorts). But some defects cause timing failures — a path is slightly too slow and fails only at full speed. At-speed testing applies patterns and captures at the functional clock frequency. Launch-on-Shift (LOS): the last shift clock edge launches a transition at the flip-flop output, and the next (functional-speed) clock captures the result. Launch-on-Capture (LOC): two full-speed clocks are applied — the first launches, the second captures. LOC is more controllable but requires the circuit to be set up before both clocks. At-speed testing adds 20-30% test time but catches yield-killing timing defects invisible to stuck-at ATPG.",
+        "xp": 20
+      },
+      {
+        "id": "dft-8-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "At-speed test control structures and timing patterns.",
+        "keyPoints": [
+          "LOS: last shift clock = first (slow) launch clock",
+          "LOC: separate functional-speed launch clock after shift",
+          "Two-cycle capture: apply L1 (launch), L2 (capture) at speed",
+          "Clock controller: generates slow scan clock and fast functional clock",
+          "ATE timing: must generate two closely-spaced capture clocks",
+          "ATPG option: -transition for transition fault targeting",
+          "Path tracing: identify critical paths for at-speed test focus"
+        ],
+        "content": "// At-speed test clock controller\n// Generates: slow scan clock and fast capture pulses\nmodule atspeed_clk_ctrl (\n  input  logic clk_func,    // functional clock (fast)\n  input  logic clk_scan,    // scan clock (slow, from ATE)\n  input  logic scan_en,     // scan enable\n  input  logic test_mode,\n  input  logic capture_en,  // enable capture phase\n  output logic clk_out      // to flip-flops\n);\n  // During shift: use slow scan clock\n  // During capture: use one/two functional clock pulses\n  assign clk_out = test_mode ?\n                   (scan_en ? clk_scan :    // shift phase\n                              clk_func)     // capture phase\n                   : clk_func;              // functional\nendmodule\n\n// LOC (Launch-on-Capture) sequence:\n// 1. Shift in pattern (scan_en=1, slow clock)\n// 2. Pulse 1: scan_en=0, apply clk_func pulse 1 (LAUNCH)\n//    → FF outputs transition based on combinational logic\n// 3. Pulse 2: apply clk_func pulse 2 (CAPTURE at speed)\n//    → Capture result — detects if path met timing\n// 4. Shift out result (scan_en=1, slow clock)",
+        "xp": 20
+      },
+      {
+        "id": "dft-8-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace a Launch-on-Capture at-speed test sequence.",
+        "keyPoints": [
+          "Step 1: Shift in initializing pattern (slow clock, SE=1)",
+          "Step 2: Launch clock pulse (fast, SE=0) — launches transition",
+          "Step 3: Capture clock pulse (fast, SE=0) — captures at speed",
+          "Step 4: Shift out captured data (slow clock, SE=1)",
+          "Step 5: Compare to expected — mismatch = transition fault",
+          "Defect: a slow path misses capture window = FAIL detected"
+        ],
+        "content": "// LOC At-Speed Test Timeline\n// Target: detect SA-slow on critical path\n// FF_A → [combinational cloud] → FF_B\n\n// PHASE 1: SHIFT (slow clock, SE=1)\n// Shift pattern into FF_A: Q_A = 0\n// (setting up initial state for launch)\n// Shift count = chain length cycles\n\n// PHASE 2: LAUNCH (SE=0, functional clock pulse 1)\n// FF_A.D = 1 (from combinational logic with previous state)\n// Rising edge of fast clock → FF_A.Q transitions 0→1\n// Combinational logic starts evaluating immediately\n// If path is SLOW: FF_B.D arrives late (after setup window)\n\n// PHASE 3: CAPTURE (SE=0, functional clock pulse 2)\n// Rising edge arrives ONE FULL PERIOD after launch\n// If path is fault-free: FF_B.Q = correct value\n// If path has resistive open: FF_B.Q = wrong value!\n// → TRANSITION FAULT DETECTED\n\n// PHASE 4: SHIFT OUT (slow clock, SE=1)\n// Shift out captured values from all FFs\n// Compare to expected pattern on ATE\n// Any mismatch → at-speed defect reported\n\n$display(\"At-speed capture complete\");\n$display(\"Checking FF_B value after capture...\");",
+        "xp": 20
+      },
+      {
+        "id": "dft-8-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a clock controller for at-speed LOC test mode.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 8: At-Speed Clock Controller\n\nImplement a clock controller that generates the LOC at-speed test sequence:\n\n```\nmodule atspeed_ctrl (\n  input  logic clk_fast,    // functional speed clock\n  input  logic clk_slow,    // scan/ATE clock\n  input  logic scan_en,     // 1=shift, 0=capture\n  input  logic test_mode,   // 1=test, 0=functional\n  input  logic loc_en,      // 1=LOC capture mode\n  output logic clk_dff,     // clock to all flip-flops\n  output logic capture_done // signals capture complete\n);\n```\n\nBehavior:\n- `test_mode=0`: clk_dff = clk_fast (normal operation)\n- `test_mode=1, scan_en=1`: clk_dff = clk_slow (scan shift)\n- `test_mode=1, scan_en=0, loc_en=0`: clk_dff = 0 (hold)\n- `test_mode=1, scan_en=0, loc_en=1`: allow 2 clk_fast pulses then assert capture_done\n\nWrite testbench to verify all 4 modes switch correctly.",
+          "starterCode": "// Lab 8: At-Speed LOC Clock Controller\nmodule atspeed_ctrl (\n  input  logic clk_fast, clk_slow,\n  input  logic scan_en, test_mode, loc_en,\n  output logic clk_dff,\n  output logic capture_done\n);\n  logic [1:0] pulse_count;\n  logic counting;\n\n  // Clock mux\n  always_comb begin\n    if (!test_mode)\n      clk_dff = clk_fast;         // functional mode\n    else if (scan_en)\n      clk_dff = clk_slow;         // scan shift mode\n    else if (loc_en)\n      clk_dff = clk_fast;         // LOC capture\n    else\n      clk_dff = 1'b0;             // hold\n  end\n\n  // LOC pulse counter — count 2 fast clock pulses\n  always_ff @(posedge clk_fast or negedge loc_en) begin\n    if (!loc_en) begin\n      pulse_count  <= 0;\n      capture_done <= 0;\n    end else if (test_mode && !scan_en && loc_en) begin\n      if (pulse_count < 2)\n        pulse_count <= pulse_count + 1;\n      if (pulse_count == 1)  // after 2nd pulse\n        capture_done <= 1;\n    end\n  end\n\nendmodule\n\nmodule tb_atspeed;\n  logic clk_fast=0, clk_slow=0;\n  logic scan_en, test_mode, loc_en;\n  logic clk_dff, capture_done;\n\n  atspeed_ctrl dut(.*);\n\n  always #2  clk_fast = ~clk_fast;  // 250MHz (fast)\n  always #10 clk_slow = ~clk_slow;  // 50MHz (slow/scan)\n\n  initial begin\n    // Functional mode\n    test_mode=0; scan_en=0; loc_en=0;\n    #20;\n    assert(clk_dff == clk_fast) else $error(\"Func mode FAIL\");\n\n    // Scan shift mode\n    test_mode=1; scan_en=1; loc_en=0;\n    #20;\n    // clk_dff should follow clk_slow\n    $display(\"Scan mode: clk_dff=%b\", clk_dff);\n\n    // LOC capture mode\n    scan_en=0; loc_en=1;\n    wait(capture_done==1);\n    $display(\"LOC capture complete!\");\n    assert(capture_done==1) else $error(\"Capture done FAIL\");\n\n    $display(\"At-speed controller PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Functional: clk_dff = clk_fast",
+            "Scan shift: clk_dff = clk_slow when scan_en=1",
+            "LOC: allow clk_fast to pass, count 2 pulses then assert capture_done",
+            "Always_comb for clock mux ensures no glitches"
+          ],
+          "requiredPatterns": [
+            "module atspeed_ctrl",
+            "clk_fast",
+            "clk_slow",
+            "scan_en",
+            "loc_en",
+            "capture_done",
+            "pulse_count",
+            "module tb_atspeed",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The clock controller muxes between functional clock, scan clock, and gated states based on test mode signals. During LOC, exactly 2 fast clock pulses are generated — the first launches the transition (functional state), the second captures the result. capture_done tells the system when to switch back to scan shift mode. This is the core of at-speed DFT infrastructure."
+        }
+      },
+      {
+        "id": "dft-8-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your at-speed testing knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "At-speed testing is necessary because:", "options": ["Stuck-at ATPG is too slow to run", "Some defects only manifest as timing failures at functional frequency", "BIST doesn't work for logic", "Scan chains can't detect opens"], "answer": 1 },
+          { "q": "LOC (Launch-on-Capture) means:", "options": ["Last shift clock launches", "A dedicated launch clock pulse before capture at functional speed", "Load-on-clock operation", "Loop-on-capture error mode"], "answer": 1 },
+          { "q": "Transition fault models:", "options": ["Permanently stuck signals", "Gates that can transition but may be too slow at speed", "Clock frequency drift", "Memory coupling"], "answer": 1 },
+          { "q": "Why are two clock pulses needed in LOC?", "options": ["For setup and hold check", "First pulse launches transition, second pulse captures result at speed", "For LFSR operation", "For power stability"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 9,
+    "bonusXp": 180,
+    "badge": "Hierarchical DFT Expert",
+    "subLevels": [
+      {
+        "id": "dft-9-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Hierarchical DFT — testing complex SoCs block by block.",
+        "keyPoints": [
+          "Large SoCs have billions of transistors — cannot test as one flat design",
+          "Hierarchical DFT: test each IP block independently, then assemble",
+          "Core wrapper: isolates block for standalone test and chip-level test",
+          "IEEE 1500: standard for embedded core testing (wrapping standard)",
+          "Test access mechanism (TAM): routes test data to/from each core",
+          "Modular test: each block has its own ATPG patterns",
+          "Top-level test: tests interconnects between blocks"
+        ],
+        "content": "Modern SoCs contain hundreds of IP blocks from multiple vendors. Hierarchical DFT wraps each block with a standardized test interface (IEEE 1500 core wrapper) that allows the block to be: (1) tested in isolation before integration, (2) tested as part of the assembled chip using the same test patterns. The core wrapper adds bypass logic, wrapper cells at block boundaries, and a test interface. A Test Access Mechanism (TAM) distributes test data from chip-level JTAG to each block's wrapper. This enables IP reuse with pre-verified test patterns — the block's ATPG patterns work whether the block is tested standalone or embedded in the SoC.",
+        "xp": 20
+      },
+      {
+        "id": "dft-9-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "IEEE 1500 core wrapper cell and TAM interface patterns.",
+        "keyPoints": [
+          "Wrapper cell: at each block I/O, captures/drives boundary values",
+          "WI (Wrapper Input): parallel→serial conversion of block inputs",
+          "WO (Wrapper Output): captures block output for shift-out",
+          "WSI/WSO: wrapper serial in/out — connects to TAM",
+          "WBY: wrapper bypass — skip this block in test chain",
+          "SELECTWIR: selects wrapper instruction register",
+          "TAM: typically a JTAG-based distribution network to each block"
+        ],
+        "content": "// IEEE 1500 Core Wrapper — simplified\n// Each boundary flip-flop replaced by wrapper cell\nmodule wrapper_cell (\n  input  logic clk,\n  input  logic d,         // functional data\n  input  logic wsi,       // wrapper serial in\n  input  logic sel,       // select: 0=func, 1=test\n  input  logic cap,       // capture enable\n  input  logic shi,       // shift enable\n  output logic q,         // to core logic\n  output logic wso        // wrapper serial out\n);\n  logic cap_reg, shi_reg;\n\n  // Capture register: stores boundary value\n  always_ff @(posedge clk)\n    if (cap) cap_reg <= d;         // capture boundary\n    else if (shi) cap_reg <= wsi;  // shift in test data\n\n  // Output mux\n  assign q   = sel ? cap_reg : d;  // test or functional\n  assign wso = cap_reg;            // serial out for shift\nendmodule\n\n// TAM (Test Access Mechanism) — routes from JTAG\nmodule tam_controller (\n  input  logic jtag_tdi, jtag_tck, jtag_tms,\n  output logic [3:0] block_wsi,  // to each block's WSI\n  input  logic [3:0] block_wso   // from each block's WSO\n);",
+        "xp": 20
+      },
+      {
+        "id": "dft-9-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a hierarchical DFT architecture for a 3-block SoC.",
+        "keyPoints": [
+          "SoC: CPU block + Memory Controller + USB block",
+          "Each block wrapped with IEEE 1500 wrapper",
+          "JTAG TAP at chip level distributes test access",
+          "TAM chains: CPU wrapper → Mem wrapper → USB wrapper",
+          "Block test: isolate one block, apply its ATPG patterns",
+          "Interconnect test: use boundary scan to test chip-level wiring",
+          "Total test time = sum of all block test times (can parallelize)"
+        ],
+        "content": "// SoC Hierarchical DFT Architecture\n//\n// ┌─────────────────────────────────────┐\n// │              SoC TOP                │\n// │  ┌──────┐  ┌──────┐  ┌──────────┐  │\n// │  │ CPU  │  │ MEM  │  │   USB    │  │\n// │  │Block │  │ CTRL │  │  Block   │  │\n// │  └──┬───┘  └──┬───┘  └────┬─────┘  │\n// │     │         │           │         │\n// │  [WRAP]    [WRAP]      [WRAP]       │\n// │     │         │           │         │\n// │  ───┴─────────┴───────────┴───      │\n// │              TAM Bus                │\n// │               │                    │\n// │           [JTAG TAP]               │\n// └───────────────┼─────────────────────┘\n//                 │ TDI/TDO/TCK/TMS\n//                ATE\n\n// TEST FLOW:\n// 1. JTAG selects CPU wrapper → apply CPU ATPG patterns\n// 2. JTAG selects MEM wrapper → run MBIST on memory\n// 3. JTAG selects USB wrapper → apply USB ATPG patterns\n// 4. All wrappers in EXTEST → test interconnects\n\n// Block isolation example:\n// CPU wrapper: sel=1 (test mode)\n// MEM wrapper: sel=1, bypass=1 (bypassed)\n// USB wrapper: sel=1, bypass=1 (bypassed)\n// → Only CPU is actively tested this round",
+        "xp": 20
+      },
+      {
+        "id": "dft-9-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a simple core wrapper for a 2-input, 1-output block.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 9: IEEE 1500 Core Wrapper (Simplified)\n\nImplement a wrapper for a 2-input AND gate block:\n\n```\n// Core: out = a & b\nmodule core_and (input a, b, output out);\n  assign out = a & b;\nendmodule\n```\n\nWrapper must:\n1. Have wrapper cells on inputs a,b and output out\n2. In functional mode (sel=0): a,b come from chip pins; out goes to chip\n3. In test mode (sel=1, cap=1): capture chip_a, chip_b into wrapper regs\n4. In test mode (sel=1, shi=1): shift data in from wsi, out through wso\n5. In test mode, drive core inputs from wrapper cells (test values)\n\nTest the wrapper by:\n- Loading test vector a=1,b=1 via wsi shift\n- Switching to capture mode — verify core out=1\n- Shifting out captured output — verify wso sequence\n\nModule: `tb_core_wrapper`",
+          "starterCode": "// Lab 9: Core Wrapper\nmodule wrapper_cell (\n  input  logic clk, d, wsi, sel, cap, shi,\n  output logic q, wso\n);\n  logic cap_reg;\n  always_ff @(posedge clk) begin\n    if (cap) cap_reg <= d;\n    else if (shi) cap_reg <= wsi;\n  end\n  assign q   = sel ? cap_reg : d;\n  assign wso = cap_reg;\nendmodule\n\nmodule core_and (input a, b, output out);\n  assign out = a & b;\nendmodule\n\nmodule wrapped_and (\n  input  logic clk,\n  // Chip boundary signals\n  input  logic chip_a, chip_b,\n  output logic chip_out,\n  // Test signals\n  input  logic sel, cap, shi,\n  input  logic wsi,\n  output logic wso\n);\n  logic core_a, core_b, core_out;\n  logic wso_a, wso_b;\n\n  // Wrapper cells on inputs\n  wrapper_cell wa(.clk,.d(chip_a),.wsi,.sel,.cap,.shi,\n                  .q(core_a),.wso(wso_a));\n  wrapper_cell wb(.clk,.d(chip_b),.wsi(wso_a),.sel,.cap,.shi,\n                  .q(core_b),.wso(wso_b));\n\n  // Core logic\n  core_and core(.a(core_a),.b(core_b),.out(core_out));\n\n  // Wrapper cell on output\n  wrapper_cell wo(.clk,.d(core_out),.wsi(wso_b),.sel,.cap,.shi,\n                  .q(chip_out),.wso);\nendmodule\n\nmodule tb_core_wrapper;\n  logic clk=0, chip_a,chip_b,chip_out;\n  logic sel,cap,shi,wsi,wso;\n\n  wrapped_and dut(.*);\n  always #5 clk = ~clk;\n\n  initial begin\n    sel=0; cap=0; shi=0; wsi=0;\n    chip_a=0; chip_b=0;\n\n    // Functional mode test\n    sel=0; chip_a=1; chip_b=1;\n    @(posedge clk); #1;\n    assert(chip_out==1) else $error(\"Functional FAIL\");\n\n    // Test mode: shift in a=1, b=1\n    sel=1; shi=1;\n    wsi=1; @(posedge clk); // shift 1 into wa\n    wsi=1; @(posedge clk); // shift 1 into wb\n    wsi=0; @(posedge clk); // shift 0 into wo\n    shi=0;\n\n    // Capture: clock once in test mode\n    cap=1; @(posedge clk); #1;\n    cap=0;\n\n    // Verify core output\n    assert(chip_out==1) else $error(\"Test mode capture FAIL\");\n\n    $display(\"Core wrapper PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "wrapper_cell captures 'd' when cap=1, shifts 'wsi' when shi=1",
+            "Chain: wsi→wa→wb→wo→wso (serial chain through all boundary cells)",
+            "sel=1: core sees wrapper register values instead of chip pins",
+            "sel=0: core sees chip pins directly (functional mode)"
+          ],
+          "requiredPatterns": [
+            "module wrapper_cell",
+            "module core_and",
+            "module wrapped_and",
+            "cap_reg",
+            "sel ? cap_reg : d",
+            "module tb_core_wrapper",
+            "assert(chip_out==1)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The core wrapper isolates the block for testing. Wrapper cells at each boundary capture/shift boundary values. The serial chain wsi→wa→wb→wo→wso allows ATPG patterns to be shifted in and responses shifted out. sel=1 breaks the chip-level connections and substitutes wrapper register values — the block is now isolated and testable independently."
+        }
+      },
+      {
+        "id": "dft-9-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your hierarchical DFT knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "IEEE 1500 defines:", "options": ["Scan chain connections", "Standard for embedded core wrapping and test access", "ATPG algorithm", "JTAG pin names"], "answer": 1 },
+          { "q": "A core wrapper isolates a block by:", "options": ["Removing it from the chip", "Using wrapper cells to intercept boundary signals in test mode", "Bypassing all clocks", "Disconnecting power"], "answer": 1 },
+          { "q": "TAM (Test Access Mechanism) is used to:", "options": ["Generate test patterns", "Route test data from chip-level JTAG to each embedded block", "Compress scan data", "Fix timing violations"], "answer": 1 },
+          { "q": "Interconnect test in hierarchical DFT tests:", "options": ["Internal logic of each block", "Wiring between blocks at the chip level", "Memory arrays", "Clock distribution"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 10,
+    "bonusXp": 200,
+    "badge": "Industry DFT Engineer",
+    "subLevels": [
+      {
+        "id": "dft-10-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Industry DFT flows — complete chip DFT from specification to silicon validation.",
+        "keyPoints": [
+          "DFT specification: target coverage, test time, chip test pins",
+          "DFT insertion: scan, MBIST, JTAG added in RTL or post-synthesis",
+          "Formal DFT check: verify scan chain connectivity is correct",
+          "ATPG run: TetraMAX or Encounter Test generates patterns",
+          "Pattern simulation: verify patterns detect target faults",
+          "Tester translation: convert STIL to ATE format (93000, V93000, Titan)",
+          "Silicon bring-up: first silicon validation using DFT infrastructure"
+        ],
+        "content": "The complete industry DFT flow starts at specification: what test coverage is required (99% stuck-at, 95% transition), how many test pins are available, what test time budget exists. DFT engineers then insert scan, MBIST, and JTAG during RTL coding or post-synthesis. Formal verification checks that scan chains are correctly connected (no broken chains). ATPG generates patterns targeting 99%+ coverage. Patterns are simulated at gate level to confirm expected coverage. Final patterns are translated to the ATE format. In silicon bring-up, DFT is the first thing used — JTAG to read IDCODE (is the chip alive?), scan to check register functionality, MBIST to qualify memories.",
+        "xp": 20
+      },
+      {
+        "id": "dft-10-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Industry DFT scripts — TetraMAX ATPG and Encounter Test commands.",
+        "keyPoints": [
+          "TetraMAX: Synopsys ATPG tool — most widely used in industry",
+          "Encounter Test: Cadence ATPG tool",
+          "read_netlist: load gate-level netlist into ATPG tool",
+          "add_dft_signals: define scan, test_mode, JTAG pins",
+          "run_atpg: generate test patterns for target coverage",
+          "report_statistics: shows fault coverage, pattern count",
+          "write_patterns: export to STIL for ATE"
+        ],
+        "content": "# TetraMAX ATPG Flow (industry commands)\n\n# Step 1: Read design\ntmax> read_netlist design_scan.v -design my_chip\ntmax> read_netlist tech_lib.v\n\n# Step 2: Define DFT signals\ntmax> add_dft_signals -scan_enable scan_en\ntmax> add_dft_signals -test_clock clk -period 10\ntmax> set_dft_signal -type ScanDataIn  -port tdi\ntmax> set_dft_signal -type ScanDataOut -port tdo\n\n# Step 3: Build model\ntmax> build_model -verbose\ntmax> check_design -count\n\n# Step 4: Run ATPG\ntmax> run_atpg -effort high\n# → generates patterns targeting stuck-at faults\n\n# Step 5: Report coverage\ntmax> report_statistics\n# Stuck-at coverage: 99.3%\n# Patterns: 1,847\n\n# Step 6: Add transition fault patterns\ntmax> set_fault_type transition\ntmax> run_atpg -effort high\ntmax> report_statistics\n\n# Step 7: Write patterns\ntmax> write_patterns ./output/chip_test.stil -format stil\ntmax> write_patterns ./output/chip_test.wgl  -format wgl",
+        "xp": 20
+      },
+      {
+        "id": "dft-10-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete ATPG statistics report from a real chip run.",
+        "keyPoints": [
+          "Total faults = 2× internal nets (SA0 and SA1 each)",
+          "Detected faults = covered by at least 1 test pattern",
+          "Possibly detected = may be detected (simulation X-states)",
+          "Undetectable = logically redundant (cannot be detected)",
+          "Target: (detected + possibly detected) / (total - undetectable) > 99%",
+          "Pattern count trade-off: more patterns = higher coverage but longer test"
+        ],
+        "reportContent": "# TetraMAX ATPG Statistics Report\n# Design: cpu_core_dft_inserted\n================================================\n  Fault Statistics:\n  Total faults:          1,284,736\n  Detected:              1,268,104   (98.71%)\n  Possibly detected:        10,293   ( 0.80%)\n  Undetectable (redun):      4,218   ( 0.33%)\n  Not detected:              2,121   ( 0.17%)\n================================================\n  Fault Coverage:\n  Stuck-at coverage:  99.51%  PASS (target: 99%)\n  (detected + possibly) / (total - undetectable)\n================================================\n  Pattern Statistics:\n  Total patterns:         2,847\n  Shift length (max):       384 cycles\n  Estimated test time:     12.4 ms at 100MHz\n================================================\n  ATPG Messages:\n  [INFO] 142 faults are clock-domain related\n  [INFO] 67 faults untestable (async reset paths)\n  [WARN] 15 chains with imbalanced lengths\n================================================",
+        "xp": 20
+      },
+      {
+        "id": "dft-10-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a complete DFT testbench simulating ATE test execution.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 10: ATE Test Simulation\n\nSimulate an ATE test execution for a scan-based chip:\n\n```\n// Chip with 8-flop scan chain and combinational logic\nmodule dut_chip (\n  input  logic clk, rst_n,\n  input  logic scan_en, tdi,\n  input  logic [3:0] pi,    // primary inputs\n  output logic [1:0] po,    // primary outputs\n  output logic tdo\n);\n```\n\nWrite an ATE simulation testbench that:\n1. Resets chip and verifies TDO=0\n2. **ATPG Pattern 1** — shift in and capture:\n   - Shift in: 8'b10110100 (MSB first through TDI)\n   - Set primary inputs: pi=4'b1010\n   - Capture (SE=0, 1 clock)\n   - Shift out 8 bits and print TDO sequence\n3. **ATPG Pattern 2** — second pattern:\n   - Shift in: 8'b01001011\n   - pi=4'b0101\n   - Capture and shift out\n4. Print PASS/FAIL for each pattern\n5. Report: total patterns, pass count\n\nModule: `tb_ate_sim`",
+          "starterCode": "// Lab 10: ATE Test Simulation\n// Simple 8-flop scan chain DUT\nmodule dut_chip (\n  input  logic clk, rst_n,\n  input  logic scan_en, tdi,\n  input  logic [3:0] pi,\n  output logic [1:0] po,\n  output logic tdo\n);\n  logic [7:0] scan_chain;\n  logic [7:0] d_func;\n\n  // Functional data: mix of primary inputs and previous state\n  assign d_func[7:4] = pi ^ scan_chain[3:0];\n  assign d_func[3:0] = scan_chain[7:4] & pi;\n\n  // Scan chain with functional mux\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) scan_chain <= 8'h00;\n    else if (scan_en)\n      scan_chain <= {scan_chain[6:0], tdi}; // shift\n    else\n      scan_chain <= d_func;  // capture\n  end\n\n  assign tdo = scan_chain[7];    // TDO = last flop\n  assign po  = scan_chain[7:6]; // primary outputs\nendmodule\n\nmodule tb_ate_sim;\n  logic clk=0, rst_n, scan_en, tdi;\n  logic [3:0] pi;\n  logic [1:0] po;\n  logic tdo;\n  int pass_count=0, total_patterns=0;\n\n  dut_chip dut(.*);\n  always #5 clk = ~clk;\n\n  // Task: apply one ATPG pattern\n  task apply_pattern(\n    input logic [7:0] shift_in,\n    input logic [3:0] pri_in,\n    input logic [7:0] expected_out,\n    input string      pat_name\n  );\n    logic [7:0] shifted_out;\n    // Phase 1: Shift in\n    scan_en = 1; pi = pri_in;\n    for (int i=7; i>=0; i--) begin\n      tdi = shift_in[i];\n      @(posedge clk);\n    end\n    // Phase 2: Capture\n    scan_en = 0;\n    @(posedge clk);\n    // Phase 3: Shift out\n    scan_en = 1;\n    for (int i=7; i>=0; i--) begin\n      @(posedge clk); #1;\n      shifted_out[i] = tdo;\n    end\n    total_patterns++;\n    if (shifted_out == expected_out) begin\n      $display(\"PASS [%s]: shifted_out=%b\", pat_name, shifted_out);\n      pass_count++;\n    end else\n      $display(\"FAIL [%s]: got=%b exp=%b\",\n               pat_name, shifted_out, expected_out);\n  endtask\n\n  initial begin\n    rst_n=0; scan_en=0; tdi=0; pi=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Pattern 1: shift in 10110100\n    apply_pattern(8'b10110100, 4'b1010, 8'bxxxxxxxx, \"PAT1\");\n\n    // Pattern 2: shift in 01001011\n    apply_pattern(8'b01001011, 4'b0101, 8'bxxxxxxxx, \"PAT2\");\n\n    $display(\"ATE Results: %0d/%0d patterns passed\",\n             pass_count, total_patterns);\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Shift in: tdi gets shift_in[7] first (MSB), then [6], ..., [0]",
+            "Shift out: read tdo after each clock during shift-out phase",
+            "expected_out can be 'x' (don't care) — use 'bxxxxxxxx for initial runs",
+            "Real ATE compares shifted_out to expected from ATPG simulation"
+          ],
+          "requiredPatterns": [
+            "module dut_chip",
+            "scan_chain",
+            "module tb_ate_sim",
+            "task apply_pattern",
+            "scan_en = 1",
+            "scan_en = 0",
+            "pass_count",
+            "total_patterns",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The ATE simulation applies exactly what physical ATE does: shift in → capture → shift out → compare. The shift-in loads the ATPG-determined scan state. Capture applies one functional clock to observe circuit response. Shift-out reads the response for comparison. Real ATE runs this at MHz speeds with thousands of patterns. This lab models the fundamental ATE test loop."
+        }
+      },
+      {
+        "id": "dft-10-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your industry DFT knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "The first thing tested on new silicon using DFT is usually:", "options": ["Full ATPG patterns", "JTAG IDCODE read — confirms chip is powered and accessible", "MBIST memory test", "At-speed patterns"], "answer": 1 },
+          { "q": "TetraMAX report_statistics shows:", "options": ["Timing violations", "Fault coverage percentage, pattern count, and test time estimate", "DRC violations", "Power consumption"], "answer": 1 },
+          { "q": "Undetectable faults in ATPG are:", "options": ["Faults that will cause chip failure", "Logically redundant faults — circuit structure makes them untestable", "Faults needing more patterns", "Timing-only faults"], "answer": 1 },
+          { "q": "STIL format is used to:", "options": ["Describe cell timing", "Transfer test patterns from ATPG tool to ATE for silicon test", "Define scan chain order", "Specify clock constraints"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 11,
+    "bonusXp": 220,
+    "badge": "DFT Interview Ready",
+    "subLevels": [
+      {
+        "id": "dft-11-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What DFT interviews at top companies actually test.",
+        "keyPoints": [
+          "Explain stuck-at fault model and why it matters — always asked",
+          "Draw a scan chain and explain shift/capture/shift-out — always asked",
+          "Write a scan flop RTL — coding round in every interview",
+          "Explain MBIST architecture — block diagram question",
+          "JTAG TAP FSM — draw the state machine",
+          "Coverage calculation — given numbers, compute fault coverage",
+          "Companies: Qualcomm, Intel, MediaTek, Apple, Samsung, TSMC"
+        ],
+        "content": "DFT interviews test both concept depth and RTL coding ability. You must be able to explain every concept from first principles — not just memorize definitions. The most common coding question: write a scan flop in RTL. You must code it correctly with scan MUX, active-low reset, and proper SO connection. The most common concept question: explain the complete scan test flow (shift in → capture → shift out). Know: why is capture done in functional mode? What causes X propagation in scan? What is fault coverage and how is it calculated? Industry numbers: 99% stuck-at, 95% transition are common targets.",
+        "xp": 20
+      },
+      {
+        "id": "dft-11-syntax",
+        "type": "syntax",
+        "title": "Common Interview Patterns",
+        "icon": "🔤",
+        "summary": "Top 10 DFT coding and concept patterns asked in every interview.",
+        "keyPoints": [
+          "1. Scan flip-flop with scan MUX — RTL coding",
+          "2. 4-flop scan chain with TDI/TDO — connection coding",
+          "3. Clock gating with scan bypass (ICG) — RTL coding",
+          "4. March C- algorithm — write the pseudo-code",
+          "5. LFSR 4-bit maximal — RTL coding",
+          "6. TAP controller states — draw/explain FSM",
+          "7. ATPG: find test vector for SA0 — calculation",
+          "8. Fault coverage formula — given numbers, compute",
+          "9. Scan compression: decompressor XOR network",
+          "10. LOC at-speed sequence — explain step by step"
+        ],
+        "content": "// INTERVIEW REFERENCE: Complete Scan Flop\nmodule scan_dff_ref (\n  input  logic clk,\n  input  logic rst_n,  // active-low async reset\n  input  logic d,      // functional data\n  input  logic si,     // scan in\n  input  logic se,     // scan enable (1=scan, 0=func)\n  output logic q,\n  output logic so      // scan out = q\n);\n  logic d_mux;\n  assign d_mux = se ? si : d;\n  assign so    = q;\n\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) q <= 1'b0;\n    else        q <= d_mux;\nendmodule\n\n// INTERVIEW REFERENCE: Fault Coverage Formula\n// Coverage = (Detected + Possibly_Detected) /\n//            (Total_Faults - Undetectable_Faults)\n// Example: 990 detected, 5 PD, 8 undetect, total 1000\n// Coverage = (990+5) / (1000-8) = 995/992 = 100.3%\n// → Report as 100% (PD counted as detected)\n\n// Real example:\n// Total: 100,000\n// Detected: 98,500\n// PD: 700\n// Undetectable: 300\n// Coverage = (98500+700)/(100000-300) = 99,200/99,700 = 99.5%",
+        "xp": 20
+      },
+      {
+        "id": "dft-11-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Solve 5 classic DFT interview questions.",
+        "keyPoints": [
+          "Q: Why is scan enable high during shift but low during capture?",
+          "Q: What is an untestable fault? Give an example",
+          "Q: Why can't we test SRAMs with scan chains?",
+          "Q: What causes X propagation in scan and how do you fix it?",
+          "Q: What is the difference between LBIST and MBIST?"
+        ],
+        "content": "// Interview Q1: Why SE=1 shift, SE=0 capture?\n// SE=1: flops form shift register, TDI data loads\n// SE=0: flops operate functionally (D input used)\n// Capture in functional mode = observing real circuit behavior\n// If SE=1 during capture, no functional logic evaluated!\n\n// Interview Q2: Untestable fault example\n// Gate: Y = A & (!A)  → always 0 (redundant logic)\n// SA1 on Y: Y=1 is impossible even fault-free\n// → Cannot create test that distinguishes fault from fault-free\n// Redundant logic creates untestable faults\n\n// Interview Q3: Why can't scan test SRAM?\n// SRAM cell: 6T cross-coupled inverters + access transistors\n// These are NOT standard scan flip-flops\n// Scan chain only connects D flip-flops in the design\n// SRAM internal array is completely invisible to scan\n// → Need MBIST with march algorithm\n\n// Interview Q4: X propagation causes and fixes\n// Cause 1: Uninitialized flip-flops (no reset before shift)\n// Cause 2: Async resets not controlled (X on reset path)\n// Cause 3: Multidriven nets (short circuit)\n// Fix: Always reset before shift, make reset controllable\n\n// Interview Q5: LBIST vs MBIST\n// LBIST: tests combinational LOGIC using LFSR+MISR\n// MBIST: tests MEMORY ARRAYS using march algorithm\n// Different targets: LBIST=gates, MBIST=SRAM/ROM/CAM",
+        "xp": 20
+      },
+      {
+        "id": "dft-11-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "The classic DFT interview challenge — complete scan chain testbench.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 11: Classic DFT Interview — Full Scan Test\n\nWrite a complete scan test for a 4-bit register with XOR reduction:\n\n```\nmodule dut_4bit (\n  input  logic clk, rst_n,\n  input  logic [3:0] d,\n  input  logic scan_en, tdi,\n  output logic [3:0] q,\n  output logic parity,   // q[3]^q[2]^q[1]^q[0]\n  output logic tdo\n);\n```\n\n**Must include:**\n1. Scan flop for each of the 4 bits (chain: tdi→ff0→ff1→ff2→ff3→tdo)\n2. Parity output = XOR of all Q bits\n3. Full testbench that:\n   - Resets all flops\n   - Shifts in `1010` \n   - Verifies parity=0 after capture (1^0^1^0=0)\n   - Shifts in `1111`\n   - Verifies parity=0 (1^1^1^1=0)\n   - Shifts in `1110`\n   - Verifies parity=1 (1^1^1^0=1)\n   - Reports PASS/FAIL\n\nModule: `tb_dft_interview`",
+          "starterCode": "// Lab 11: Classic DFT Interview Challenge\nmodule scan_dff (\n  input  logic clk, rst_n, d, si, se,\n  output logic q, so\n);\n  assign so = q;\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) q <= 0;\n    else        q <= se ? si : d;\nendmodule\n\nmodule dut_4bit (\n  input  logic clk, rst_n,\n  input  logic [3:0] d,\n  input  logic scan_en, tdi,\n  output logic [3:0] q,\n  output logic parity,\n  output logic tdo\n);\n  logic so0, so1, so2;\n\n  // Chain: tdi → ff0 → ff1 → ff2 → ff3 → tdo\n  scan_dff ff0(.clk,.rst_n,.d(d[0]),.si(tdi), .se(scan_en),.q(q[0]),.so(so0));\n  scan_dff ff1(.clk,.rst_n,.d(d[1]),.si(so0), .se(scan_en),.q(q[1]),.so(so1));\n  scan_dff ff2(.clk,.rst_n,.d(d[2]),.si(so1), .se(scan_en),.q(q[2]),.so(so2));\n  scan_dff ff3(.clk,.rst_n,.d(d[3]),.si(so2), .se(scan_en),.q(q[3]),.so(tdo));\n\n  assign parity = ^q;  // XOR all bits\nendmodule\n\nmodule tb_dft_interview;\n  logic clk=0, rst_n, scan_en, tdi, tdo;\n  logic [3:0] d, q;\n  logic parity;\n  int pass=0, fail=0;\n\n  dut_4bit dut(.*);\n  always #5 clk = ~clk;\n\n  // Task: shift in 4-bit pattern (LSB first into ff0)\n  task shift_in(input logic [3:0] pattern);\n    scan_en=1;\n    for (int i=0; i<4; i++) begin\n      tdi = pattern[i];\n      @(posedge clk);\n    end\n  endtask\n\n  // Task: capture (1 functional clock)\n  task capture;\n    scan_en=0; d=4'b0000;\n    @(posedge clk); #1;\n  endtask\n\n  // Task: check parity\n  task check_parity(\n    input logic exp_parity,\n    input string test_name\n  );\n    if (parity === exp_parity) begin\n      $display(\"PASS [%s]: q=%b parity=%b\", test_name, q, parity);\n      pass++;\n    end else begin\n      $display(\"FAIL [%s]: q=%b parity=%b exp=%b\",\n               test_name, q, parity, exp_parity);\n      fail++;\n    end\n  endtask\n\n  initial begin\n    rst_n=0; scan_en=0; tdi=0; d=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Test 1: shift 1010, parity = 1^0^1^0 = 0\n    shift_in(4'b0101); // LSB first: 0→ff0,1→ff1,0→ff2,1→ff3\n    capture;\n    check_parity(0, \"1010_parity\");\n\n    // Test 2: shift 1111, parity = 0\n    shift_in(4'b1111);\n    capture;\n    check_parity(0, \"1111_parity\");\n\n    // Test 3: shift 1110, parity = 1\n    shift_in(4'b0111);\n    capture;\n    check_parity(1, \"1110_parity\");\n\n    $display(\"DFT Interview: %0d PASS, %0d FAIL\", pass, fail);\n    if (fail==0) $display(\"** INTERVIEW PASSED **\");\n    else         $display(\"** INTERVIEW FAILED **\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Pattern shifts LSB first: pattern[0]→ff0, pattern[1]→ff1, ...",
+            "So for q=1010: shift_in(4'b0101) — ff0 gets bit0=1, ff1 gets bit1=0...",
+            "assign parity = ^q;  // SystemVerilog reduction XOR",
+            "Capture: SE=0, one clock — functional data (d) captured"
+          ],
+          "requiredPatterns": [
+            "module dut_4bit",
+            "scan_dff ff0",
+            "scan_dff ff1",
+            "scan_dff ff2",
+            "scan_dff ff3",
+            "assign parity = ^q",
+            "module tb_dft_interview",
+            "task shift_in",
+            "task capture",
+            "INTERVIEW PASSED",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "This is the complete DFT interview answer. The scan chain connects ff0→ff1→ff2→ff3 with tdi→so→si connections. Shift loads values into chain. Capture evaluates functional logic (parity XOR in this case). The parity check verifies the chain values were correctly loaded and the combinational logic (XOR reduction) works correctly. This exact flow — shift in, capture, check output — is how all silicon is tested."
+        }
+      },
+      {
+        "id": "dft-11-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "DFT interview-style questions.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Most common DFT interview coding question:", "options": ["Write a JTAG controller", "Write a scan flip-flop with scan MUX and active-low reset", "Write a March C- controller", "Write an LFSR"], "answer": 1 },
+          { "q": "During scan shift (SE=1) the flip-flop captures:", "options": ["Functional data D", "Scan input SI from previous flop", "Primary input", "Reset value"], "answer": 1 },
+          { "q": "Fault coverage formula is:", "options": ["Detected / Total", "(Detected + PD) / (Total - Undetectable)", "Detected × Total", "Total / Detected"], "answer": 1 },
+          { "q": "X propagation in scan is most commonly caused by:", "options": ["Too many scan flops", "Uninitialized flops or uncontrolled async resets", "Long scan chains", "Multiple clock domains"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 12,
+    "bonusXp": 500,
+    "badge": "DFT Architect",
+    "subLevels": [
+      {
+        "id": "dft-12-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Complete DFT architecture for a real SoC — the final boss.",
+        "keyPoints": [
+          "SoC DFT plan: scan + MBIST + JTAG + at-speed + compression all together",
+          "DFT budget: area overhead, pin count, test time, coverage targets",
+          "Multi-clock domain: each domain needs own scan clock and control",
+          "Codec architecture: decompressor→scan chains→compactor in one block",
+          "BIST hierarchy: chip-level BIST controller manages all sub-BIST blocks",
+          "Safety DFT: ISO 26262 requires LBIST for periodic field testing",
+          "Tapeout DFT checklist: coverage, chains, MBIST, JTAG all verified"
+        ],
+        "content": "A complete SoC DFT architecture integrates all test methods. Scan compression (DFTMAX/EDT) provides 50:1 compression for the thousands of internal scan chains. MBIST covers all SRAMs and ROMs. JTAG provides the top-level test access. LBIST enables periodic self-test for safety applications. The DFT engineer must balance: test coverage (higher = better quality but more patterns), test time (longer = more cost on ATE), area overhead (more DFT logic = more chip area), and pin count (limited test pins available). Final DFT signoff requires: ≥99% stuck-at coverage, ≥95% transition coverage, 0 broken scan chains, all memories with MBIST, JTAG functional.",
+        "xp": 30
+      },
+      {
+        "id": "dft-12-syntax",
+        "type": "syntax",
+        "title": "Architecture Overview",
+        "icon": "🔤",
+        "summary": "Complete SoC DFT architecture — all components and connections.",
+        "keyPoints": [
+          "Scan: 256 internal chains compressed to 8 external — 32:1 ratio",
+          "MBIST: controller tests 12 SRAM blocks sequentially",
+          "JTAG: TAP → selects scan, MBIST, IDCODE, BYPASS",
+          "At-speed: LOC for transition faults on critical paths",
+          "LBIST: LFSR+MISR for automotive safety periodic test",
+          "Test pins: 8 scan data + 4 JTAG = 12 test pins total",
+          "Compression: input XOR decompressor + output MISR compactor"
+        ],
+        "content": "// Complete SoC DFT Architecture\n//\n// ┌─────────────────────────────────────────┐\n// │                SoC DFT                  │\n// │                                         │\n// │  ┌─────────────────────────────────┐   │\n// │  │         SCAN COMPRESSION        │   │\n// │  │  8-in ──[Decompressor]── 256    │   │\n// │  │  Ext      (XOR network)  chains │   │\n// │  │  8-out ──[Compactor]─────────── │   │\n// │  └─────────────────────────────────┘   │\n// │                                         │\n// │  ┌─────────────┐  ┌────────────────┐   │\n// │  │ MBIST CTRL  │  │  LBIST         │   │\n// │  │ (12 SRAMs)  │  │  LFSR + MISR  │   │\n// │  └─────────────┘  └────────────────┘   │\n// │                                         │\n// │  ┌─────────────────────────────────┐   │\n// │  │      JTAG TAP CONTROLLER        │   │\n// │  │  IDCODE | BYPASS | SCAN | BIST  │   │\n// │  └──────────────┬──────────────────┘   │\n// └─────────────────┼───────────────────────┘\n//                   │ TDI/TDO/TCK/TMS\n//                  ATE\n//\n// TEST PROTOCOL ORDER:\n// 1. JTAG IDCODE — chip alive check\n// 2. MBIST — all memories pass\n// 3. Scan stuck-at — 99%+ coverage\n// 4. Scan transition at-speed — 95%+ coverage\n// 5. LBIST — logic pass (automotive only)",
+        "xp": 30
+      },
+      {
+        "id": "dft-12-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete DFT signoff checklist for a real SoC.",
+        "keyPoints": [
+          "All scan chains must be verified by formal check",
+          "MBIST must pass on all memories before scan patterns",
+          "Stuck-at coverage ≥ 99% mandatory before tapeout",
+          "Transition coverage ≥ 95% for performance silicon",
+          "JTAG IDCODE must be readable after first power-on",
+          "X-bounding: all undefined states must be set before capture",
+          "Final pattern count and test time must fit ATE budget"
+        ],
+        "content": "# DFT Tapeout Signoff Checklist\n# Design: MY_SOC_DFT_v2\n================================================\n  SCAN CHAINS\n  Total chains:         256 (internal)\n  External channels:      8 (compression 32:1)\n  Longest chain:         847 flops\n  Broken chains:           0  PASS\n  Undriven chains:         0  PASS\n  Clock domains:           3 (func, pll, io)\n================================================\n  FAULT COVERAGE\n  Stuck-at:          99.67%  PASS (target 99%)\n  Transition:        95.23%  PASS (target 95%)\n  IDDQ coverage:     98.10%  PASS\n  Total patterns:     4,821  (scan compressed)\n  Estimated test time: 8.3ms at 500MHz\n================================================\n  MBIST\n  SRAM blocks:            12  all passing\n  ROM blocks:              2  all passing\n  MBIST test time:      1.2ms\n================================================\n  JTAG\n  IDCODE:        0x0A35_0093  verified\n  Boundary scan: 342 BSR cells  verified\n  BYPASS:        functional  PASS\n================================================\n  LBIST (automotive)\n  LFSR length:        1024 patterns\n  Golden signature:   32'hF3A8_12C4\n  Logic coverage:     98.4%  PASS\n================================================\n  >> DFT SIGNOFF APPROVED — READY FOR TAPEOUT <<\n================================================",
+        "xp": 30
+      },
+      {
+        "id": "dft-12-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "FINAL BOSS — Complete DFT system: scan + MBIST + JTAG in one design.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 12: FINAL BOSS — Complete DFT System\n\nIntegrate all DFT components for a small processor:\n\n```\nmodule soc_dft (\n  // Functional\n  input  logic clk, rst_n,\n  input  logic [3:0] instr,\n  output logic [3:0] result,\n  // JTAG\n  input  logic tck, tms, tdi_jtag, trst_n,\n  output logic tdo_jtag,\n  // Scan\n  input  logic scan_en, tdi_scan,\n  output logic tdo_scan,\n  // BIST\n  input  logic bist_en,\n  output logic bist_done, bist_pass\n);\n```\n\nIntegrate:\n1. **4-flop scan chain** on the processor register (tdi_scan→ff0→ff1→ff2→ff3→tdo_scan)\n2. **Simplified TAP** (TEST_RESET, RUN_IDLE, SHIFT_DR): routes tdi_jtag to either scan chain or IDCODE based on instruction\n3. **IDCODE register** (32-bit): hardcode value 32'hDEAD_BEEF\n4. **MBIST block** (4-cell memory): run march M0+M1+M2 when bist_en=1\n5. **Testbench** that:\n   - Reads IDCODE via JTAG\n   - Runs MBIST — verify pass\n   - Applies one scan pattern via tdi_scan\n   - Prints full test report\n\nModule: `tb_soc_dft_final`",
+          "starterCode": "// Lab 12: FINAL BOSS — Complete DFT System\nimport std::*;\n\n// Scan flip-flop\nmodule scan_dff (input clk,rst_n,d,si,se, output logic q,so);\n  assign so=q;\n  always_ff @(posedge clk or negedge rst_n)\n    if(!rst_n) q<=0; else q<= se?si:d;\nendmodule\n\n// 4-cell SRAM\nmodule sram4 (input clk,we,input[1:0]addr,input din, output logic dout);\n  logic[3:0] mem;\n  always_ff @(posedge clk) if(we) mem[addr]<=din;\n  assign dout=mem[addr];\nendmodule\n\n// Main SoC DFT module\nmodule soc_dft (\n  input  logic clk, rst_n,\n  input  logic [3:0] instr,\n  output logic [3:0] result,\n  input  logic tck, tms, tdi_jtag, trst_n,\n  output logic tdo_jtag,\n  input  logic scan_en, tdi_scan,\n  output logic tdo_scan,\n  input  logic bist_en,\n  output logic bist_done, bist_pass\n);\n  // ── Scan chain (4 flops) ──\n  logic [3:0] q;\n  logic so0,so1,so2;\n  scan_dff ff0(.clk,.rst_n,.d(instr[0]),.si(tdi_scan),.se(scan_en),.q(q[0]),.so(so0));\n  scan_dff ff1(.clk,.rst_n,.d(instr[1]),.si(so0),    .se(scan_en),.q(q[1]),.so(so1));\n  scan_dff ff2(.clk,.rst_n,.d(instr[2]),.si(so1),    .se(scan_en),.q(q[2]),.so(so2));\n  scan_dff ff3(.clk,.rst_n,.d(instr[3]),.si(so2),    .se(scan_en),.q(q[3]),.so(tdo_scan));\n  assign result = q;\n\n  // ── Simplified JTAG (IDCODE only) ──\n  logic [31:0] idcode = 32'hDEAD_BEEF;\n  logic [31:0] id_shift;\n  logic [4:0]  tap_state;\n  logic shift_active;\n\n  // TAP: reset on trst_n or 5x TMS=1\n  // Simplified: just provide IDCODE shift\n  always_ff @(posedge tck or negedge trst_n) begin\n    if (!trst_n) begin\n      id_shift <= idcode;\n    end else if (tms) begin\n      id_shift <= idcode; // reset-like\n    end else begin\n      id_shift <= {tdi_jtag, id_shift[31:1]}; // shift right\n    end\n  end\n  assign tdo_jtag = id_shift[0]; // LSB out\n\n  // ── MBIST (4-cell memory) ──\n  logic mem_we;\n  logic [1:0] mem_addr;\n  logic mem_din, mem_dout;\n  logic [1:0] bist_state;\n  logic fail_flag;\n\n  sram4 mem(.clk,.we(mem_we),.addr(mem_addr),.din(mem_din),.dout(mem_dout));\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      bist_state<=0; bist_done<=0; bist_pass<=0;\n      mem_we<=0; mem_addr<=0; mem_din<=0; fail_flag<=0;\n    end else begin\n      case (bist_state)\n        2'd0: if (bist_en) begin // M0: write 0\n                mem_we<=1; mem_din<=0; mem_addr<=0;\n                bist_state<=1;\n              end\n        2'd1: begin // M1: read 0 write 1\n                mem_we<=0;\n                if (mem_dout!==0) fail_flag<=1;\n                mem_we<=1; mem_din<=1;\n                if (mem_addr==3) begin mem_addr<=0; bist_state<=2; end\n                else mem_addr<=mem_addr+1;\n              end\n        2'd2: begin // M2: read 1\n                mem_we<=0;\n                if (mem_dout!==1) fail_flag<=1;\n                if (mem_addr==3) begin\n                  bist_done<=1; bist_pass<=~fail_flag;\n                  bist_state<=0;\n                end else mem_addr<=mem_addr+1;\n              end\n        default: bist_state<=0;\n      endcase\n    end\n  end\nendmodule\n\n// FINAL BOSS TESTBENCH\nmodule tb_soc_dft_final;\n  logic clk=0, rst_n;\n  logic [3:0] instr, result;\n  logic tck=0, tms, tdi_jtag, trst_n;\n  logic tdo_jtag;\n  logic scan_en, tdi_scan, tdo_scan;\n  logic bist_en, bist_done, bist_pass;\n\n  soc_dft dut(.*);\n  always #5 clk=~clk;\n  always #8 tck=~tck;\n\n  // Read IDCODE via JTAG\n  task jtag_read_idcode;\n    logic [31:0] idcode;\n    trst_n=0; @(posedge tck); trst_n=1;\n    // Shift out 32 bits with TMS=0\n    tms=0;\n    for (int i=0; i<32; i++) begin\n      @(posedge tck); #1;\n      idcode[i] = tdo_jtag;\n    end\n    $display(\"JTAG IDCODE: %h (expected DEAD_BEEF)\", idcode);\n    assert(idcode==32'hDEAD_BEEF)\n      else $error(\"IDCODE MISMATCH!\");\n  endtask\n\n  // Run MBIST\n  task run_mbist;\n    bist_en=1; @(posedge clk); bist_en=0;\n    wait(bist_done==1); #1;\n    $display(\"MBIST: %s\", bist_pass ? \"PASS\" : \"FAIL\");\n    assert(bist_pass) else $error(\"MBIST FAILED\");\n  endtask\n\n  // Scan test\n  task scan_test;\n    // Shift in 1010 (LSB first)\n    scan_en=1;\n    tdi_scan=0; @(posedge clk);\n    tdi_scan=1; @(posedge clk);\n    tdi_scan=0; @(posedge clk);\n    tdi_scan=1; @(posedge clk);\n    // Capture\n    scan_en=0; instr=4'b0000;\n    @(posedge clk); #1;\n    $display(\"Scan capture: result=%b\", result);\n    assert(result==4'b1010)\n      else $error(\"Scan FAIL: result=%b\",result);\n    $display(\"Scan test: PASS\");\n  endtask\n\n  initial begin\n    rst_n=0; trst_n=0; bist_en=0; scan_en=0;\n    tdi_jtag=0; tdi_scan=0; tms=1; instr=0;\n    repeat(2) @(posedge clk); rst_n=1; trst_n=1;\n\n    $display(\"== FINAL BOSS: Complete SoC DFT Test ==\");\n\n    // 1. JTAG IDCODE\n    $display(\"--- Test 1: JTAG IDCODE ---\");\n    jtag_read_idcode;\n\n    // 2. MBIST\n    $display(\"--- Test 2: MBIST ---\");\n    run_mbist;\n\n    // 3. Scan\n    $display(\"--- Test 3: Scan Chain ---\");\n    scan_test;\n\n    $display(\"== ALL DFT TESTS PASSED ==\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "JTAG IDCODE: shift 32 bits out via tdo_jtag with TMS=0",
+            "MBIST: assert bist_en for 1 cycle, wait for bist_done",
+            "Scan: shift in LSB first through tdi_scan, capture with SE=0",
+            "result=q captures the scan chain contents after capture clock"
+          ],
+          "requiredPatterns": [
+            "module soc_dft",
+            "scan_dff ff0",
+            "idcode",
+            "32'hDEAD_BEEF",
+            "bist_en",
+            "bist_done",
+            "bist_pass",
+            "module tb_soc_dft_final",
+            "jtag_read_idcode",
+            "run_mbist",
+            "scan_test",
+            "ALL DFT TESTS PASSED",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The final boss integrates all DFT disciplines in one design: scan chain for logic testing, JTAG for test access and IDCODE, MBIST for memory testing. The testbench runs exactly the sequence used in real silicon bring-up: IDCODE first (chip alive?), MBIST second (memories good?), scan patterns last (logic good?). This is the complete DFT architect skill set — what you need to design and verify DFT for production silicon at Intel, Qualcomm, MediaTek, or Apple."
+        }
+      },
+      {
+        "id": "dft-12-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Final boss — complete DFT architect knowledge.",
+        "xp": 30,
+        "quiz": [
+          { "q": "The first DFT test run on new silicon is typically:", "options": ["Full ATPG patterns", "JTAG IDCODE read — verifies the chip is powered and the TAP is functional", "LBIST", "At-speed patterns"], "answer": 1 },
+          { "q": "DFT area overhead of 10-15% is:", "options": ["Too much — avoid DFT", "Acceptable — mandatory cost for testability", "Too little — add more", "Depends on clock frequency"], "answer": 1 },
+          { "q": "ISO 26262 safety standard requires:", "options": ["Higher scan coverage only", "Periodic in-field self-test (LBIST) to detect field failures during operation", "More ATPG patterns", "Lower test time"], "answer": 1 },
+          { "q": "A DFT architect designs:", "options": ["Only scan chains", "The complete test strategy: scan+MBIST+JTAG+compression+at-speed+LBIST", "Only ATPG scripts", "Only JTAG controllers"], "answer": 1 }
+        ]
+      }
+    ]
+  }
+]

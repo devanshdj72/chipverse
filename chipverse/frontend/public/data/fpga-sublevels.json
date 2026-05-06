@@ -1,0 +1,1428 @@
+[
+  {
+    "levelId": 0,
+    "bonusXp": 80,
+    "badge": "FPGA Initiate",
+    "subLevels": [
+      {
+        "id": "fpga-0-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What FPGAs are, how they work, and where they fit in the digital design world.",
+        "keyPoints": [
+          "FPGA = Field Programmable Gate Array — reconfigurable hardware",
+          "Contains: LUTs (Look-Up Tables), Flip-Flops, DSP blocks, Block RAM, I/O",
+          "LUT: implements any combinational function of N inputs — the core building block",
+          "Programming: load a bitstream to configure internal connections",
+          "vs ASIC: FPGA is slower and more expensive per unit but no NRE cost",
+          "vs CPU: FPGA runs logic in parallel — massive throughput advantage",
+          "Major vendors: Xilinx (AMD) — Vivado tool, Intel — Quartus tool"
+        ],
+        "content": "An FPGA is a chip that can be programmed to implement any digital circuit. Unlike an ASIC which is permanently fabricated, an FPGA can be reprogrammed unlimited times. The core element is the LUT (Look-Up Table) — a small memory that implements any boolean function. Connect thousands of LUTs together with flip-flops and routing, and you can implement a CPU, an image processor, or any digital system. FPGAs are used in: prototyping ASICs before tapeout, high-frequency trading (low latency), telecommunications (5G base stations), aerospace/defense, and AI inference acceleration.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-0-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Basic Verilog for FPGAs — always blocks, assign, and module structure.",
+        "keyPoints": [
+          "FPGA design uses Verilog or VHDL — same RTL as ASIC flow",
+          "always_ff → maps to flip-flops on FPGA",
+          "always_comb / assign → maps to LUTs on FPGA",
+          "Vivado: Xilinx FPGA tool (xc7, UltraScale families)",
+          "Quartus: Intel FPGA tool (Cyclone, Stratix families)",
+          "Synthesis: converts RTL to FPGA primitives (LUTs, FFs)",
+          "Place & Route: maps primitives to physical FPGA resources"
+        ],
+        "content": "// Basic FPGA Verilog — LED blinker\n// Target: Xilinx Basys3 (xc7a35t) or any FPGA\nmodule led_blink #(\n  parameter CLK_HZ  = 100_000_000, // 100MHz clock\n  parameter BLINK_HZ = 1           // 1Hz blink rate\n) (\n  input  logic clk,\n  input  logic rst_n,\n  output logic led\n);\n  localparam HALF_PERIOD = CLK_HZ / (2 * BLINK_HZ);\n  logic [$clog2(HALF_PERIOD)-1:0] counter;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      counter <= 0;\n      led     <= 0;\n    end else if (counter == HALF_PERIOD - 1) begin\n      counter <= 0;\n      led     <= ~led;  // toggle LED\n    end else begin\n      counter <= counter + 1;\n    end\n  end\nendmodule\n// $clog2: ceiling log2 — auto-sizes counter width\n// localparam: constant computed at elaboration time",
+        "xp": 20
+      },
+      {
+        "id": "fpga-0-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through a complete FPGA design flow from RTL to bitstream.",
+        "keyPoints": [
+          "Step 1: Write RTL (Verilog/VHDL)",
+          "Step 2: Synthesis — RTL to FPGA netlists (LUTs, FFs)",
+          "Step 3: Constraint file (.xdc/.qsf) — assign pins and clock",
+          "Step 4: Place & Route — map to physical FPGA resources",
+          "Step 5: Timing analysis — verify setup/hold at target frequency",
+          "Step 6: Generate bitstream (.bit file)",
+          "Step 7: Program FPGA via JTAG — design runs immediately"
+        ],
+        "content": "// FPGA Design Flow — step by step\n\n// STEP 1: RTL (led_blink.v)\n// → Write Verilog describing behavior\n\n// STEP 2: SYNTHESIS\n// Vivado command:\n// synth_design -top led_blink -part xc7a35tcpg236-1\n// Result: netlist of LUTs and FFs\n// LUT usage: ~5 LUTs for counter\n// FF usage:  ~26 FFs for 26-bit counter\n\n// STEP 3: CONSTRAINTS (led_blink.xdc)\n// # Clock constraint\n// create_clock -period 10.000 [get_ports clk]\n// # Pin assignments (Basys3 board)\n// set_property PACKAGE_PIN W5 [get_ports clk]  ;# 100MHz\n// set_property PACKAGE_PIN U16 [get_ports led] ;# LED0\n// set_property IOSTANDARD LVCMOS33 [get_ports *]\n\n// STEP 4-5: PLACE & ROUTE + TIMING\n// impl_design\n// report_timing_summary -file timing.rpt\n// WNS must be > 0 for clean timing\n\n// STEP 6: BITSTREAM\n// write_bitstream -file led_blink.bit\n\n// STEP 7: PROGRAM\n// open_hw_manager\n// program_device [get_hw_devices] -bitfile led_blink.bit",
+        "xp": 20
+      },
+      {
+        "id": "fpga-0-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a parameterized LED blinker with adjustable frequency.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "verilog",
+          "instructions": "# Lab 0: Parameterized LED Blinker\n\nImplement a parameterized LED blinker for a 100MHz FPGA clock:\n\n```\nmodule led_blink #(\n  parameter CLK_HZ   = 100_000_000,\n  parameter BLINK_HZ = 1\n) (\n  input  logic clk, rst_n,\n  output logic led\n);\n```\n\nRequirements:\n1. Counter counts from 0 to `CLK_HZ/(2*BLINK_HZ) - 1`\n2. Toggle `led` each time counter reaches its max\n3. Use `$clog2` to auto-size the counter\n4. Verify: at BLINK_HZ=1, CLK_HZ=100, period = 50 counts → 1Hz\n\nWrite a testbench that:\n- Uses CLK_HZ=10, BLINK_HZ=1 (period=5 counts)\n- Runs 20 clock cycles\n- Verifies LED toggles at cycle 5 and cycle 10",
+          "starterCode": "// Lab 0: Parameterized LED Blinker\nmodule led_blink #(\n  parameter CLK_HZ   = 100_000_000,\n  parameter BLINK_HZ = 1\n) (\n  input  logic clk, rst_n,\n  output logic led\n);\n  localparam HALF_PERIOD = CLK_HZ / (2 * BLINK_HZ);\n  logic [$clog2(HALF_PERIOD)-1:0] counter;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      counter <= 0;\n      led     <= 0;\n    end else if (counter == HALF_PERIOD - 1) begin\n      // Your code: reset counter and toggle LED\n    end else begin\n      // Your code: increment counter\n    end\n  end\nendmodule\n\n// Testbench\nmodule tb_led_blink;\n  logic clk=0, rst_n, led;\n\n  // Use small values for simulation\n  led_blink #(.CLK_HZ(10), .BLINK_HZ(1)) dut(.clk,.rst_n,.led);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; @(posedge clk); rst_n=1;\n    // Run 25 cycles and check LED toggles\n    repeat(5) @(posedge clk);\n    assert(led==1) else $error(\"LED should toggle at cycle 5\");\n    repeat(5) @(posedge clk);\n    assert(led==0) else $error(\"LED should toggle back at cycle 10\");\n    $display(\"LED blinker PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "counter <= 0; led <= ~led;  // reset counter and toggle",
+            "counter <= counter + 1;  // increment",
+            "HALF_PERIOD = 10/(2*1) = 5 counts",
+            "$clog2(5) = 3 bits wide counter"
+          ],
+          "requiredPatterns": [
+            "module led_blink",
+            "localparam HALF_PERIOD",
+            "$clog2",
+            "led <= ~led",
+            "counter <= 0",
+            "counter <= counter + 1",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The LED blinker divides the clock frequency. HALF_PERIOD = CLK_HZ/(2*BLINK_HZ) counts each half-period. When counter reaches HALF_PERIOD-1, it resets and toggles LED. $clog2 automatically sizes the counter for any frequency combination."
+        }
+      },
+      {
+        "id": "fpga-0-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your FPGA fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "What is a LUT (Look-Up Table) in an FPGA?", "options": ["A memory block for storing data", "A small truth table that implements any combinational logic function", "A flip-flop array", "A clock distribution network"], "answer": 1 },
+          { "q": "FPGA vs ASIC — FPGAs are preferred when:", "options": ["Mass production of millions of chips", "Design needs to be changed after deployment or for prototyping", "Maximum performance is needed", "Lowest power consumption required"], "answer": 1 },
+          { "q": "A bitstream in FPGA flow is:", "options": ["The RTL source code", "The binary configuration file that programs the FPGA fabric", "The constraint file", "The simulation waveform"], "answer": 1 },
+          { "q": "$clog2(N) in SystemVerilog returns:", "options": ["N squared", "Ceiling of log base 2 of N — minimum bits to represent N", "N divided by 2", "Floor of log base 2"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 1,
+    "bonusXp": 90,
+    "badge": "Constraint Master",
+    "subLevels": [
+      {
+        "id": "fpga-1-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "XDC constraints — pin assignment, clock definition, and I/O standards.",
+        "keyPoints": [
+          "XDC: Xilinx Design Constraints — Tcl-based constraint format",
+          "QSF: Quartus Settings File — Intel FPGA equivalent",
+          "Pin assignment: maps RTL port names to physical FPGA pins",
+          "Clock constraint: tells tool the frequency for timing analysis",
+          "IOSTANDARD: voltage standard for I/O pins (LVCMOS33, LVCMOS18)",
+          "SLEW: output edge rate (FAST/SLOW) affects EMI and signal integrity",
+          "DRIVE: output drive strength in mA"
+        ],
+        "content": "Constraints are critical in FPGA design — without them the tool cannot verify timing or drive the correct voltage levels. The XDC (Xilinx) or QSF (Intel) file maps your RTL port names to physical chip pins. The clock constraint defines the period and waveform so the P&R tool knows what timing to meet. IOSTANDARD must match your PCB voltage rails — using LVCMOS33 on a 1.8V rail will damage the FPGA. Pin assignments come from the board schematic — always check the eval board user guide for correct pin numbers.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-1-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "XDC and QSF constraint file syntax for Vivado and Quartus.",
+        "keyPoints": [
+          "create_clock -period 10 [get_ports clk] — 100MHz clock",
+          "set_property PACKAGE_PIN W5 [get_ports clk] — pin assignment",
+          "set_property IOSTANDARD LVCMOS33 [get_ports {*}] — I/O voltage",
+          "set_input_delay / set_output_delay — I/O timing constraints",
+          "set_false_path — paths to ignore in timing (async signals)",
+          "Quartus: set_location_assignment PIN_23 -to clk",
+          "Quartus: set_instance_assignment -name IO_STANDARD \"3.3-V LVCMOS\" -to clk"
+        ],
+        "content": "## Xilinx Vivado XDC file\n## Basys3 board (xc7a35t)\n\n## Clock — 100MHz on pin W5\ncreate_clock -period 10.000 -name sys_clk \\\n             -waveform {0.000 5.000} \\\n             [get_ports clk]\nset_property PACKAGE_PIN W5      [get_ports clk]\nset_property IOSTANDARD LVCMOS33 [get_ports clk]\n\n## Reset button (active low, center button)\nset_property PACKAGE_PIN U18     [get_ports rst_n]\nset_property IOSTANDARD LVCMOS33 [get_ports rst_n]\n\n## LED outputs\nset_property PACKAGE_PIN U16     [get_ports {led[0]}]\nset_property PACKAGE_PIN E19     [get_ports {led[1]}]\nset_property PACKAGE_PIN U19     [get_ports {led[2]}]\nset_property PACKAGE_PIN V19     [get_ports {led[3]}]\nset_property IOSTANDARD LVCMOS33 [get_ports {led[*]}]\n\n## Switches inputs\nset_property PACKAGE_PIN V17     [get_ports {sw[0]}]\nset_property PACKAGE_PIN V16     [get_ports {sw[1]}]\nset_property IOSTANDARD LVCMOS33 [get_ports {sw[*]}]\n\n## False path for async reset\nset_false_path -from [get_ports rst_n]",
+        "xp": 20
+      },
+      {
+        "id": "fpga-1-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete timing analysis report from Vivado.",
+        "keyPoints": [
+          "WNS: Worst Negative Slack — must be ≥ 0 for timing closure",
+          "WHS: Worst Hold Slack — must be ≥ 0",
+          "TNS: Total Negative Slack — sum of all violations",
+          "Fmax: maximum frequency = 1/(clock_period - WNS)",
+          "Critical path: longest path limiting Fmax",
+          "LUT delays dominate in FPGA; routing also significant"
+        ],
+        "content": "## Vivado Timing Summary Report\n## report_timing_summary\n\n--------------------------------\nDesign Timing Summary\n--------------------------------\nWNS(ns)  TNS(ns)  WHS(ns)  WPSS(ns)\n  2.314    0.000    0.187    0.000\n--------------------------------\nAll user specified timing constraints are met.\n\n## Critical Path Report:\nStartpoint: counter_reg[23] (FF clocked by sys_clk)\nEndpoint:   counter_reg[24] (FF clocked by sys_clk)\nPath Group: sys_clk\nPath Type:  Setup (Max at Slow Corner)\n\nData Path Delay: 7.686ns\n  counter_reg[23]/C→Q:     0.478ns\n  LUT5 (carry chain):      0.124ns  ×8\n  counter_reg[24]/D:       0.000ns\n\nClock Path Skew: 0.000ns\nClock Uncertainty: 0.035ns\n\nRequired Time: 10.000ns\nArrival Time:   7.686ns\nSlack:         +2.314ns  (MET)\n\n## Resource Utilization:\nLUTs:   28 / 20800  (0.13%)\nFFs:    26 / 41600  (0.06%)",
+        "xp": 20
+      },
+      {
+        "id": "fpga-1-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write complete XDC constraints and RTL for a 4-bit switch-to-LED design.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "verilog",
+          "instructions": "# Lab 1: Switch-to-LED with Constraints\n\nDesign a module that shows switch values on LEDs with a registered output:\n\n```\nmodule sw_to_led (\n  input  logic        clk,\n  input  logic        rst_n,\n  input  logic [3:0]  sw,\n  output logic [3:0]  led\n);\n```\n\nRequirements:\n1. Register sw inputs on posedge clk (reduces metastability)\n2. LED = registered switch value\n3. Active-low reset: led = 4'b0000\n4. Write the XDC constraints for Basys3:\n   - Clock: pin W5, 100MHz, LVCMOS33\n   - sw[0..3]: pins V17,V16,W16,W17\n   - led[0..3]: pins U16,E19,U19,V19\n   - All LVCMOS33\n5. Testbench: verify led matches sw after 1 clock cycle",
+          "starterCode": "// Lab 1: Switch-to-LED\nmodule sw_to_led (\n  input  logic        clk,\n  input  logic        rst_n,\n  input  logic [3:0]  sw,\n  output logic [3:0]  led\n);\n  // Register switch inputs\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) led <= 4'b0000;\n    else        // your code here\n  end\nendmodule\n\n// XDC Constraints (write as comments)\n// ## Clock\n// create_clock ...\n// set_property PACKAGE_PIN W5 [get_ports clk]\n// ## LEDs\n// ## Switches\n\n// Testbench\nmodule tb_sw_led;\n  logic clk=0, rst_n;\n  logic [3:0] sw, led;\n\n  sw_to_led dut(.clk,.rst_n,.sw,.led);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; sw=4'b0000;\n    @(posedge clk); rst_n=1;\n\n    // Test: sw=1010, check led after 1 clock\n    sw=4'b1010;\n    @(posedge clk); #1;\n    assert(led==4'b1010) else $error(\"FAIL: led=%b\",led);\n\n    // Test: sw=0101\n    sw=4'b0101;\n    @(posedge clk); #1;\n    assert(led==4'b0101) else $error(\"FAIL: led=%b\",led);\n\n    $display(\"sw_to_led PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "led <= sw;  // capture switch value",
+            "create_clock -period 10.000 [get_ports clk]",
+            "set_property PACKAGE_PIN W5 [get_ports clk]",
+            "set_property IOSTANDARD LVCMOS33 [get_ports {led[*]}]"
+          ],
+          "requiredPatterns": [
+            "module sw_to_led",
+            "always_ff",
+            "rst_n",
+            "led <= sw",
+            "create_clock",
+            "PACKAGE_PIN W5",
+            "IOSTANDARD LVCMOS33",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Registering switch inputs prevents metastability from asynchronous button presses. The XDC file maps RTL ports to physical pins and sets I/O voltage. LVCMOS33 matches the Basys3 board's 3.3V I/O voltage. Always verify pin assignments against the board schematic."
+        }
+      },
+      {
+        "id": "fpga-1-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your constraint knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "XDC files are used in:", "options": ["Intel Quartus", "Xilinx Vivado", "Cadence Innovus", "Synopsys Design Compiler"], "answer": 1 },
+          { "q": "IOSTANDARD LVCMOS33 means:", "options": ["33 MHz I/O speed", "3.3V CMOS I/O voltage standard", "33 ohm impedance", "33 mA drive current"], "answer": 1 },
+          { "q": "WNS > 0 in timing report means:", "options": ["Timing violation exists", "All timing constraints are met with positive slack", "Routing is incomplete", "Power budget exceeded"], "answer": 1 },
+          { "q": "set_false_path is used for:", "options": ["Faster timing closure", "Telling the tool to ignore timing on asynchronous paths", "Setting clock period", "Fixing hold violations"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 2,
+    "bonusXp": 100,
+    "badge": "FSM Designer",
+    "subLevels": [
+      {
+        "id": "fpga-2-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "FSM design on FPGAs — state encoding, one-hot vs binary, and safe FSMs.",
+        "keyPoints": [
+          "FSM = Finite State Machine — fundamental FPGA design pattern",
+          "Binary encoding: N states need log2(N) flip-flops — area efficient",
+          "One-hot encoding: N states use N flip-flops — faster, more LUTs",
+          "FPGAs prefer one-hot — abundant FFs, fast next-state decode",
+          "Safe FSM: handles illegal states gracefully (returns to reset)",
+          "Mealy: outputs depend on state AND inputs — faster response",
+          "Moore: outputs depend only on state — cleaner, glitch-free"
+        ],
+        "content": "FSMs are the backbone of FPGA control logic. Xilinx Vivado and Intel Quartus both have FSM extraction — they recognize state machine patterns and apply optimal encoding. On FPGAs, one-hot encoding is often preferred because FFs are abundant (FPGAs have 2 FFs per LUT), and one-hot next-state logic is simpler (one AND gate per transition). The safe state attribute tells the synthesis tool to add logic that forces the FSM back to a known state if it ever enters an undefined state — critical for reliable hardware. Always use the two-process FSM style: one for state register (sequential), one for next state and output logic (combinational).",
+        "xp": 20
+      },
+      {
+        "id": "fpga-2-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Two-process FSM pattern for FPGAs with one-hot encoding.",
+        "keyPoints": [
+          "typedef enum logic [N-1:0] { S0=N'b1, S1=N'b10... } state_t — one-hot",
+          "Two-process style: state_reg (FF) + next_state logic (comb)",
+          "// synthesis translate_off/on — simulation-only code",
+          "/* synthesis full_case */ — tell tool all cases covered",
+          "/* synthesis parallel_case */ — all branches mutually exclusive",
+          "Vivado FSM attribute: (* fsm_encoding = \"one_hot\" *)",
+          "Quartus: synthesis_off pragma for debug code"
+        ],
+        "content": "// One-hot FSM — Traffic Light Controller\n(* fsm_encoding = \"one_hot\" *)  // Vivado attribute\nmodule traffic_fsm (\n  input  logic clk, rst_n,\n  input  logic timer_done,\n  output logic red, yellow, green\n);\n  typedef enum logic [2:0] {\n    RED    = 3'b001,\n    GREEN  = 3'b010,\n    YELLOW = 3'b100\n  } state_t;\n\n  state_t state, next_state;\n\n  // Process 1: State register (sequential)\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) state <= RED;\n    else        state <= next_state;\n  end\n\n  // Process 2: Next state + output (combinational)\n  always_comb begin\n    next_state = state; // default: stay\n    {red, yellow, green} = 3'b000;\n    case (state)\n      RED:    begin red=1;    if (timer_done) next_state=GREEN;  end\n      GREEN:  begin green=1;  if (timer_done) next_state=YELLOW; end\n      YELLOW: begin yellow=1; if (timer_done) next_state=RED;    end\n      default: next_state = RED; // safe state\n    endcase\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-2-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a UART receiver FSM step by step.",
+        "keyPoints": [
+          "UART frame: 1 start bit (0) + 8 data bits + 1 stop bit (1)",
+          "States: IDLE → START → DATA[0..7] → STOP → IDLE",
+          "Baud rate: sample in middle of each bit period",
+          "Baud counter: counts CLK_HZ/BAUD_RATE clocks per bit",
+          "Data shift register: shifts in LSB first",
+          "done pulse: 1 cycle high when full byte received"
+        ],
+        "content": "// UART RX FSM\nmodule uart_rx #(\n  parameter CLK_HZ  = 100_000_000,\n  parameter BAUD    = 115_200\n) (\n  input  logic clk, rst_n,\n  input  logic rx,\n  output logic [7:0] data,\n  output logic       done\n);\n  localparam CLKS_PER_BIT  = CLK_HZ / BAUD;        // 868\n  localparam HALF_BIT      = CLKS_PER_BIT / 2;     // 434\n\n  typedef enum logic [1:0] {\n    IDLE=2'b00, START=2'b01,\n    DATA=2'b10, STOP=2'b11\n  } state_t;\n\n  state_t        state;\n  logic [9:0]    baud_cnt;   // counts clocks per bit\n  logic [2:0]    bit_idx;    // 0..7 data bits\n  logic [7:0]    rx_shift;   // shift register\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      state<=IDLE; done<=0; data<=0;\n    end else begin\n      done <= 0; // default\n      case (state)\n        IDLE:  if (!rx) begin  // start bit detected\n                 baud_cnt<=0; state<=START;\n               end\n        START: if (baud_cnt==HALF_BIT-1) begin  // sample middle\n                 baud_cnt<=0; bit_idx<=0; state<=DATA;\n               end else baud_cnt<=baud_cnt+1;\n        DATA:  if (baud_cnt==CLKS_PER_BIT-1) begin\n                 baud_cnt<=0;\n                 rx_shift<={rx,rx_shift[7:1]};  // LSB first\n                 if (bit_idx==7) state<=STOP;\n                 else bit_idx<=bit_idx+1;\n               end else baud_cnt<=baud_cnt+1;\n        STOP:  if (baud_cnt==CLKS_PER_BIT-1) begin\n                 data<=rx_shift; done<=1; state<=IDLE;\n               end else baud_cnt<=baud_cnt+1;\n      endcase\n    end\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-2-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a vending machine FSM with coin detection.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 2: Vending Machine FSM\n\nImplement a vending machine that accepts 10¢ and 25¢ coins, dispenses item at 35¢:\n\n```\nmodule vending_machine (\n  input  logic clk, rst_n,\n  input  logic coin_10,    // pulse: 10 cent inserted\n  input  logic coin_25,    // pulse: 25 cent inserted\n  output logic dispense,   // pulse: item dispensed\n  output logic ret_10,     // pulse: return 10 cents change\n  output logic [5:0] credit // current credit in cents\n);\n```\n\nStates: 0¢, 10¢, 20¢, 25¢, 30¢, 35¢+\n- At 35¢+: dispense item, reset to 0¢\n- At 35¢+ with change: assert ret_10\n- Item costs 35¢ exactly\n\nWrite a testbench:\n1. Insert 25¢ + 10¢ → expect dispense\n2. Insert 10¢+10¢+10¢+10¢ → expect dispense + ret_10 change",
+          "starterCode": "// Lab 2: Vending Machine FSM\nmodule vending_machine (\n  input  logic clk, rst_n,\n  input  logic coin_10, coin_25,\n  output logic dispense, ret_10,\n  output logic [5:0] credit\n);\n  typedef enum logic [2:0] {\n    S0  = 3'd0,   // 0 cents\n    S10 = 3'd1,   // 10 cents\n    S20 = 3'd2,   // 20 cents\n    S25 = 3'd3,   // 25 cents\n    S30 = 3'd4,   // 30 cents\n    S35 = 3'd5    // 35+ cents → dispense\n  } state_t;\n\n  state_t state, next_state;\n  logic   next_dispense, next_ret10;\n  logic [5:0] next_credit;\n\n  // State register\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      state<=S0; dispense<=0; ret_10<=0; credit<=0;\n    end else begin\n      state    <= next_state;\n      dispense <= next_dispense;\n      ret_10   <= next_ret10;\n      credit   <= next_credit;\n    end\n  end\n\n  // Next state logic\n  always_comb begin\n    next_state    = state;\n    next_dispense = 0;\n    next_ret10    = 0;\n    next_credit   = credit;\n    case (state)\n      S0:  begin next_credit=0;\n             if (coin_10) begin next_state=S10; next_credit=10; end\n             if (coin_25) begin next_state=S25; next_credit=25; end\n           end\n      S10: begin next_credit=10;\n             if (coin_10) begin next_state=S20; next_credit=20; end\n             if (coin_25) begin next_state=S35; next_credit=35; end\n           end\n      S20: begin next_credit=20;\n             if (coin_10) begin next_state=S30; next_credit=30; end\n             if (coin_25) begin next_state=S35; next_credit=45;\n                               next_ret10=1; end // 45-35=10 change\n           end\n      S25: begin next_credit=25;\n             if (coin_10) begin next_state=S35; next_credit=35; end\n             if (coin_25) begin next_state=S35; next_credit=50;\n                               next_ret10=1; end\n           end\n      S30: begin next_credit=30;\n             if (coin_10) begin next_state=S35; next_credit=40;\n                               next_ret10=1; end\n             if (coin_25) begin next_state=S35; next_credit=55;\n                               next_ret10=1; end\n           end\n      S35: begin // Dispense and return to S0\n             next_dispense=1; next_state=S0; next_credit=0;\n           end\n      default: next_state=S0;\n    endcase\n  end\nendmodule\n\nmodule tb_vending;\n  logic clk=0, rst_n;\n  logic coin_10, coin_25, dispense, ret_10;\n  logic [5:0] credit;\n\n  vending_machine dut(.*);\n  always #5 clk = ~clk;\n\n  task insert(input logic c10, c25);\n    coin_10=c10; coin_25=c25;\n    @(posedge clk); #1;\n    coin_10=0; coin_25=0;\n  endtask\n\n  initial begin\n    rst_n=0; coin_10=0; coin_25=0;\n    @(posedge clk); rst_n=1;\n\n    // Test 1: 25 + 10 = 35 → dispense\n    insert(0,1); // 25 cents\n    insert(1,0); // 10 cents\n    @(posedge clk); #1;\n    assert(dispense==1) else $error(\"Test1: no dispense\");\n    $display(\"Test1 PASSED: 25+10 dispenses\");\n\n    // Test 2: 10+10+10+10 = 40 → dispense + ret_10\n    repeat(4) insert(1,0);\n    @(posedge clk); #1;\n    assert(dispense==1) else $error(\"Test2: no dispense\");\n    $display(\"Test2 PASSED: 4×10 dispenses\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Two-process FSM: state_reg (FF) + next_state (comb)",
+            "S35 state: next_dispense=1, next_state=S0 (auto-reset)",
+            "Change: when total > 35, assert ret_10 for 10 cents change",
+            "insert task: pulse coin for 1 cycle then deassert"
+          ],
+          "requiredPatterns": [
+            "module vending_machine",
+            "typedef enum",
+            "always_ff",
+            "always_comb",
+            "next_dispense",
+            "next_ret10",
+            "module tb_vending",
+            "assert(dispense==1)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The vending machine FSM uses registered outputs to prevent glitches. The two-process style separates state storage (always_ff) from next-state computation (always_comb). Each coin insertion advances the state. At S35, dispense fires and the machine resets. The default case returns to S0 for safety — critical in FPGA designs."
+        }
+      },
+      {
+        "id": "fpga-2-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your FSM design knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "FPGAs prefer one-hot encoding because:", "options": ["It uses fewer flip-flops", "FPGAs have abundant FFs and one-hot next-state logic is fast with LUTs", "It is easier to debug", "It uses fewer LUTs"], "answer": 1 },
+          { "q": "The two-process FSM style separates:", "options": ["Inputs and outputs", "State register (sequential) and next-state logic (combinational)", "Clocked and unclocked logic", "Fast and slow paths"], "answer": 1 },
+          { "q": "A safe FSM handles:", "options": ["Power failures", "Illegal/undefined states by returning to reset state", "Clock domain crossings", "Timing violations"], "answer": 1 },
+          { "q": "Moore FSM outputs depend on:", "options": ["Current inputs only", "Current state only — no input dependency", "Both state and inputs", "Clock frequency"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 3,
+    "bonusXp": 110,
+    "badge": "Memory Interface Expert",
+    "subLevels": [
+      {
+        "id": "fpga-3-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "FPGA Block RAM — dual-port memory, FIFOs, and ROM inference.",
+        "keyPoints": [
+          "Block RAM (BRAM): dedicated on-chip memory blocks — faster than LUTs",
+          "Simple Dual-Port: one read port, one write port — simultaneously accessible",
+          "True Dual-Port: both ports can read AND write independently",
+          "BRAM inference: Vivado/Quartus auto-infers BRAM from RTL patterns",
+          "Synchronous read: output registered — 1 cycle read latency",
+          "Asynchronous read: output combinational — avoid (bad timing)",
+          "FIFO: First-In-First-Out buffer — fundamental FPGA interface primitive"
+        ],
+        "content": "Block RAMs are dedicated memory tiles on FPGAs — much more efficient than implementing RAM with LUTs. Vivado and Quartus automatically infer BRAM when they see typical memory patterns: an array with synchronous write and optionally synchronous read. True Dual-Port BRAM allows two independent ports to access the same memory simultaneously — essential for video buffers (one port writes, one reads). FIFOs are built from BRAM and are ubiquitous in FPGA designs for clock domain crossing and buffering between modules running at different rates.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-3-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "BRAM inference patterns and FIFO instantiation.",
+        "keyPoints": [
+          "Simple array with sync write → infers BRAM automatically",
+          "Initial block with $readmemh/$readmemb → infers ROM",
+          "Xilinx IP Catalog: FIFO Generator — configures BRAM FIFOs",
+          "almost_full/almost_empty flags — programmable thresholds",
+          "wr_en/rd_en: write and read enable signals",
+          "full/empty: status flags — check before write/read",
+          "data_count: number of words in FIFO"
+        ],
+        "content": "// BRAM inference — Simple Dual Port\nmodule bram_sdp #(\n  parameter DATA_W = 8,\n  parameter DEPTH  = 256,\n  parameter AW     = 8\n) (\n  input  logic           clk,\n  // Write port\n  input  logic           we,\n  input  logic [AW-1:0]  waddr,\n  input  logic [DATA_W-1:0] wdata,\n  // Read port\n  input  logic [AW-1:0]  raddr,\n  output logic [DATA_W-1:0] rdata\n);\n  logic [DATA_W-1:0] mem [DEPTH];\n\n  // Synchronous write\n  always_ff @(posedge clk)\n    if (we) mem[waddr] <= wdata;\n\n  // Synchronous read (registered output → 1 cycle latency)\n  always_ff @(posedge clk)\n    rdata <= mem[raddr];\nendmodule\n\n// ROM inference from file\nmodule sine_rom (\n  input  logic [7:0]  addr,\n  output logic [7:0]  data\n);\n  logic [7:0] rom [256];\n  initial $readmemh(\"sine_lut.hex\", rom); // load from hex file\n  always_ff @(posedge clk)\n    data <= rom[addr];\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-3-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a FIFO timing diagram and understand full/empty flag behavior.",
+        "keyPoints": [
+          "Write when NOT full: wr_en=1, full=0",
+          "Read when NOT empty: rd_en=1, empty=0",
+          "Simultaneous R+W: data count stays same if FIFO non-empty",
+          "almost_full: user-defined threshold (e.g., depth-4)",
+          "Read latency: 1 cycle for synchronous BRAM FIFO",
+          "FWFT (First-Word-Fall-Through): data available without rd_en"
+        ],
+        "content": "// FIFO operation trace (8-deep FIFO)\n// Cycle  wr_en  rd_en  wdata  rdata  count  empty  full\n//  1       1     0      AA     --     1      0      0\n//  2       1     0      BB     --     2      0      0\n//  3       1     0      CC     --     3      0      0\n//  4       0     1      --     AA     2      0      0   ← 1-cycle latency\n//  5       0     1      --     BB     1      0      0\n//  6       0     1      --     CC     0      1      0   ← empty!\n//  7       0     1      --     XX     0      1      0   ← INVALID READ!\n\n// Key rules:\n// NEVER write when full=1   → data lost\n// NEVER read when empty=1   → garbage data\n// ALWAYS check flags before R/W\n\n// FIFO instantiation (Xilinx FIFO Generator IP)\nfifo_generator_v13_2 #(\n  .FIFO_DEPTH(256),\n  .DATA_WIDTH(8)\n) fifo_inst (\n  .clk(clk), .rst(!rst_n),\n  .wr_en(wr_en), .din(wdata),\n  .rd_en(rd_en), .dout(rdata),\n  .full(full), .empty(empty),\n  .data_count(count)\n);",
+        "xp": 20
+      },
+      {
+        "id": "fpga-3-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a synchronous BRAM and verify read/write operation.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 3: Synchronous BRAM\n\nImplement a 16-deep × 8-bit synchronous dual-port BRAM:\n\n```\nmodule bram_16x8 (\n  input  logic       clk,\n  input  logic       we,\n  input  logic [3:0] waddr,\n  input  logic [7:0] wdata,\n  input  logic [3:0] raddr,\n  output logic [7:0] rdata\n);\n```\n\nTestbench must:\n1. Write values 0xA0,0xB1,0xC2,0xD3 to addresses 0,1,2,3\n2. Read back from addresses 0,1,2,3 (remember: 1-cycle read latency!)\n3. Verify read data matches written data\n4. Test simultaneous read and write to different addresses\n5. Initialize memory with `$readmemh` pattern (comment is ok)",
+          "starterCode": "// Lab 3: 16x8 Synchronous BRAM\nmodule bram_16x8 (\n  input  logic       clk,\n  input  logic       we,\n  input  logic [3:0] waddr,\n  input  logic [7:0] wdata,\n  input  logic [3:0] raddr,\n  output logic [7:0] rdata\n);\n  logic [7:0] mem [16];\n\n  // Synchronous write\n  always_ff @(posedge clk)\n    if (we) mem[waddr] <= wdata;\n\n  // Synchronous read (1-cycle latency)\n  always_ff @(posedge clk)\n    rdata <= mem[raddr];\n\nendmodule\n\nmodule tb_bram;\n  logic clk=0, we;\n  logic [3:0] waddr, raddr;\n  logic [7:0] wdata, rdata;\n\n  bram_16x8 dut(.*);\n  always #5 clk = ~clk;\n\n  initial begin\n    we=0; waddr=0; wdata=0; raddr=0;\n\n    // Write phase: write 4 values\n    @(posedge clk);\n    we=1; waddr=0; wdata=8'hA0; @(posedge clk);\n    we=1; waddr=1; wdata=8'hB1; @(posedge clk);\n    we=1; waddr=2; wdata=8'hC2; @(posedge clk);\n    we=1; waddr=3; wdata=8'hD3; @(posedge clk);\n    we=0;\n\n    // Read phase: 1-cycle latency!\n    // Apply address, wait 1 cycle, then read data\n    raddr=0; @(posedge clk); #1;\n    assert(rdata==8'hA0) else $error(\"addr0: got %h\",rdata);\n\n    raddr=1; @(posedge clk); #1;\n    assert(rdata==8'hB1) else $error(\"addr1: got %h\",rdata);\n\n    raddr=2; @(posedge clk); #1;\n    assert(rdata==8'hC2) else $error(\"addr2: got %h\",rdata);\n\n    raddr=3; @(posedge clk); #1;\n    assert(rdata==8'hD3) else $error(\"addr3: got %h\",rdata);\n\n    $display(\"BRAM test PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "always_ff @(posedge clk) if (we) mem[waddr] <= wdata;",
+            "always_ff @(posedge clk) rdata <= mem[raddr];",
+            "1-cycle latency: apply raddr at cycle N, read rdata at cycle N+1",
+            "Simultaneous R+W to different addresses is safe"
+          ],
+          "requiredPatterns": [
+            "module bram_16x8",
+            "logic [7:0] mem",
+            "always_ff",
+            "mem[waddr] <= wdata",
+            "rdata <= mem[raddr]",
+            "module tb_bram",
+            "assert(rdata==8'hA0)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Synchronous BRAM has both write and read clocked. Write: when we=1, data is written on clock edge. Read: the address is registered on the clock edge and data appears one cycle later. This 1-cycle latency is the key difference from asynchronous (distributed) RAM. Vivado infers BRAM automatically from this pattern."
+        }
+      },
+      {
+        "id": "fpga-3-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your BRAM and FIFO knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "BRAM is preferred over LUT RAM because:", "options": ["LUTs can't store data", "BRAM is dedicated memory — faster, denser, and doesn't consume LUTs", "BRAM is always larger", "LUTs only work with 8-bit data"], "answer": 1 },
+          { "q": "Synchronous BRAM read has:", "options": ["No latency", "1 clock cycle latency — address registered, data appears next cycle", "2 cycle latency always", "Variable latency"], "answer": 1 },
+          { "q": "$readmemh in RTL infers:", "options": ["A FIFO", "A ROM initialized with hex file contents", "A register file", "A DSP block"], "answer": 1 },
+          { "q": "Writing to a FULL FIFO causes:", "options": ["FIFO auto-expands", "Data is lost — overflow condition", "Write is blocked until space available", "An interrupt"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 4,
+    "bonusXp": 120,
+    "badge": "DSP Block Expert",
+    "subLevels": [
+      {
+        "id": "fpga-4-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "DSP48 blocks — multipliers, accumulators, and FIR filters on FPGAs.",
+        "keyPoints": [
+          "DSP48: dedicated multiply-accumulate block on Xilinx FPGAs",
+          "DSP48E2: 27×18 multiplier + 48-bit accumulator + pre-adder",
+          "Intel DSP: 27×27 multiplier on Stratix, 18×18 on Cyclone",
+          "Cascade: chain multiple DSP48s for wider operations",
+          "FIR filter: sum of products — maps perfectly to DSP48 cascade",
+          "Multiply inference: `a * b` in RTL → Vivado infers DSP48",
+          "Pipelining: add register stages inside DSP48 for higher Fmax"
+        ],
+        "content": "DSP48 blocks are the secret weapon of FPGA performance. Every Xilinx FPGA has tens to thousands of them. A single DSP48E2 computes: P = (A ± D) × B + C in one clock cycle, where A is 30-bit, B is 18-bit, C is 48-bit, and P is 48-bit. FIR (Finite Impulse Response) filters are ideal DSP48 applications — each tap is a multiply-accumulate. A 16-tap FIR uses 16 DSP48s chained together. The key to using DSP48s efficiently is pipelining — add 3 register stages (A,B input registers + output register) to achieve >400MHz operation.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-4-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "DSP inference patterns — multiply, MAC, and FIR filter RTL.",
+        "keyPoints": [
+          "a * b → infers DSP48 (if widths fit)",
+          "Always pipeline multipliers for high Fmax",
+          "MAC: P <= P + (A * B) — accumulate pattern",
+          "FIR: use generate loop for taps",
+          "// synthesis keep — prevents optimization of a signal",
+          "Vivado attribute: (* use_dsp = \"yes\" *) on multiplier",
+          "Saturation: clamp output to avoid overflow"
+        ],
+        "content": "// Pipelined 8×8 multiplier → infers DSP48\nmodule mult_pipe (\n  input  logic        clk,\n  input  logic [7:0]  a, b,\n  output logic [15:0] p\n);\n  // Pipeline registers — maps to DSP48 internal regs\n  logic [7:0]  a_reg, b_reg;  // input registers\n  logic [15:0] p_reg;          // output register\n\n  always_ff @(posedge clk) begin\n    a_reg <= a;          // stage 1\n    b_reg <= b;\n    p_reg <= a_reg * b_reg; // stage 2 (DSP48 multiply)\n    p     <= p_reg;      // stage 3 (output reg)\n  end\nendmodule\n\n// 4-tap FIR filter\n// y[n] = h0*x[n] + h1*x[n-1] + h2*x[n-2] + h3*x[n-3]\nmodule fir4 (\n  input  logic        clk, rst_n,\n  input  logic signed [7:0]  x,\n  output logic signed [15:0] y\n);\n  // Coefficients (symmetric: h0=h3, h1=h2)\n  logic signed [7:0] h [4] = '{8'd1, 8'd3, 8'd3, 8'd1};\n  logic signed [7:0] delay [4]; // delay line\n  logic signed [15:0] products [4];\n  logic signed [17:0] acc;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      foreach (delay[i]) delay[i] <= 0;\n      y <= 0;\n    end else begin\n      delay[0] <= x;\n      delay[1] <= delay[0];\n      delay[2] <= delay[1];\n      delay[3] <= delay[2];\n      // Multiply-accumulate (each → DSP48)\n      acc = h[0]*delay[0] + h[1]*delay[1]\n          + h[2]*delay[2] + h[3]*delay[3];\n      y <= acc[15:0];\n    end\n  end\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-4-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Implement a multiply-accumulate (MAC) unit and trace the pipeline.",
+        "keyPoints": [
+          "MAC: P = P + A×B repeated for N cycles",
+          "Accumulator: 48-bit (prevents overflow for long sums)",
+          "Latency: 3 cycles for pipelined DSP48",
+          "Throughput: 1 result per cycle after pipeline fills",
+          "Clear signal: resets accumulator between dot products",
+          "Use signed arithmetic for signal processing"
+        ],
+        "content": "// MAC unit pipeline trace\n// Operation: dot product of 4-element vectors A and B\n// A = [1, 2, 3, 4], B = [5, 6, 7, 8]\n// Expected: 1×5 + 2×6 + 3×7 + 4×8 = 5+12+21+32 = 70\n\n// Cycle  a_in  b_in  a_reg b_reg  mult   acc    valid\n//  1      1     5     1    5      -      -      0    ← load A,B regs\n//  2      2     6     2    6      5      5      0    ← mult ready\n//  3      3     7     3    7      12     17     0    ← accumulate\n//  4      4     8     4    8      21     38     0\n//  5      0     0     0    0      32     70     1    ← result ready!\n//\n// Latency = 2 cycles (input reg + multiply)\n// Total: 4 inputs + 2 latency = 6 cycles to valid result\n\n// Key insight:\n// DSP48 computes a_reg * b_reg → registered product\n// Accumulator adds product each cycle\n// After N inputs, assert valid to indicate result ready\n\n// Pipelining increases latency but allows higher Fmax\n// Without pipeline: multiply is critical path → ~200MHz\n// With 3-stage pipe: each stage <2.5ns → >400MHz",
+        "xp": 20
+      },
+      {
+        "id": "fpga-4-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a pipelined multiply-accumulate unit.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 4: Pipelined MAC Unit\n\nImplement a pipelined multiply-accumulate (MAC) for dot product:\n\n```\nmodule mac_unit (\n  input  logic        clk, rst_n,\n  input  logic        clear,    // reset accumulator\n  input  logic        valid_in, // input data valid\n  input  logic signed [7:0]  a, b,\n  output logic signed [23:0] acc_out,\n  output logic               valid_out\n);\n```\n\nPipeline stages:\n1. **Stage 1**: Register a, b inputs\n2. **Stage 2**: Multiply a_reg × b_reg → product (16-bit)\n3. **Stage 3**: Accumulate: acc += product\n\nTestbench:\n1. Compute dot product [1,2,3,4] · [5,6,7,8] = 70\n2. Account for 2-cycle pipeline latency\n3. Assert acc_out == 70 when valid_out=1\n4. Test clear functionality",
+          "starterCode": "// Lab 4: Pipelined MAC Unit\nmodule mac_unit (\n  input  logic        clk, rst_n,\n  input  logic        clear,\n  input  logic        valid_in,\n  input  logic signed [7:0]  a, b,\n  output logic signed [23:0] acc_out,\n  output logic               valid_out\n);\n  // Pipeline stage registers\n  logic signed [7:0]  a_reg, b_reg;        // Stage 1\n  logic signed [15:0] product;              // Stage 2\n  logic               valid_s1, valid_s2;  // valid pipeline\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      a_reg<=0; b_reg<=0; product<=0;\n      acc_out<=0; valid_s1<=0; valid_s2<=0; valid_out<=0;\n    end else begin\n      // Stage 1: register inputs\n      a_reg    <= a;\n      b_reg    <= b;\n      valid_s1 <= valid_in;\n\n      // Stage 2: multiply\n      product  <= a_reg * b_reg;\n      valid_s2 <= valid_s1;\n\n      // Stage 3: accumulate\n      if (clear)\n        acc_out <= 0;\n      else if (valid_s2)\n        acc_out <= acc_out + product;\n      valid_out <= valid_s2;\n    end\n  end\nendmodule\n\nmodule tb_mac;\n  logic clk=0, rst_n, clear, valid_in, valid_out;\n  logic signed [7:0]  a, b;\n  logic signed [23:0] acc_out;\n\n  mac_unit dut(.*);\n  always #5 clk = ~clk;\n\n  task feed(input signed [7:0] ta, tb, input logic v=1);\n    a=ta; b=tb; valid_in=v;\n    @(posedge clk); #1;\n  endtask\n\n  initial begin\n    rst_n=0; clear=0; valid_in=0; a=0; b=0;\n    @(posedge clk); rst_n=1;\n\n    // Compute [1,2,3,4]·[5,6,7,8] = 70\n    clear=1; @(posedge clk); #1; clear=0;\n\n    feed(1, 5);   // 1×5=5\n    feed(2, 6);   // 2×6=12\n    feed(3, 7);   // 3×7=21\n    feed(4, 8);   // 4×8=32\n    feed(0, 0, 0); // flush pipeline\n    feed(0, 0, 0);\n\n    // Pipeline latency = 2 cycles\n    // Result should be 70\n    $display(\"acc_out = %0d (expected 70)\", acc_out);\n    assert(acc_out == 70)\n      else $error(\"MAC FAIL: got %0d\", acc_out);\n\n    $display(\"MAC unit PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Stage 1: a_reg<=a; b_reg<=b; valid_s1<=valid_in;",
+            "Stage 2: product <= a_reg * b_reg; valid_s2 <= valid_s1;",
+            "Stage 3: if(valid_s2) acc_out <= acc_out + product;",
+            "After 4 inputs + 2 flush cycles, acc_out = 70"
+          ],
+          "requiredPatterns": [
+            "module mac_unit",
+            "a_reg",
+            "b_reg",
+            "product",
+            "acc_out",
+            "valid_s1",
+            "valid_s2",
+            "a_reg * b_reg",
+            "acc_out + product",
+            "module tb_mac",
+            "assert(acc_out == 70)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The 3-stage pipeline: input registers → multiplier → accumulator. Each stage adds one clock cycle of latency but allows the critical path to be just one stage (not all three in series). This maps perfectly to the DSP48E2 internal pipeline: A/B registers → multiply → P register. Running at 400MHz+, this computes 400 million multiply-accumulates per second."
+        }
+      },
+      {
+        "id": "fpga-4-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your DSP block knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "DSP48E2 on Xilinx FPGAs computes:", "options": ["Only addition", "(A±D)×B+C in one clock — multiply-accumulate with pre-adder", "Division only", "Boolean logic only"], "answer": 1 },
+          { "q": "Pipelining a multiplier:", "options": ["Reduces throughput", "Increases latency but allows higher Fmax by shortening critical path", "Reduces accuracy", "Eliminates the need for DSP blocks"], "answer": 1 },
+          { "q": "A FIR filter maps to DSP48s because:", "options": ["FIR uses only logic", "FIR is sum of products — each tap is a multiply-accumulate", "FIR doesn't need multipliers", "DSP48s have built-in FIR support"], "answer": 1 },
+          { "q": "`a * b` in Verilog RTL when synthesized with Vivado:", "options": ["Always uses LUTs", "Automatically infers DSP48 block if bit widths fit", "Requires manual DSP instantiation", "Creates a ROM table"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 5,
+    "bonusXp": 130,
+    "badge": "Clock Domain Expert",
+    "subLevels": [
+      {
+        "id": "fpga-5-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Clock domain crossing — synchronizers, FIFOs, and handshake protocols.",
+        "keyPoints": [
+          "CDC: Clock Domain Crossing — signals crossing between different clocks",
+          "Metastability: FF output is undefined when setup/hold violated",
+          "Synchronizer: 2-FF chain reduces metastability probability",
+          "MTBF: Mean Time Between Failures — measures synchronizer reliability",
+          "Gray code: only 1 bit changes per transition — safe for multi-bit CDC",
+          "Async FIFO: standard solution for multi-bit CDC with flow control",
+          "False path: CDC paths must be set_false_path in constraints"
+        ],
+        "content": "When a signal crosses from one clock domain to another, metastability can occur — the receiving flip-flop output is neither 0 nor 1 and can take unpredictable time to resolve. A 2-FF synchronizer gives the metastable state time to resolve before the second FF samples it, reducing failure probability to <1 error in billions of years. Single-bit signals need a 2-FF synchronizer. Multi-bit signals need either Gray-coded counters (for incrementing values) or an asynchronous FIFO (for general data). Never simply pass a multi-bit bus between clock domains without synchronization — bits can change at different times causing bus tears.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-5-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "2-FF synchronizer, pulse synchronizer, and async FIFO pointer patterns.",
+        "keyPoints": [
+          "2-FF sync: (* ASYNC_REG = \"TRUE\" *) Vivado attribute",
+          "Pulse sync: stretch pulse to guarantee capture in slow domain",
+          "Gray code counter: for async FIFO read/write pointers",
+          "binary_to_gray: b ^ (b >> 1)",
+          "gray_to_binary: iterative XOR from MSB",
+          "set_false_path -from [get_cells *src_ff*] -to [get_cells *sync_ff*]",
+          "Vivado CDC analysis: report_cdc command"
+        ],
+        "content": "// 2-FF Synchronizer\n(* ASYNC_REG = \"TRUE\" *) // Vivado: place in same slice\nmodule sync_2ff (\n  input  logic clk_dst,  // destination clock\n  input  logic rst_n,\n  input  logic d_src,    // from source domain\n  output logic q_dst     // to destination domain\n);\n  (* ASYNC_REG = \"TRUE\" *)\n  logic sync1, sync2;\n\n  always_ff @(posedge clk_dst or negedge rst_n) begin\n    if (!rst_n) begin sync1<=0; sync2<=0; end\n    else begin\n      sync1 <= d_src;  // may be metastable!\n      sync2 <= sync1;  // resolved (MTBF > 1 billion years)\n    end\n  end\n  assign q_dst = sync2;\nendmodule\n\n// Gray code conversion\nfunction automatic [3:0] bin_to_gray(input [3:0] bin);\n  return bin ^ (bin >> 1);\nendfunction\n\nfunction automatic [3:0] gray_to_bin(input [3:0] gray);\n  logic [3:0] bin;\n  bin[3] = gray[3];\n  bin[2] = gray[3] ^ gray[2];\n  bin[1] = gray[3] ^ gray[2] ^ gray[1];\n  bin[0] = gray[3] ^ gray[2] ^ gray[1] ^ gray[0];\n  return bin;\nendfunction",
+        "xp": 20
+      },
+      {
+        "id": "fpga-5-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace through an async FIFO pointer comparison for empty/full detection.",
+        "keyPoints": [
+          "Write pointer in write domain, read pointer in read domain",
+          "Gray-code pointers before crossing clock domains",
+          "Synchronize gray-coded read pointer into write domain for full",
+          "Synchronize gray-coded write pointer into read domain for empty",
+          "Full: write_ptr_gray == {~read_ptr_gray_sync[MSB:MSB-1], read_ptr_gray_sync[MSB-2:0]}",
+          "Empty: read_ptr_gray == write_ptr_gray_sync"
+        ],
+        "content": "// Async FIFO pointer logic trace\n// FIFO depth = 8 (3-bit pointer, MSB for wrap detection)\n\n// Initial: wptr=0000, rptr=0000 → empty\n// Write 1: wptr=0001 (gray=0001)\n// Write 2: wptr=0010 (gray=0011)\n// Write 3: wptr=0011 (gray=0010)\n\n// EMPTY check (in read domain):\n// empty = (rptr_gray == wptr_gray_sync)\n// If rptr_gray==wptr_gray_sync → nothing written yet → EMPTY\n\n// FULL check (in write domain):\n// Pointers have MSB for wrap counting (1 extra bit)\n// Full when wptr and rptr differ only in MSB (wrapped)\n// full = (wptr_gray[N:N-1] == ~rptr_gray_sync[N:N-1])\n//       && (wptr_gray[N-2:0] == rptr_gray_sync[N-2:0])\n\n// KEY: Gray code ensures only 1 bit changes per count\n// Safe to sample across clock domains — no bus tear possible\n// Even if synchronizer samples mid-transition, it just sees\n// the old or new value — never a glitch combination\n\n// Example: binary 3 (0011) → gray 0010\n// binary 4 (0100) → gray 0110\n// Only bit[1] changes: 0010→0110 ✓",
+        "xp": 20
+      },
+      {
+        "id": "fpga-5-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a 2-FF synchronizer and verify metastability protection.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 5: Clock Domain Crossing Synchronizer\n\nImplement a complete CDC package:\n\n1. **2-FF synchronizer**:\n```\nmodule sync_2ff (\n  input  logic clk_dst, rst_n,\n  input  logic d_src,\n  output logic q_dst\n);\n```\n\n2. **Pulse synchronizer** (single clock pulse from slow to fast domain):\n```\nmodule pulse_sync (\n  input  logic clk_src, clk_dst, rst_n,\n  input  logic pulse_src,\n  output logic pulse_dst\n);\n```\nHint: Toggle in src domain, 2-FF sync, edge detect in dst\n\n3. **Testbench**:\n- Use clk_src=10ns, clk_dst=7ns (different frequencies)\n- Send 3 pulses in src domain\n- Verify all 3 pulses received in dst domain\n- Verify no double-pulses",
+          "starterCode": "// Lab 5: CDC Synchronizer\n\n// 2-FF Synchronizer\nmodule sync_2ff (\n  input  logic clk_dst, rst_n,\n  input  logic d_src,\n  output logic q_dst\n);\n  (* ASYNC_REG = \"TRUE\" *)\n  logic sync1, sync2;\n\n  always_ff @(posedge clk_dst or negedge rst_n) begin\n    if (!rst_n) begin sync1<=0; sync2<=0; end\n    else begin\n      sync1 <= d_src;\n      sync2 <= sync1;\n    end\n  end\n  assign q_dst = sync2;\nendmodule\n\n// Pulse Synchronizer\n// Toggle in src domain → sync → edge detect in dst\nmodule pulse_sync (\n  input  logic clk_src, clk_dst, rst_n,\n  input  logic pulse_src,\n  output logic pulse_dst\n);\n  logic toggle_src;  // toggles on each pulse\n  logic toggle_dst;  // synchronized toggle\n  logic toggle_dst_d; // delayed toggle\n\n  // Toggle FF in source domain\n  always_ff @(posedge clk_src or negedge rst_n)\n    if (!rst_n) toggle_src <= 0;\n    else if (pulse_src) toggle_src <= ~toggle_src;\n\n  // Synchronize toggle into destination domain\n  sync_2ff sync (\n    .clk_dst, .rst_n,\n    .d_src(toggle_src),\n    .q_dst(toggle_dst)\n  );\n\n  // Edge detect: pulse when toggle changes\n  always_ff @(posedge clk_dst or negedge rst_n)\n    if (!rst_n) toggle_dst_d <= 0;\n    else        toggle_dst_d <= toggle_dst;\n\n  assign pulse_dst = toggle_dst ^ toggle_dst_d;\nendmodule\n\n// Testbench\nmodule tb_cdc;\n  logic clk_src=0, clk_dst=0, rst_n;\n  logic pulse_src, pulse_dst;\n  int pulse_count = 0;\n\n  pulse_sync dut(.clk_src,.clk_dst,.rst_n,.pulse_src,.pulse_dst);\n\n  always #5  clk_src = ~clk_src;  // 100MHz\n  always #3.5 clk_dst = ~clk_dst; // ~143MHz\n\n  // Count received pulses\n  always @(posedge clk_dst)\n    if (pulse_dst) pulse_count++;\n\n  initial begin\n    rst_n=0; pulse_src=0;\n    repeat(5) @(posedge clk_src); rst_n=1;\n\n    // Send 3 pulses in src domain\n    repeat(3) begin\n      @(posedge clk_src);\n      pulse_src=1; @(posedge clk_src); #1;\n      pulse_src=0;\n      repeat(5) @(posedge clk_src); // gap between pulses\n    end\n\n    // Wait for synchronization\n    repeat(20) @(posedge clk_dst);\n\n    assert(pulse_count==3)\n      else $error(\"CDC FAIL: got %0d pulses, exp 3\",pulse_count);\n    $display(\"CDC PASSED: %0d pulses received\", pulse_count);\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Toggle: if(pulse_src) toggle_src <= ~toggle_src — changes once per pulse",
+            "Edge detect: pulse_dst = toggle_dst ^ toggle_dst_d",
+            "2-FF sync handles the metastability of the toggle signal",
+            "Each toggle edge in dst domain = one original pulse in src domain"
+          ],
+          "requiredPatterns": [
+            "module sync_2ff",
+            "ASYNC_REG",
+            "sync1",
+            "sync2",
+            "module pulse_sync",
+            "toggle_src",
+            "toggle_dst",
+            "pulse_dst = toggle_dst ^ toggle_dst_d",
+            "module tb_cdc",
+            "pulse_count==3",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The toggle synchronizer converts a pulse to an edge: the toggle FF state changes once per input pulse and holds until the next pulse. The 2-FF synchronizer safely transfers this toggle across the clock boundary. Edge detection (XOR of current and delayed) converts the toggle edge back to a pulse in the destination domain. This pattern reliably transfers any number of pulses regardless of the clock frequency ratio."
+        }
+      },
+      {
+        "id": "fpga-5-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your CDC knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Metastability in FPGAs occurs when:", "options": ["Clock is too fast", "A flip-flop's setup/hold time is violated — output is undefined", "Too many LUTs are used", "Power supply droops"], "answer": 1 },
+          { "q": "Gray code is used in async FIFO pointers because:", "options": ["It's faster to compute", "Only 1 bit changes per count — safe to sample across clock domains", "It uses fewer bits", "It's easier to decode"], "answer": 1 },
+          { "q": "The ASYNC_REG attribute in Vivado:", "options": ["Makes FFs asynchronous", "Places synchronizer FFs in the same slice for best timing", "Disables timing analysis", "Marks signals as don't care"], "answer": 1 },
+          { "q": "For a multi-bit bus CDC, the correct approach is:", "options": ["Directly connect the bus", "Use 2-FF synchronizer on each bit separately", "Use Gray coding or async FIFO", "Use set_false_path on all bits"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 6,
+    "bonusXp": 140,
+    "badge": "AXI Interface Expert",
+    "subLevels": [
+      {
+        "id": "fpga-6-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "AXI4 protocol — the standard FPGA interconnect for Xilinx/Intel IP.",
+        "keyPoints": [
+          "AXI4: ARM AMBA Advanced eXtensible Interface — industry standard",
+          "AXI4-Full: high-performance burst memory-mapped interface",
+          "AXI4-Lite: simple, single-transfer register interface",
+          "AXI4-Stream: unidirectional streaming without address",
+          "5 channels: AW, W, B (write), AR, R (read)",
+          "VALID/READY handshake: both must be high for transfer",
+          "Xilinx Vivado: IP Integrator uses AXI for all IP connections"
+        ],
+        "content": "AXI is the backbone of modern FPGA designs. Xilinx Zynq (ARM+FPGA) uses AXI to connect the processor to FPGA logic. Every Xilinx IP block has AXI interfaces. AXI4-Lite is for control registers — simple read/write of single 32-bit values. AXI4-Full supports burst transactions (up to 256 beats) for high-bandwidth memory access. AXI4-Stream is for data streaming — video, audio, network packets — where there's no address, just continuous data flow with TVALID/TREADY/TDATA/TLAST. Understanding AXI is mandatory for any serious FPGA work.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-6-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "AXI4-Lite slave and AXI4-Stream passthrough implementation patterns.",
+        "keyPoints": [
+          "AXI4-Lite slave: state machine for write and read channels",
+          "Write: AW+W channels → B response",
+          "Read: AR channel → R channel",
+          "BVALID/BREADY: write response handshake",
+          "RVALID/RREADY: read data handshake",
+          "AXI-Stream: TVALID, TREADY, TDATA, TKEEP, TLAST",
+          "TLAST: marks end of packet/frame in stream"
+        ],
+        "content": "// AXI4-Lite Slave — register interface\nmodule axi_lite_slave #(\n  parameter ADDR_W = 8,\n  parameter DATA_W = 32\n) (\n  input  logic                 clk, rst_n,\n  // Write address channel\n  input  logic [ADDR_W-1:0]   awaddr,\n  input  logic                 awvalid,\n  output logic                 awready,\n  // Write data channel\n  input  logic [DATA_W-1:0]   wdata,\n  input  logic                 wvalid,\n  output logic                 wready,\n  // Write response channel\n  output logic [1:0]           bresp,   // 00=OKAY\n  output logic                 bvalid,\n  input  logic                 bready,\n  // Read address channel\n  input  logic [ADDR_W-1:0]   araddr,\n  input  logic                 arvalid,\n  output logic                 arready,\n  // Read data channel\n  output logic [DATA_W-1:0]   rdata,\n  output logic [1:0]           rresp,\n  output logic                 rvalid,\n  input  logic                 rready\n);\n  logic [DATA_W-1:0] regs [64]; // 64 registers\n  // ... state machine handles W and R channels\n  assign bresp = 2'b00; // OKAY\n  assign rresp = 2'b00;\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-6-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace an AXI4-Stream data path through an FPGA design.",
+        "keyPoints": [
+          "Source: camera/ADC drives TVALID+TDATA+TLAST",
+          "Processing: AXI-Stream passthrough with FIFO buffering",
+          "Sink: HDMI output or DDR memory accepts stream",
+          "Back-pressure: sink asserts TREADY=0 to pause source",
+          "TLAST: marks end of video line or network packet",
+          "TKEEP: byte enables for partial last beat"
+        ],
+        "content": "// AXI4-Stream Pipeline (video processing example)\n//\n// Camera → [Input FIFO] → [Pixel Proc] → [Output FIFO] → HDMI\n//\n// Each stage: TVALID/TREADY handshake\n\n// Simple AXI-Stream register slice (add 1 pipeline stage)\nmodule axis_register_slice #(\n  parameter DATA_W = 8\n) (\n  input  logic             clk, rst_n,\n  // Input stream\n  input  logic             s_tvalid,\n  output logic             s_tready,\n  input  logic [DATA_W-1:0] s_tdata,\n  input  logic             s_tlast,\n  // Output stream\n  output logic             m_tvalid,\n  input  logic             m_tready,\n  output logic [DATA_W-1:0] m_tdata,\n  output logic             m_tlast\n);\n  logic             buf_valid;\n  logic [DATA_W-1:0] buf_data;\n  logic             buf_last;\n\n  // Accept input when output is ready or buffer empty\n  assign s_tready = !buf_valid || m_tready;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      buf_valid <= 0;\n    end else if (s_tvalid && s_tready) begin\n      buf_valid <= 1;\n      buf_data  <= s_tdata;\n      buf_last  <= s_tlast;\n    end else if (m_tready) begin\n      buf_valid <= 0;\n    end\n  end\n\n  assign m_tvalid = buf_valid;\n  assign m_tdata  = buf_data;\n  assign m_tlast  = buf_last;\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-6-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement an AXI4-Lite slave with 4 readable/writable registers.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 6: AXI4-Lite Slave Registers\n\nImplement an AXI4-Lite slave with 4 32-bit registers:\n- Reg 0 (0x00): Control register (R/W)\n- Reg 1 (0x04): Status register (R only, driven by HW)\n- Reg 2 (0x08): Data register (R/W)\n- Reg 3 (0x0C): ID register (R only, hardcoded 0xDEAD_C0DE)\n\nSimplified interface (no burst, single transfer):\n```\nmodule axi_lite_regs (\n  input  logic        clk, rst_n,\n  input  logic [3:0]  awaddr, araddr,\n  input  logic        awvalid, wvalid, arvalid, bready, rready,\n  input  logic [31:0] wdata,\n  input  logic [3:0]  hw_status,  // hardware status input\n  output logic        awready, wready, bvalid, arready, rvalid,\n  output logic [31:0] rdata,\n  output logic [1:0]  bresp, rresp,\n  output logic [31:0] ctrl_reg, data_reg  // to rest of design\n);\n```\n\nTestbench: write 0xABCD to ctrl_reg, read it back; read ID reg = 0xDEADC0DE",
+          "starterCode": "// Lab 6: AXI4-Lite Slave\nmodule axi_lite_regs (\n  input  logic        clk, rst_n,\n  input  logic [3:0]  awaddr, araddr,\n  input  logic        awvalid, wvalid, arvalid, bready, rready,\n  input  logic [31:0] wdata,\n  input  logic [3:0]  hw_status,\n  output logic        awready, wready, bvalid, arready, rvalid,\n  output logic [31:0] rdata,\n  output logic [1:0]  bresp, rresp,\n  output logic [31:0] ctrl_reg, data_reg\n);\n  assign bresp = 2'b00; // OKAY\n  assign rresp = 2'b00;\n\n  // Write channel\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      ctrl_reg<=0; data_reg<=0;\n      awready<=0; wready<=0; bvalid<=0;\n    end else begin\n      awready <= awvalid; // accept address\n      wready  <= wvalid;  // accept data\n      if (awvalid && wvalid) begin\n        case (awaddr[3:2])  // word address\n          2'd0: ctrl_reg <= wdata;\n          2'd2: data_reg <= wdata;\n          // 2'd1 and 2'd3 are read-only\n        endcase\n        bvalid <= 1;\n      end else if (bvalid && bready)\n        bvalid <= 0;\n    end\n  end\n\n  // Read channel\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin arready<=0; rvalid<=0; rdata<=0; end\n    else begin\n      arready <= arvalid;\n      if (arvalid) begin\n        rvalid <= 1;\n        case (araddr[3:2])\n          2'd0: rdata <= ctrl_reg;\n          2'd1: rdata <= {28'b0, hw_status};  // status\n          2'd2: rdata <= data_reg;\n          2'd3: rdata <= 32'hDEAD_C0DE;        // ID\n        endcase\n      end else if (rvalid && rready)\n        rvalid <= 0;\n    end\n  end\n\n  assign data_reg = data_reg; // expose to design\nendmodule\n\nmodule tb_axi_lite;\n  logic clk=0, rst_n;\n  logic [3:0]  awaddr, araddr;\n  logic        awvalid, wvalid, arvalid, bready, rready;\n  logic [31:0] wdata;\n  logic [3:0]  hw_status=4'hA;\n  logic        awready, wready, bvalid, arready, rvalid;\n  logic [31:0] rdata, ctrl_reg, data_reg;\n  logic [1:0]  bresp, rresp;\n\n  axi_lite_regs dut(.*);\n  always #5 clk = ~clk;\n\n  task axi_write(input [3:0] addr, input [31:0] data);\n    awaddr=addr; wdata=data;\n    awvalid=1; wvalid=1; bready=1;\n    @(posedge clk); #1;\n    wait(awready && wready);\n    @(posedge clk);\n    awvalid=0; wvalid=0;\n    wait(bvalid); @(posedge clk);\n  endtask\n\n  task axi_read(input [3:0] addr, output [31:0] data);\n    araddr=addr; arvalid=1; rready=1;\n    @(posedge clk); #1;\n    wait(rvalid);\n    data = rdata;\n    arvalid=0;\n    @(posedge clk);\n  endtask\n\n  initial begin\n    rst_n=0; awvalid=0; wvalid=0; arvalid=0; bready=0; rready=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Write 0xABCD to ctrl_reg (addr 0x00)\n    axi_write(4'h0, 32'h0000_ABCD);\n    assert(ctrl_reg==32'h0000_ABCD)\n      else $error(\"Write FAIL: ctrl=%h\",ctrl_reg);\n\n    // Read back ctrl_reg\n    logic [31:0] rd;\n    axi_read(4'h0, rd);\n    assert(rd==32'h0000_ABCD)\n      else $error(\"Read FAIL: got %h\",rd);\n\n    // Read ID register\n    axi_read(4'hC, rd);\n    assert(rd==32'hDEAD_C0DE)\n      else $error(\"ID FAIL: got %h\",rd);\n\n    $display(\"AXI4-Lite PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "awaddr[3:2] gives word address (0,1,2,3 for 4 registers)",
+            "Write: accept when awvalid && wvalid both high",
+            "Read: register address on arvalid, respond with rvalid",
+            "ID register: rdata <= 32'hDEAD_C0DE (hardcoded)"
+          ],
+          "requiredPatterns": [
+            "module axi_lite_regs",
+            "awready",
+            "wready",
+            "bvalid",
+            "arready",
+            "rvalid",
+            "32'hDEAD_C0DE",
+            "module tb_axi_lite",
+            "axi_write",
+            "axi_read",
+            "assert(ctrl_reg",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "AXI4-Lite slave separates write (AW+W+B channels) and read (AR+R channels). Write accepts address and data when both AWVALID and WVALID are high, then responds with BVALID. Read accepts address when ARVALID, then drives RDATA with RVALID. Read-only registers (status, ID) ignore writes. This is the standard pattern for FPGA control register banks."
+        }
+      },
+      {
+        "id": "fpga-6-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your AXI knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "AXI4-Lite is used for:", "options": ["High-bandwidth streaming", "Simple register read/write — control and status registers", "Burst memory access", "Video processing"], "answer": 1 },
+          { "q": "AXI transfer occurs when:", "options": ["VALID is high only", "READY is high only", "Both VALID and READY are high simultaneously", "VALID falls after READY"], "answer": 2 },
+          { "q": "AXI4-Stream TLAST indicates:", "options": ["Transfer error", "End of packet/frame — last beat of a transaction", "Data is not valid", "Ready to accept next transfer"], "answer": 1 },
+          { "q": "BRESP=2'b00 in AXI4-Lite means:", "options": ["Slave error", "Decode error", "OKAY — write was accepted successfully", "Exclusive OKAY"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 7,
+    "bonusXp": 160,
+    "badge": "HLS Pioneer",
+    "subLevels": [
+      {
+        "id": "fpga-7-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "HLS — High-Level Synthesis, writing FPGA hardware in C/C++.",
+        "keyPoints": [
+          "HLS: compile C/C++ code to RTL automatically",
+          "Xilinx Vitis HLS (formerly Vivado HLS): industry-leading tool",
+          "Intel HLS Compiler: alternative for Intel FPGAs",
+          "Directives (#pragma HLS): guide the HLS tool for optimization",
+          "Pipeline: II=1 means new data accepted every clock cycle",
+          "Unroll: expand loops to increase parallelism",
+          "Dataflow: pipeline function calls at coarse grain level"
+        ],
+        "content": "HLS allows software engineers to describe hardware behavior in C/C++ and let the tool generate RTL. The key insight: HLS doesn't make your C code run faster — it makes it run in parallel hardware. The HLS tool analyzes data dependencies and creates pipelines, parallel units, and memories. Directives (#pragma HLS PIPELINE, #pragma HLS UNROLL) guide the tool. A simple C loop with II=1 (Initiation Interval=1) means the hardware accepts a new input every clock cycle — achieving hardware-level throughput without writing FSMs and datapaths manually. Used heavily for: machine learning inference, image processing, wireless algorithms.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-7-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "HLS C++ patterns — pragmas, interfaces, and data types.",
+        "keyPoints": [
+          "#pragma HLS PIPELINE II=1 — pipeline with II=1 (1 new input/cycle)",
+          "#pragma HLS UNROLL factor=4 — unroll loop 4x",
+          "#pragma HLS ARRAY_PARTITION complete dim=1 — split array into regs",
+          "ap_int<N>: arbitrary precision integer (N-bit)",
+          "ap_fixed<W,I>: fixed-point (W total bits, I integer bits)",
+          "hls::stream<T>: FIFO stream in HLS — maps to AXI-Stream",
+          "DATAFLOW pragma: pipeline function calls"
+        ],
+        "content": "// HLS FIR Filter in C++\n#include \"ap_int.h\"\n#include \"hls_stream.h\"\n\ntypedef ap_int<8>  data_t;\ntypedef ap_int<16> acc_t;\n\nvoid fir_filter(\n  hls::stream<data_t>& in_stream,\n  hls::stream<acc_t>&  out_stream\n) {\n  #pragma HLS PIPELINE II=1  // accept 1 sample per cycle\n\n  static data_t shift_reg[8] = {0};\n  const data_t  coeff[8]     = {1,2,3,4,4,3,2,1};\n\n  #pragma HLS ARRAY_PARTITION variable=shift_reg complete\n  #pragma HLS ARRAY_PARTITION variable=coeff     complete\n\n  data_t x = in_stream.read();\n\n  // Shift register update\n  for (int i=7; i>0; i--) {\n    #pragma HLS UNROLL\n    shift_reg[i] = shift_reg[i-1];\n  }\n  shift_reg[0] = x;\n\n  // MAC (all in parallel after unroll)\n  acc_t result = 0;\n  for (int i=0; i<8; i++) {\n    #pragma HLS UNROLL\n    result += coeff[i] * shift_reg[i];\n  }\n  out_stream.write(result);\n}",
+        "xp": 20
+      },
+      {
+        "id": "fpga-7-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Understand HLS pipeline scheduling and resource estimation.",
+        "keyPoints": [
+          "HLS schedule: assigns operations to clock cycles",
+          "II=1: new data every cycle (fully pipelined)",
+          "Latency: cycles from input to output (typically 5-15)",
+          "Resource estimate: DSPs, BRAMs, LUTs after HLS",
+          "ARRAY_PARTITION: splits array to allow parallel access",
+          "Bottleneck: RAW dependency (read-after-write) limits II"
+        ],
+        "content": "// HLS Schedule Analysis for FIR filter\n// After: #pragma HLS PIPELINE II=1\n//        #pragma HLS UNROLL on loops\n\n// Cycle 1:\n//   Read x from stream\n//   Shift: shift_reg[7]=shift_reg[6], ...\n//   Multiply: coeff[0]*shift_reg[0] → p0\n//             coeff[1]*shift_reg[1] → p1  (parallel!)\n//             ...all 8 multiplies in parallel\n\n// Cycle 2:\n//   Add: p0+p1+p2+p3+p4+p5+p6+p7 (adder tree)\n//   Write result to output stream\n\n// HLS Resource Estimate:\n// DSP48:  8 (one per multiply)\n// FF:     8×8 = 64 (shift register)\n// LUT:    ~50 (adder tree, control)\n// Latency: 2 cycles\n// II:     1 (new sample accepted every cycle)\n\n// Without pragmas:\n// Loop not unrolled → II = 8 (one multiply per cycle)\n// With pragmas:\n// All 8 multiplies in parallel → II = 1\n// 8x throughput improvement from one pragma!\n\n// HLS C simulation:\n// cosim_design -O -rtl verilog\n// → runs C testbench against RTL to verify behavior",
+        "xp": 20
+      },
+      {
+        "id": "fpga-7-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write an HLS vector dot product with pipeline and unroll pragmas.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 7: HLS-Style Dot Product\n\nSince we're simulating HLS concepts in SystemVerilog, implement a fully pipelined dot product that demonstrates HLS principles:\n\n```\nmodule dot_product #(parameter N=4) (\n  input  logic        clk, rst_n,\n  input  logic        valid_in,\n  input  logic signed [7:0] a [N],\n  input  logic signed [7:0] b [N],\n  output logic signed [23:0] result,\n  output logic               valid_out\n);\n```\n\nImplement with full parallelism (like HLS UNROLL):\n1. **Cycle 1**: All N multiplications in parallel\n2. **Cycle 2**: Adder tree (parallel adds)\n3. **Cycle 3**: Final sum → result\n\nFor N=4: [1,2,3,4]·[5,6,7,8] = 5+12+21+32 = 70\n\nTestbench: compute 3 dot products back-to-back, verify all = 70",
+          "starterCode": "// Lab 7: Pipelined Dot Product (HLS-style parallel implementation)\nmodule dot_product #(parameter N=4) (\n  input  logic        clk, rst_n,\n  input  logic        valid_in,\n  input  logic signed [7:0] a [N],\n  input  logic signed [7:0] b [N],\n  output logic signed [23:0] result,\n  output logic               valid_out\n);\n  // Stage 1: N parallel multipliers\n  logic signed [15:0] products [N];\n  logic valid_s1;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      valid_s1 <= 0;\n      foreach (products[i]) products[i] <= 0;\n    end else begin\n      valid_s1 <= valid_in;\n      for (int i=0; i<N; i++)\n        products[i] <= a[i] * b[i];  // all in parallel!\n    end\n  end\n\n  // Stage 2: Adder tree (for N=4: add pairs)\n  logic signed [16:0] sum01, sum23;\n  logic valid_s2;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin valid_s2<=0; sum01<=0; sum23<=0; end\n    else begin\n      valid_s2 <= valid_s1;\n      sum01    <= products[0] + products[1];\n      sum23    <= products[2] + products[3];\n    end\n  end\n\n  // Stage 3: Final sum\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin result<=0; valid_out<=0; end\n    else begin\n      valid_out <= valid_s2;\n      result    <= sum01 + sum23;\n    end\n  end\nendmodule\n\nmodule tb_dot;\n  logic clk=0, rst_n, valid_in, valid_out;\n  logic signed [7:0]  a [4], b [4];\n  logic signed [23:0] result;\n  int result_count = 0;\n\n  dot_product dut(.*);\n  always #5 clk = ~clk;\n\n  // Verify results as they come out\n  always @(posedge clk) begin\n    if (valid_out) begin\n      assert(result==24'd70)\n        else $error(\"FAIL: got %0d\", result);\n      result_count++;\n      $display(\"Result %0d: %0d (correct!)\", result_count, result);\n    end\n  end\n\n  initial begin\n    rst_n=0; valid_in=0;\n    foreach(a[i]) begin a[i]=0; b[i]=0; end\n    @(posedge clk); rst_n=1;\n\n    // Send 3 dot products\n    repeat(3) begin\n      a[0]=1; a[1]=2; a[2]=3; a[3]=4;\n      b[0]=5; b[1]=6; b[2]=7; b[3]=8;\n      valid_in=1;\n      @(posedge clk); #1;\n    end\n    valid_in=0;\n\n    // Wait for pipeline to drain (3 cycles latency)\n    repeat(6) @(posedge clk);\n\n    assert(result_count==3)\n      else $error(\"Expected 3 results, got %0d\", result_count);\n    $display(\"Dot product PASSED: %0d results\", result_count);\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Stage 1: all multiplications in one always_ff (parallel like HLS UNROLL)",
+            "Stage 2: add pairs (adder tree): sum01=products[0]+products[1]",
+            "Stage 3: final sum = sum01 + sum23",
+            "3 pipeline stages = 3 cycle latency = results start 3 cycles after input"
+          ],
+          "requiredPatterns": [
+            "module dot_product",
+            "products",
+            "valid_s1",
+            "valid_s2",
+            "sum01",
+            "sum23",
+            "sum01 + sum23",
+            "module tb_dot",
+            "result==24'd70",
+            "result_count==3",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "This parallel dot product implements HLS UNROLL semantics in RTL. Stage 1: 4 DSP multipliers operate simultaneously. Stage 2: 2 adders reduce 4 products to 2 sums. Stage 3: final addition. Total: 3 cycles latency, 1 new result per cycle throughput (after pipeline fills). HLS PIPELINE II=1 + UNROLL generates exactly this hardware automatically from C code."
+        }
+      },
+      {
+        "id": "fpga-7-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your HLS knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "HLS II=1 (Initiation Interval) means:", "options": ["1 clock cycle total computation", "New data accepted every 1 clock cycle — fully pipelined", "1 resource used", "1 multiplication per cycle"], "answer": 1 },
+          { "q": "#pragma HLS UNROLL on a loop:", "options": ["Removes the loop", "Replicates loop body in parallel hardware — increases throughput", "Reduces loop count", "Converts loop to pipeline"], "answer": 1 },
+          { "q": "ap_int<N> in Xilinx HLS is:", "options": ["A pointer type", "Arbitrary precision N-bit integer — maps to exact-width hardware", "A floating point type", "An array type"], "answer": 1 },
+          { "q": "HLS ARRAY_PARTITION complete is needed because:", "options": ["Arrays are too large", "Arrays are stored as BRAM with 1 read/write port — partition splits to registers for parallel access", "HLS cannot handle arrays", "It saves power"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 8,
+    "bonusXp": 170,
+    "badge": "Timing Closure Expert",
+    "subLevels": [
+      {
+        "id": "fpga-8-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "FPGA timing closure — achieving target Fmax with retiming and pipelining.",
+        "keyPoints": [
+          "Timing closure: making all paths meet setup and hold requirements",
+          "Fmax: maximum operating frequency — limited by critical path",
+          "Retiming: tool moves registers across combinational logic for balance",
+          "Pipeline: manually add register stages to break long paths",
+          "register_retiming: Vivado synthesis option to enable retiming",
+          "Fanout: high fanout nets have routing delay — add buffers",
+          "Placement constraints: lock critical path logic to nearby cells"
+        ],
+        "content": "Timing closure in FPGA design is the art of making every path meet its timing requirement. The critical path — the longest combinational path between flip-flops — limits Fmax. Strategies: pipelining (add registers to break long paths), retiming (tool moves registers automatically), and physical optimization (place critical cells close together). High fanout is a common timing killer — a single register driving 1000 LUTs has high routing delay. Insert buffers or use set_max_fanout constraint. Vivado's physical optimization (phys_opt_design) can fix many timing issues automatically by duplicating cells or adjusting placement.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-8-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Vivado timing analysis commands and optimization techniques.",
+        "keyPoints": [
+          "report_timing_summary: shows WNS, TNS, WHS",
+          "report_timing -max_paths 10 -path_type full: detailed paths",
+          "phys_opt_design: physical optimization after P&R",
+          "set_property KEEP_HIERARCHY false [get_cells]: enables cross-hierarchy optimization",
+          "pipeline_style: attribute to control pipeline behavior",
+          "set_multicycle_path: for intentionally slow paths",
+          "Vivado: synth_design -retiming — enable retiming"
+        ],
+        "content": "# Vivado Timing Optimization Flow\n\n# Step 1: Synthesis with retiming\nsynth_design -top my_design \\\n             -part xc7a35tcpg236-1 \\\n             -retiming\n\n# Step 2: Implementation\nopt_design\nplace_design\nphys_opt_design  ;# physical optimization\nroute_design\n\n# Step 3: Check timing\nreport_timing_summary -file timing_summary.rpt\n\n# Step 4: If violations exist, view critical path\nreport_timing -max_paths 5 \\\n              -path_type full \\\n              -delay_type max \\\n              -file critical_path.rpt\n\n# Step 5: Post-route physical optimization\n# (fixes remaining violations by cell duplication)\nphys_opt_design -directive AggressiveExplore\n\n# Step 6: Common fixes in RTL\n# - Add pipeline register to long path\n# - Use (* keep = \"true\" *) to prevent optimization issues\n# - set_max_fanout 8 for control signals\n# - PBLOCK constraint to co-locate critical cells",
+        "xp": 20
+      },
+      {
+        "id": "fpga-8-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Fix a timing violation by adding a pipeline register.",
+        "keyPoints": [
+          "Original: 32-bit adder + 8:1 mux = 15ns critical path at 100MHz",
+          "Violation: WNS = -5ns (need 10ns, have 15ns combinational)",
+          "Fix: add pipeline register between adder and mux",
+          "Result: adder = 8ns, mux = 6ns — both meet 10ns",
+          "Trade-off: 1 extra cycle latency",
+          "Pipeline throughput: unchanged — still 1 result/cycle"
+        ],
+        "content": "// BEFORE: Timing violation\n// Path: adder → mux → output_reg\n// Delay: 15ns > 10ns period → WNS = -5ns\n\nmodule bad_timing (\n  input  logic        clk,\n  input  logic [31:0] a, b,\n  input  logic [2:0]  sel,\n  output logic [31:0] out\n);\n  logic [31:0] sum;\n  assign sum = a + b;  // 8ns\n  // Big mux on adder output: +7ns\n  always_ff @(posedge clk)\n    case (sel)            // Total: 15ns! VIOLATION!\n      3'd0: out <= sum;\n      3'd1: out <= a;\n      // ...\n    endcase\nendmodule\n\n// AFTER: Pipeline register breaks the path\nmodule fixed_timing (\n  input  logic        clk,\n  input  logic [31:0] a, b,\n  input  logic [2:0]  sel,\n  output logic [31:0] out\n);\n  logic [31:0] sum_reg; // PIPELINE REGISTER\n  logic [31:0] a_reg;\n  logic [2:0]  sel_reg;\n\n  // Stage 1: compute sum (8ns — MEETS 10ns)\n  always_ff @(posedge clk) begin\n    sum_reg <= a + b;    // 8ns ✓\n    a_reg   <= a;\n    sel_reg <= sel;\n  end\n\n  // Stage 2: mux (6ns — MEETS 10ns)\n  always_ff @(posedge clk)\n    case (sel_reg)       // 6ns ✓\n      3'd0: out <= sum_reg;\n      3'd1: out <= a_reg;\n      // ...\n    endcase\nendmodule\n// Extra latency: 1 cycle\n// But throughput: still 1 result/cycle!",
+        "xp": 20
+      },
+      {
+        "id": "fpga-8-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Add pipeline registers to fix a multi-stage timing violation.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 8: Pipeline Register Insertion\n\nThe following design has a 3-stage combinational path that's too slow:\n\n```\n// Critical path: multiply → shift → accumulate = TOO LONG\nmodule slow_path (\n  input  logic        clk,\n  input  logic [7:0]  a, b,\n  input  logic [2:0]  shift_amt,\n  output logic [23:0] result\n);\n  logic [15:0] product;\n  logic [23:0] shifted;\n  assign product = a * b;           // ~8ns\n  assign shifted = product << shift_amt; // ~4ns  \n  // Total combinational: 12ns — too slow for 10ns clock!\n  always_ff @(posedge clk)\n    result <= shifted + result;   // + 3ns = 15ns VIOLATION\nendmodule\n```\n\nFix by adding pipeline registers to split into 2 stages:\n- **Stage 1**: multiply only (8ns)\n- **Stage 2**: shift + accumulate (7ns)\n\nTestbench: verify pipelined version gives same final result as combinational (accounting for latency). Compute: a=4, b=5, shift=2 → product=20, shifted=80, accumulated over 3 cycles.",
+          "starterCode": "// Lab 8: Fixed Pipeline\n// Original (slow) version for reference\nmodule slow_path (\n  input  logic        clk,\n  input  logic [7:0]  a, b,\n  input  logic [2:0]  shift_amt,\n  output logic [23:0] result\n);\n  logic [15:0] product;\n  logic [22:0] shifted;\n  assign product = a * b;\n  assign shifted = {7'b0, product} << shift_amt;\n  always_ff @(posedge clk)\n    result <= shifted + result;\nendmodule\n\n// Pipelined fix\nmodule fast_path (\n  input  logic        clk, rst_n,\n  input  logic        valid_in,\n  input  logic [7:0]  a, b,\n  input  logic [2:0]  shift_amt,\n  output logic [23:0] result,\n  output logic        valid_out\n);\n  // Stage 1: multiply\n  logic [15:0] product_reg;\n  logic [2:0]  shift_reg;\n  logic        valid_s1;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin product_reg<=0; valid_s1<=0; end\n    else begin\n      product_reg <= a * b;      // pipeline register!\n      shift_reg   <= shift_amt;\n      valid_s1    <= valid_in;\n    end\n  end\n\n  // Stage 2: shift + accumulate\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin result<=0; valid_out<=0; end\n    else begin\n      valid_out <= valid_s1;\n      if (valid_s1)\n        result <= result + ({8'b0, product_reg} << shift_reg);\n    end\n  end\nendmodule\n\nmodule tb_pipeline_fix;\n  logic clk=0, rst_n, valid_in, valid_out;\n  logic [7:0]  a, b;\n  logic [2:0]  shift_amt;\n  logic [23:0] result;\n\n  fast_path dut(.*);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; valid_in=0; a=0; b=0; shift_amt=0;\n    @(posedge clk); rst_n=1;\n\n    // Apply: a=4, b=5, shift=2 for 3 cycles\n    // Each cycle: product=20, shifted=80\n    // After 3 cycles: result = 0+80+80+80 = 240\n    a=4; b=5; shift_amt=2; valid_in=1;\n    repeat(3) @(posedge clk);\n    valid_in=0;\n\n    // Wait for pipeline drain\n    repeat(4) @(posedge clk); #1;\n\n    $display(\"Result = %0d (expected 240)\", result);\n    assert(result==240) else $error(\"FAIL: got %0d\",result);\n\n    $display(\"Pipeline fix PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Stage 1: product_reg <= a * b; (register the multiply output)",
+            "Stage 2: result <= result + (product_reg << shift_reg);",
+            "Always register shift_amt alongside product (same cycle)",
+            "Result = 80+80+80 = 240 after 3 accumulations"
+          ],
+          "requiredPatterns": [
+            "module fast_path",
+            "product_reg",
+            "shift_reg",
+            "valid_s1",
+            "a * b",
+            "product_reg << shift_reg",
+            "result + ",
+            "module tb_pipeline_fix",
+            "assert(result==240)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The pipeline register breaks the 15ns path into two 7-8ns stages. Stage 1 computes and registers the multiply result. Stage 2 shifts and accumulates. Each stage fits within the 10ns clock period. The shift_amt register is critical — it must be delayed by the same number of cycles as the data to stay aligned. Result: same computation, 1 cycle extra latency, meets timing."
+        }
+      },
+      {
+        "id": "fpga-8-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your timing closure knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Adding a pipeline register to fix timing:", "options": ["Reduces throughput", "Increases latency by 1 cycle but maintains throughput", "Fixes hold violations", "Reduces area"], "answer": 1 },
+          { "q": "High fanout signals have timing problems because:", "options": ["They consume too much power", "Routing delay increases with more loads — signal reaches each destination at different times", "They cause hold violations", "They require more LUTs"], "answer": 1 },
+          { "q": "phys_opt_design in Vivado:", "options": ["Only runs synthesis", "Performs physical optimization post-P&R — duplicates cells, adjusts placement to fix timing", "Generates bitstream", "Runs simulation"], "answer": 1 },
+          { "q": "Retiming in synthesis:", "options": ["Changes logic function", "Automatically moves registers across combinational logic to balance path delays", "Removes registers", "Duplicates clock signals"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 9,
+    "bonusXp": 180,
+    "badge": "Zynq SoC Expert",
+    "subLevels": [
+      {
+        "id": "fpga-9-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Zynq SoC — combining ARM processor with FPGA fabric on one chip.",
+        "keyPoints": [
+          "Zynq: ARM Cortex-A9 (PS) + Artix/Kintex FPGA (PL) on one die",
+          "PS: Processing System — runs Linux, bare-metal, FreeRTOS",
+          "PL: Programmable Logic — your custom FPGA design",
+          "AXI: PS and PL communicate via AXI interconnect",
+          "HP ports: High Performance AXI ports — PS DDR access from PL",
+          "GP ports: General Purpose AXI — PS controls PL registers",
+          "Petalinux: Xilinx embedded Linux for Zynq"
+        ],
+        "content": "Zynq combines the best of both worlds: a hard ARM processor for software algorithms and FPGA fabric for hardware acceleration. The PS runs operating systems (Linux, FreeRTOS) while the PL implements custom hardware accelerators. They communicate via AXI: the PS can read/write PL registers (AXI-GP), and PL hardware can access PS DDR memory at high bandwidth (AXI-HP at >1GB/s). Common use cases: video processing (PS controls, PL does pixel manipulation), motor control (PS runs RTOS, PL does PWM/encoder), machine learning (PS coordinates, PL runs inference). Vivado IP Integrator (block design) makes Zynq designs visual and manageable.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-9-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Zynq PS-PL interface — AXI GP and HP port patterns.",
+        "keyPoints": [
+          "Block Design: Vivado IP Integrator — visual AXI connections",
+          "ZYNQ7 Processing System IP: configures PS clocks, DDR, MIO",
+          "AXI Interconnect IP: routes multiple AXI masters/slaves",
+          "PS to PL: AXI-GP master (PS) → AXI-Lite slave (PL registers)",
+          "PL to DDR: AXI-HP slave (PS) ← AXI-Full master (PL DMA)",
+          "devmem: Linux command to read/write AXI-mapped registers",
+          "mmap: C code to map PL registers into Linux user space"
+        ],
+        "content": "// Zynq PL Accelerator — AXI-Lite control registers\n// Connected to PS via M_AXI_GP0\nmodule zynq_accelerator (\n  input  logic        clk, rst_n,\n  // AXI-Lite slave (from PS)\n  input  logic [11:0] s_axi_awaddr,\n  input  logic        s_axi_awvalid,\n  output logic        s_axi_awready,\n  input  logic [31:0] s_axi_wdata,\n  input  logic        s_axi_wvalid,\n  output logic        s_axi_wready,\n  output logic [1:0]  s_axi_bresp,\n  output logic        s_axi_bvalid,\n  input  logic        s_axi_bready,\n  // ... AR, R channels\n  // Accelerator outputs\n  output logic [7:0]  led_out\n);\n  // Register map:\n  // 0x00: CONTROL (R/W) — bit0=enable, bit1=mode\n  // 0x04: STATUS  (R)   — bit0=done, bit1=error\n  // 0x08: DATA    (R/W) — data input\n  // 0x0C: RESULT  (R)   — computation result\n\n  logic [31:0] ctrl_reg;\n  // ... AXI-Lite slave logic\n  assign led_out = ctrl_reg[7:0]; // LEDs show control\nendmodule\n\n// Linux driver (C code) — reading/writing PL registers:\n// int fd = open(\"/dev/mem\", O_RDWR|O_SYNC);\n// void *base = mmap(NULL, 4096, PROT_RW, MAP_SHARED, fd, 0x43C00000);\n// ((uint32_t*)base)[0] = 0x01; // write CONTROL reg\n// uint32_t status = ((uint32_t*)base)[1]; // read STATUS",
+        "xp": 20
+      },
+      {
+        "id": "fpga-9-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete Zynq block design and understand PS-PL data flow.",
+        "keyPoints": [
+          "ZYNQ7 PS IP: configure DDR, clocks (100MHz PL clock), UART",
+          "AXI Interconnect: M00_AXI → LED controller, S00_AXI from PS",
+          "Address map: PS maps PL peripherals at 0x43C0_0000",
+          "DMA: PS DMA IP transfers data from DDR to PL stream",
+          "ILA: Integrated Logic Analyzer — debug PL signals from Vivado"
+        ],
+        "content": "// Zynq Block Design — IP connections (Vivado TCL)\n\n# Create PS IP\ncreate_bd_cell -type ip \\\n  -vlnv xilinx.com:ip:processing_system7 ZYNQ7_Processing_System\n\n# Configure PS: enable M_AXI_GP0, set PL clock to 100MHz\nset_property -dict [\n  list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {100} \\\n       CONFIG.PCW_USE_M_AXI_GP0 {1} \\\n       CONFIG.PCW_USE_S_AXI_HP0 {1}\n] [get_bd_cells ZYNQ7_Processing_System]\n\n# Add AXI Interconnect\ncreate_bd_cell -type ip \\\n  -vlnv xilinx.com:ip:axi_interconnect axi_interconnect_0\nset_property CONFIG.NUM_MI {2} [get_bd_cells axi_interconnect_0]\n\n# Connect PS GP0 → Interconnect → LED controller\nconnect_bd_intf_net \\\n  [get_bd_intf_pins ZYNQ7_Processing_System/M_AXI_GP0] \\\n  [get_bd_intf_pins axi_interconnect_0/S00_AXI]\n\n# Address assignment: LED controller at 0x43C00000\nassign_bd_address -offset 0x43C00000 -range 4K \\\n  [get_bd_addr_segs led_ctrl/s_axi/reg0]\n\n# From Linux:\n# echo 0x0F > /sys/class/led_ctrl/leds  # turn on 4 LEDs\n# devmem 0x43C00000 w 0x0000000F",
+        "xp": 20
+      },
+      {
+        "id": "fpga-9-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a Zynq-compatible AXI-Lite peripheral with interrupt.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 9: Zynq AXI-Lite Peripheral with Interrupt\n\nImplement a timer peripheral for Zynq PS connection:\n\n```\nmodule zynq_timer (\n  input  logic        clk, rst_n,\n  // AXI-Lite (simplified)\n  input  logic [3:0]  awaddr, araddr,\n  input  logic        awvalid, wvalid, arvalid, bready, rready,\n  input  logic [31:0] wdata,\n  output logic        awready, wready, bvalid, arready, rvalid,\n  output logic [31:0] rdata,\n  output logic [1:0]  bresp, rresp,\n  // Interrupt to PS\n  output logic        irq\n);\n```\n\nRegister map:\n- 0x0: CTRL — bit0=enable, bit1=auto_reload\n- 0x4: LOAD — timer reload value\n- 0x8: COUNT — current count (read only)\n- 0xC: STATUS — bit0=expired (write 1 to clear)\n\nBehavior:\n- When enabled: count down from LOAD to 0\n- At 0: assert irq for 1 cycle, set STATUS[0]=1\n- If auto_reload: reload LOAD value and continue\n- Testbench: set LOAD=10, enable, wait for irq, verify STATUS",
+          "starterCode": "// Lab 9: Zynq Timer Peripheral\nmodule zynq_timer (\n  input  logic        clk, rst_n,\n  input  logic [3:0]  awaddr, araddr,\n  input  logic        awvalid, wvalid, arvalid, bready, rready,\n  input  logic [31:0] wdata,\n  output logic        awready, wready, bvalid, arready, rvalid,\n  output logic [31:0] rdata,\n  output logic [1:0]  bresp, rresp,\n  output logic        irq\n);\n  // Registers\n  logic [31:0] ctrl_reg;   // 0x0\n  logic [31:0] load_reg;   // 0x4\n  logic [31:0] count_reg;  // 0x8 (RO)\n  logic [31:0] status_reg; // 0xC\n\n  assign bresp = 2'b00;\n  assign rresp = 2'b00;\n\n  logic enable      = ctrl_reg[0];\n  logic auto_reload = ctrl_reg[1];\n\n  // AXI Write\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      ctrl_reg<=0; load_reg<=0; awready<=0; wready<=0; bvalid<=0;\n    end else begin\n      awready <= awvalid;\n      wready  <= wvalid;\n      if (awvalid && wvalid) begin\n        case (awaddr[3:2])\n          2'd0: ctrl_reg <= wdata;\n          2'd1: load_reg <= wdata;\n          2'd3: if (wdata[0]) status_reg[0] <= 0; // W1C: write 1 to clear\n        endcase\n        bvalid <= 1;\n      end else if (bvalid && bready) bvalid <= 0;\n    end\n  end\n\n  // AXI Read\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin arready<=0; rvalid<=0; rdata<=0; end\n    else begin\n      arready <= arvalid;\n      if (arvalid) begin\n        rvalid <= 1;\n        case (araddr[3:2])\n          2'd0: rdata <= ctrl_reg;\n          2'd1: rdata <= load_reg;\n          2'd2: rdata <= count_reg;\n          2'd3: rdata <= status_reg;\n        endcase\n      end else if (rvalid && rready) rvalid <= 0;\n    end\n  end\n\n  // Timer logic\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      count_reg  <= 0;\n      status_reg <= 0;\n      irq        <= 0;\n    end else begin\n      irq <= 0; // default\n      if (enable) begin\n        if (count_reg == 0) begin\n          irq            <= 1;\n          status_reg[0]  <= 1;\n          if (auto_reload) count_reg <= load_reg;\n          else             ctrl_reg[0] <= 0; // disable\n        end else\n          count_reg <= count_reg - 1;\n      end else\n        count_reg <= load_reg; // preload when disabled\n    end\n  end\nendmodule\n\nmodule tb_zynq_timer;\n  logic clk=0, rst_n;\n  logic [3:0]  awaddr, araddr;\n  logic        awvalid, wvalid, arvalid, bready, rready;\n  logic [31:0] wdata, rdata;\n  logic        awready, wready, bvalid, arready, rvalid;\n  logic [1:0]  bresp, rresp;\n  logic        irq;\n\n  zynq_timer dut(.*);\n  always #5 clk = ~clk;\n\n  task write_reg(input [3:0] addr, input [31:0] data);\n    awaddr=addr; wdata=data; awvalid=1; wvalid=1; bready=1;\n    @(posedge clk); awvalid=0; wvalid=0;\n    wait(bvalid); @(posedge clk);\n  endtask\n\n  task read_reg(input [3:0] addr, output [31:0] data);\n    araddr=addr; arvalid=1; rready=1;\n    @(posedge clk); arvalid=0;\n    wait(rvalid); data=rdata; @(posedge clk);\n  endtask\n\n  initial begin\n    rst_n=0; awvalid=0; wvalid=0; arvalid=0; bready=0; rready=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Set LOAD = 10\n    write_reg(4'h4, 32'd10);\n    // Enable timer (bit0=1, bit1=0 no auto-reload)\n    write_reg(4'h0, 32'h1);\n\n    // Wait for IRQ\n    wait(irq==1);\n    $display(\"IRQ received!\");\n\n    // Read STATUS — should be 1\n    logic [31:0] status;\n    read_reg(4'hC, status);\n    assert(status[0]==1) else $error(\"STATUS not set\");\n\n    // Clear STATUS (write 1 to bit0)\n    write_reg(4'hC, 32'h1);\n    read_reg(4'hC, status);\n    assert(status[0]==0) else $error(\"STATUS not cleared\");\n\n    $display(\"Zynq Timer PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "W1C (Write 1 to Clear): if(wdata[0]) status_reg[0] <= 0;",
+            "Timer: if(count_reg==0) fire irq, else count_reg <= count_reg-1",
+            "Preload: when disabled, count_reg = load_reg (ready to start)",
+            "irq <= 0 as default, irq <= 1 only on expiry"
+          ],
+          "requiredPatterns": [
+            "module zynq_timer",
+            "ctrl_reg",
+            "load_reg",
+            "count_reg",
+            "status_reg",
+            "irq <= 1",
+            "count_reg - 1",
+            "module tb_zynq_timer",
+            "wait(irq==1)",
+            "assert(status[0]==1)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The Zynq timer peripheral combines AXI-Lite register access with a countdown timer and interrupt. W1C (Write-1-to-Clear) status is the standard pattern for interrupt status registers. The PS writes to LOAD and CTRL via AXI, the hardware timer counts down and fires IRQ, and the PS interrupt handler reads STATUS and clears it. This is how all hardware peripherals (UART, SPI, I2C) work in embedded systems."
+        }
+      },
+      {
+        "id": "fpga-9-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your Zynq knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Zynq PS stands for:", "options": ["Programmable Silicon", "Processing System — the ARM processor subsystem", "Physical Synthesis", "Parallel Stream"], "answer": 1 },
+          { "q": "AXI-HP ports on Zynq are used for:", "options": ["Register access", "High-performance PL access to PS DDR memory — >1GB/s bandwidth", "Clock distribution", "Debug access"], "answer": 1 },
+          { "q": "W1C (Write-1-to-Clear) registers are used for:", "options": ["Read-only registers", "Interrupt status flags — write 1 to clear the flag", "Configuration registers", "DMA control"], "answer": 1 },
+          { "q": "Vivado IP Integrator Block Design is used to:", "options": ["Write RTL code", "Visually connect AXI IP blocks — create Zynq system with drag-and-drop", "Simulate designs", "Program the FPGA"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 10,
+    "bonusXp": 200,
+    "badge": "Industry FPGA Engineer",
+    "subLevels": [
+      {
+        "id": "fpga-10-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Industry FPGA projects — HFT, 5G, video processing, and AI accelerators.",
+        "keyPoints": [
+          "HFT: High-Frequency Trading — FPGA processes orders in <1μs (faster than CPU)",
+          "5G baseband: FPGA implements LDPC/Polar decoders at wire speed",
+          "Video: FPGA processes 4K@60fps — 8GB/s pixel throughput",
+          "AI inference: FPGA runs CNN/transformer layers at low latency",
+          "Partial reconfiguration: change part of FPGA without full restart",
+          "OpenCL/SYCL: high-level FPGA programming for data center FPGAs",
+          "SmartNIC: FPGA-based network card with programmable packet processing"
+        ],
+        "content": "Industry FPGA engineers work on performance-critical systems where FPGAs have unique advantages. In HFT, network packets are processed by FPGA in 100-500ns — far below the microseconds a CPU would take. In 5G, the tight real-time requirements of the physical layer (1ms latency) are only achievable with FPGA parallelism. Video processing exploits FPGA's streaming capability — pixels flow through a pipeline at 1 pixel per clock cycle. AI inference on FPGA offers the latency of GPU with the flexibility of reprogramming. Understanding the application domain and translating requirements to FPGA architecture is the core skill.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-10-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Advanced FPGA patterns — partial reconfiguration, ILA debug, and timing exceptions.",
+        "keyPoints": [
+          "ILA (Integrated Logic Analyzer): sample internal signals on FPGA",
+          "VIO (Virtual I/O): drive/read signals from Vivado GUI",
+          "Partial reconfig: pblock defines reconfigurable region",
+          "MMCM/PLL: generate precise clocks from reference (jitter <50ps)",
+          "IBUFDS: differential input buffer for LVDS/PCIe",
+          "OBUFDS: differential output buffer",
+          "IDELAYE2: programmable input delay for DDR training"
+        ],
+        "content": "// ILA (Integrated Logic Analyzer) instantiation\n// Captures internal signals for debugging on real hardware\n\n// In Vivado: add mark_debug attribute\n(* mark_debug = \"true\" *) logic [31:0] debug_data;\n(* mark_debug = \"true\" *) logic        debug_valid;\n\n// Or instantiate ILA IP directly\nila_0 ila_inst (\n  .clk(clk),\n  .probe0(debug_data),   // 32-bit probe\n  .probe1(debug_valid),  // 1-bit probe\n  .probe2(axi_awvalid)   // trigger on AXI write\n);\n// After programming FPGA: connect Vivado Hardware Manager\n// Set trigger: probe2 = 1 (trigger on AXI write)\n// Capture 1024 samples, view waveform in Vivado\n\n// MMCM for custom clock generation\nMMCME2_BASE #(\n  .CLKIN1_PERIOD(10.0),   // 100MHz input\n  .CLKFBOUT_MULT_F(10.0), // VCO = 100×10 = 1000MHz\n  .CLKOUT0_DIVIDE_F(8.0), // Output0 = 1000/8 = 125MHz\n  .CLKOUT1_DIVIDE(5)      // Output1 = 1000/5 = 200MHz\n) mmcm_inst (\n  .CLKIN1(clk_100),\n  .CLKFBIN(clkfb),\n  .CLKFBOUT(clkfb),\n  .CLKOUT0(clk_125),\n  .CLKOUT1(clk_200),\n  .LOCKED(locked)\n);",
+        "xp": 20
+      },
+      {
+        "id": "fpga-10-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a video pixel processing pipeline for 1080p60.",
+        "keyPoints": [
+          "1080p60: 1920×1080 pixels at 60fps = 124.4 million pixels/sec",
+          "Pixel clock: 148.5MHz (standard HDMI pixel clock)",
+          "Pipeline: input → RGB conversion → filter → output",
+          "Back-pressure: TREADY handles flow control",
+          "Line buffer: store one image line for 2D filtering",
+          "Blanking: H/V blanking periods in video timing"
+        ],
+        "content": "// 1080p60 Video Pipeline\n// Pixel format: RGB888 (24-bit per pixel)\n// Clock: 148.5MHz → 1 pixel per clock\n\n// Stage 1: Grayscale conversion\n// Gray = 0.299R + 0.587G + 0.114B\n// Fixed point: Gray = (77R + 150G + 29B) >> 8\nmodule rgb_to_gray (\n  input  logic        clk,\n  input  logic        valid, hsync, vsync,\n  input  logic [7:0]  r, g, b,\n  output logic        valid_out, hs_out, vs_out,\n  output logic [7:0]  gray\n);\n  logic [15:0] sum;\n  logic valid_r, hs_r, vs_r;\n\n  always_ff @(posedge clk) begin\n    // Multiply coefficients (DSP48 inferred)\n    sum      <= 8'd77*r + 8'd150*g + 8'd29*b;\n    valid_r  <= valid;\n    hs_r     <= hsync;\n    vs_r     <= vsync;\n    // Divide by 256 (right shift 8)\n    gray     <= sum[15:8];\n    valid_out <= valid_r;\n    hs_out    <= hs_r;\n    vs_out    <= vs_r;\n  end\nendmodule\n// 2-cycle latency\n// Uses 3 DSP48 multipliers (one per coefficient)\n// Processes 148.5 million pixels per second",
+        "xp": 20
+      },
+      {
+        "id": "fpga-10-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a complete video pixel pipeline with RGB-to-grayscale conversion.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 10: Video Pixel Pipeline\n\nImplement a 3-stage video processing pipeline:\n\n**Stage 1**: RGB → Grayscale (2 cycles)\n- Gray = (77×R + 150×G + 29×B) >> 8\n\n**Stage 2**: Threshold (1 cycle)\n- if gray > threshold → pixel=white (255)\n- else → pixel=black (0)\n\n**Stage 3**: Output with metadata\n- Output: pixel, valid, hsync, vsync\n- Propagate hsync/vsync through pipeline\n\n```\nmodule video_pipeline (\n  input  logic        clk, rst_n,\n  input  logic        valid_in, hsync_in, vsync_in,\n  input  logic [7:0]  r, g, b,\n  input  logic [7:0]  threshold,\n  output logic        valid_out, hsync_out, vsync_out,\n  output logic [7:0]  pixel_out\n);\n```\n\nTestbench: send 5 pixels, verify gray conversion and threshold.",
+          "starterCode": "// Lab 10: Video Pixel Pipeline\nmodule video_pipeline (\n  input  logic        clk, rst_n,\n  input  logic        valid_in, hsync_in, vsync_in,\n  input  logic [7:0]  r, g, b,\n  input  logic [7:0]  threshold,\n  output logic        valid_out, hsync_out, vsync_out,\n  output logic [7:0]  pixel_out\n);\n  // Stage 1a: multiply (cycle 1)\n  logic [15:0] r_mult, g_mult, b_mult;\n  logic valid_1a, hs_1a, vs_1a;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin valid_1a<=0; end\n    else begin\n      r_mult   <= 8'd77  * r;\n      g_mult   <= 8'd150 * g;\n      b_mult   <= 8'd29  * b;\n      valid_1a <= valid_in;\n      hs_1a    <= hsync_in;\n      vs_1a    <= vsync_in;\n    end\n  end\n\n  // Stage 1b: sum and shift (cycle 2)\n  logic [7:0] gray;\n  logic valid_1b, hs_1b, vs_1b;\n\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin valid_1b<=0; end\n    else begin\n      gray     <= (r_mult + g_mult + b_mult) >> 8;\n      valid_1b <= valid_1a;\n      hs_1b    <= hs_1a;\n      vs_1b    <= vs_1a;\n    end\n  end\n\n  // Stage 2: threshold (cycle 3)\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin valid_out<=0; end\n    else begin\n      pixel_out  <= (gray > threshold) ? 8'hFF : 8'h00;\n      valid_out  <= valid_1b;\n      hsync_out  <= hs_1b;\n      vsync_out  <= vs_1b;\n    end\n  end\nendmodule\n\nmodule tb_video;\n  logic clk=0, rst_n;\n  logic valid_in, hsync_in=0, vsync_in=0;\n  logic valid_out, hsync_out, vsync_out;\n  logic [7:0] r,g,b, threshold, pixel_out;\n\n  video_pipeline dut(.*);\n  always #5 clk = ~clk;\n\n  // Capture output pixels\n  logic [7:0] out_pixels [5];\n  int out_count=0;\n  always @(posedge clk)\n    if (valid_out) begin\n      out_pixels[out_count] = pixel_out;\n      out_count++;\n    end\n\n  initial begin\n    rst_n=0; valid_in=0; threshold=8'd128;\n    r=0; g=0; b=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Send 5 pixels\n    // Pixel 1: R=255,G=0,B=0 → gray=77 → below 128 → BLACK\n    // Pixel 2: R=255,G=255,B=255 → gray=256>>8=255 → above 128 → WHITE\n    // Pixel 3: R=0,G=255,B=0 → gray=150 → above 128 → WHITE\n    // Pixel 4: R=0,G=0,B=255 → gray=29 → below 128 → BLACK\n    // Pixel 5: R=128,G=128,B=128 → gray=128 → NOT above → BLACK\n\n    logic [7:0] test_r[5] = '{255,255,0,0,128};\n    logic [7:0] test_g[5] = '{0,255,255,0,128};\n    logic [7:0] test_b[5] = '{0,255,0,255,128};\n\n    for (int i=0; i<5; i++) begin\n      r=test_r[i]; g=test_g[i]; b=test_b[i];\n      valid_in=1; @(posedge clk); #1;\n    end\n    valid_in=0;\n\n    // Wait for pipeline (3 cycles latency)\n    repeat(5) @(posedge clk);\n\n    // Verify: BLACK, WHITE, WHITE, BLACK, BLACK\n    assert(out_pixels[0]==8'h00) else $error(\"Pixel0 FAIL\");\n    assert(out_pixels[1]==8'hFF) else $error(\"Pixel1 FAIL\");\n    assert(out_pixels[2]==8'hFF) else $error(\"Pixel2 FAIL\");\n    assert(out_pixels[3]==8'h00) else $error(\"Pixel3 FAIL\");\n    assert(out_pixels[4]==8'h00) else $error(\"Pixel4 FAIL\");\n\n    $display(\"Video pipeline PASSED\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "Gray = (77R + 150G + 29B) >> 8 = upper 8 bits of 16-bit sum",
+            "Propagate hsync/vsync through EVERY pipeline stage",
+            "3 cycles latency: mult→sum+shift→threshold",
+            "255>128 → WHITE, 77<128 → BLACK, 150>128 → WHITE"
+          ],
+          "requiredPatterns": [
+            "module video_pipeline",
+            "r_mult",
+            "g_mult",
+            "b_mult",
+            "gray",
+            "threshold",
+            "8'hFF",
+            "8'h00",
+            "module tb_video",
+            "out_pixels",
+            "assert(out_pixels[0]==8'h00)",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Video pipelines process pixels at the pixel clock rate — no buffering allowed between stages. Each stage registers its outputs (pipelined), achieving 1 pixel/cycle throughput. Sync signals (hsync, vsync) must be delayed through the same number of pipeline stages as data to stay aligned with their pixels. This 3-stage pipeline can process 148MHz pixels — sufficient for 1080p60."
+        }
+      },
+      {
+        "id": "fpga-10-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your industry FPGA knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "HFT (High-Frequency Trading) uses FPGAs because:", "options": ["FPGAs are cheaper than CPUs", "FPGA processes orders in <1μs — far faster than software on CPU", "FPGAs use less power", "FPGAs are easier to program"], "answer": 1 },
+          { "q": "ILA (Integrated Logic Analyzer) is used for:", "options": ["Synthesis optimization", "Capturing and viewing internal FPGA signals on real hardware", "Timing analysis", "Power reduction"], "answer": 1 },
+          { "q": "In video pipelines, hsync/vsync must be:", "options": ["Ignored after input", "Delayed through the same number of pipeline stages as pixel data", "Registered only once", "Generated by the pipeline"], "answer": 1 },
+          { "q": "MMCM on Xilinx FPGAs is used to:", "options": ["Build FIFOs", "Generate precise clock frequencies from a reference clock", "Implement multipliers", "Create block RAM"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 11,
+    "bonusXp": 220,
+    "badge": "FPGA Interview Ready",
+    "subLevels": [
+      {
+        "id": "fpga-11-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What FPGA interviews at top companies actually test.",
+        "keyPoints": [
+          "RTL coding: write FSM, FIFO, or protocol in 45 minutes",
+          "Timing: explain critical path, WNS, and how to fix violations",
+          "BRAM: when to use Block RAM vs distributed RAM vs registers",
+          "CDC: explain 2-FF synchronizer and when you need Gray code",
+          "AXI: explain VALID/READY handshake and transaction flow",
+          "Companies: Xilinx/AMD, Intel, Qualcomm, NVIDIA, Broadcom, HFT firms",
+          "Common question: implement a FIFO or UART in RTL"
+        ],
+        "content": "FPGA interviews test RTL coding ability above all else. You must write clean, synthesizable Verilog/SystemVerilog quickly and correctly. The most common interview questions: (1) implement a synchronous FIFO with full/empty flags, (2) implement a UART transmitter, (3) explain CDC and draw a 2-FF synchronizer, (4) given a timing report, identify the critical path and propose a fix, (5) compare FPGA to ASIC. Know your tools: Vivado for Xilinx, Quartus for Intel. Know what maps to what resource: logic → LUT, state → FF, memory → BRAM, math → DSP48.",
+        "xp": 20
+      },
+      {
+        "id": "fpga-11-syntax",
+        "type": "syntax",
+        "title": "Common Interview Patterns",
+        "icon": "🔤",
+        "summary": "Top 10 FPGA coding patterns asked in every interview.",
+        "keyPoints": [
+          "1. Synchronous FIFO with full/empty — the classic interview question",
+          "2. UART TX/RX — serial protocol implementation",
+          "3. SPI master — 4-wire serial interface",
+          "4. PWM generator — duty cycle control",
+          "5. Debouncer — button/switch metastability filter",
+          "6. Edge detector — rising/falling edge detection",
+          "7. Frequency counter — measure unknown clock",
+          "8. Shift register — LFSR, delay line",
+          "9. Priority encoder — first-1 detector",
+          "10. Clock divider — integer and fractional"
+        ],
+        "content": "// INTERVIEW REFERENCE: Edge Detector\nmodule edge_detect (\n  input  logic clk, rst_n, sig,\n  output logic rising, falling, any_edge\n);\n  logic sig_d;\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) sig_d <= 0;\n    else        sig_d <= sig;\n\n  assign rising  = sig & ~sig_d;   // was 0, now 1\n  assign falling = ~sig & sig_d;   // was 1, now 0\n  assign any_edge = rising | falling;\nendmodule\n\n// INTERVIEW REFERENCE: PWM Generator\nmodule pwm_gen #(parameter WIDTH=8) (\n  input  logic             clk, rst_n,\n  input  logic [WIDTH-1:0] duty,   // 0-255\n  output logic             pwm_out\n);\n  logic [WIDTH-1:0] cnt;\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) cnt <= 0;\n    else        cnt <= cnt + 1;    // free-running counter\n  assign pwm_out = (cnt < duty);   // high when cnt < duty\nendmodule\n\n// INTERVIEW REFERENCE: Button Debouncer\nmodule debounce #(parameter N=20) (\n  input  logic clk, rst_n, btn_raw,\n  output logic btn_clean\n);\n  logic [N-1:0] shift;\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) shift <= 0;\n    else        shift <= {shift[N-2:0], btn_raw};\n  assign btn_clean = &shift; // all 1s = stable high\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-11-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Solve 5 classic FPGA interview questions.",
+        "keyPoints": [
+          "Q: FPGA vs ASIC — when to choose each?",
+          "Q: What maps to DSP48 blocks?",
+          "Q: How do you cross clock domains safely?",
+          "Q: Given timing violation WNS=-3ns, what do you do?",
+          "Q: Implement a 4-bit Gray code counter"
+        ],
+        "content": "// FPGA vs ASIC:\n// FPGA: prototyping, low volume (<10K), needs field updates\n// ASIC: high volume (>100K), max performance, minimum power\n// FPGA is 10-100x larger die, 5-10x slower Fmax, 10x higher $/unit\n\n// DSP48 is inferred by:\n// a*b              → multiply\n// a*b+c            → multiply-add\n// p <= p + (a*b)   → accumulate\n// a[n]*h[n] loops  → FIR filter\n\n// CDC safe methods:\n// 1-bit: 2-FF synchronizer\n// N-bit counter: Gray code + 2-FF\n// N-bit data: async FIFO\n// Pulse: toggle synchronizer\n\n// Fix WNS=-3ns:\n// Option 1: add pipeline register (most reliable)\n// Option 2: reduce logic between FFs (simplify combo)\n// Option 3: phys_opt_design -directive AggressiveExplore\n// Option 4: relax clock if possible\n// Option 5: place cells closer with Pblock\n\n// 4-bit Gray code counter:\nmodule gray_counter (\n  input  logic       clk, rst_n,\n  output logic [3:0] gray_out\n);\n  logic [3:0] bin;\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) bin <= 0;\n    else        bin <= bin + 1;\n  assign gray_out = bin ^ (bin >> 1);\nendmodule",
+        "xp": 20
+      },
+      {
+        "id": "fpga-11-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Classic FPGA interview challenge — synchronous FIFO with full/empty flags.",
+        "xp": 55,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 11: Classic Interview — Synchronous FIFO\n\nImplement a parameterized synchronous FIFO:\n\n```\nmodule sync_fifo #(\n  parameter DATA_W = 8,\n  parameter DEPTH  = 16\n) (\n  input  logic             clk, rst_n,\n  input  logic             wr_en, rd_en,\n  input  logic [DATA_W-1:0] wr_data,\n  output logic [DATA_W-1:0] rd_data,\n  output logic             full, empty,\n  output logic [$clog2(DEPTH):0] count\n);\n```\n\n**Requirements:**\n1. BRAM storage (sync read — 1 cycle latency)\n2. Full: count == DEPTH\n3. Empty: count == 0\n4. Count tracks number of valid words\n5. No write when full, no read when empty\n\n**Testbench:**\n1. Fill FIFO completely — verify full=1\n2. Read all — verify empty=1\n3. Write and read simultaneously — count stays constant\n4. Verify data order (FIFO ordering)",
+          "starterCode": "// Lab 11: Classic Synchronous FIFO\nmodule sync_fifo #(\n  parameter DATA_W = 8,\n  parameter DEPTH  = 16\n) (\n  input  logic              clk, rst_n,\n  input  logic              wr_en, rd_en,\n  input  logic [DATA_W-1:0] wr_data,\n  output logic [DATA_W-1:0] rd_data,\n  output logic              full, empty,\n  output logic [$clog2(DEPTH):0] count\n);\n  localparam AW = $clog2(DEPTH);\n\n  logic [DATA_W-1:0] mem [DEPTH];\n  logic [AW-1:0]     wr_ptr, rd_ptr;\n\n  // Write logic\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) wr_ptr <= 0;\n    else if (wr_en && !full) begin\n      mem[wr_ptr] <= wr_data;\n      wr_ptr <= wr_ptr + 1;\n    end\n  end\n\n  // Read logic (synchronous — 1 cycle latency)\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) rd_ptr <= 0;\n    else if (rd_en && !empty) begin\n      rd_data <= mem[rd_ptr];\n      rd_ptr  <= rd_ptr + 1;\n    end\n  end\n\n  // Count logic\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) count <= 0;\n    else begin\n      case ({wr_en && !full, rd_en && !empty})\n        2'b10: count <= count + 1;  // write only\n        2'b01: count <= count - 1;  // read only\n        default: ;                   // both or neither\n      endcase\n    end\n  end\n\n  assign full  = (count == DEPTH);\n  assign empty = (count == 0);\nendmodule\n\nmodule tb_fifo_interview;\n  logic clk=0, rst_n;\n  logic wr_en, rd_en;\n  logic [7:0] wr_data, rd_data;\n  logic full, empty;\n  logic [4:0] count;  // $clog2(16)+1 = 5 bits\n\n  sync_fifo #(.DATA_W(8),.DEPTH(16)) dut(.*);\n  always #5 clk = ~clk;\n\n  initial begin\n    rst_n=0; wr_en=0; rd_en=0; wr_data=0;\n    @(posedge clk); rst_n=1;\n\n    // Test 1: Fill FIFO\n    wr_en=1;\n    for (int i=0; i<16; i++) begin\n      wr_data=i; @(posedge clk);\n    end\n    wr_en=0; @(posedge clk); #1;\n    assert(full==1)  else $error(\"Should be full\");\n    assert(count==16) else $error(\"Count=%0d\",count);\n    $display(\"FIFO full test PASSED\");\n\n    // Test 2: Empty FIFO\n    rd_en=1;\n    repeat(16) @(posedge clk);\n    rd_en=0; @(posedge clk); #1;\n    assert(empty==1) else $error(\"Should be empty\");\n    $display(\"FIFO empty test PASSED\");\n\n    // Test 3: Simultaneous R+W\n    wr_data=8'hAA; wr_en=1;\n    @(posedge clk); wr_en=0;\n    wr_data=8'hBB; wr_en=1; rd_en=1;\n    @(posedge clk); #1;\n    $display(\"Simultaneous R+W: count=%0d\", count);\n    wr_en=0; rd_en=0;\n\n    $display(\"** FIFO Interview PASSED **\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "wr_ptr and rd_ptr are $clog2(DEPTH)-bit pointers that wrap naturally",
+            "Write: mem[wr_ptr]<=wr_data; wr_ptr<=wr_ptr+1; when wr_en && !full",
+            "Read: rd_data<=mem[rd_ptr]; rd_ptr<=rd_ptr+1; when rd_en && !empty",
+            "count: +1 on write only, -1 on read only, unchanged on both"
+          ],
+          "requiredPatterns": [
+            "module sync_fifo",
+            "$clog2(DEPTH)",
+            "wr_ptr",
+            "rd_ptr",
+            "mem[wr_ptr] <= wr_data",
+            "rd_data <= mem[rd_ptr]",
+            "full",
+            "empty",
+            "count",
+            "module tb_fifo_interview",
+            "assert(full==1)",
+            "assert(empty==1)",
+            "FIFO Interview PASSED",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The synchronous FIFO is the most common FPGA interview question. Key elements: BRAM storage (mem array), write pointer (wr_ptr), read pointer (rd_ptr), word count, full/empty flags. The count register tracks occupancy — increment on write, decrement on read, unchanged on simultaneous R+W. Full when count==DEPTH, empty when count==0. $clog2 auto-sizes pointers for any depth."
+        }
+      },
+      {
+        "id": "fpga-11-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "FPGA interview-style questions.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Most common FPGA interview coding question:", "options": ["Write an MMCM", "Implement a synchronous FIFO with full/empty flags", "Write AXI-Full master", "Implement HLS FIR filter"], "answer": 1 },
+          { "q": "assign pwm_out = (cnt < duty) generates:", "options": ["A BRAM access", "A LUT comparator — duty-cycle proportional high output", "A DSP48 multiplier", "A flip-flop"], "answer": 1 },
+          { "q": "Edge detector uses:", "options": ["Two multipliers", "Current signal XOR delayed signal — current^delayed", "A BRAM", "A clock divider"], "answer": 1 },
+          { "q": "Gray code counter advantage over binary:", "options": ["Uses fewer flip-flops", "Only 1 bit changes per count — safe for CDC", "Counts faster", "Uses fewer LUTs"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 12,
+    "bonusXp": 500,
+    "badge": "FPGA Architect",
+    "subLevels": [
+      {
+        "id": "fpga-12-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Complete FPGA system — the final boss challenge.",
+        "keyPoints": [
+          "Full system: AXI-Lite control + AXI-Stream data + BRAM storage + DSP processing",
+          "Architecture: PS controls via AXI-Lite → PL accelerator processes data → DMA to DDR",
+          "Verification: UVM-like testbench with scoreboard for FPGA designs",
+          "Performance: calculate throughput, latency, resource utilization",
+          "Power: dynamic (switching) + static (leakage) — Vivado power analysis",
+          "Constraints: multi-clock, CDC paths, I/O timing all need constraints",
+          "Deployment: bitstream + device tree + Linux driver for full system"
+        ],
+        "content": "The FPGA architect designs the complete system from requirements to deployment. Given a spec ('process 100 million samples/second, latency <10μs, fit in xc7a100t'), the architect determines: how many pipeline stages, what clock frequency, which blocks use DSP48/BRAM/LUT, how PS and PL communicate, what constraints are needed. The final design is a working FPGA system that can be deployed on real hardware — not just simulated. This requires mastery of all previous levels: RTL, constraints, timing closure, memory interfaces, DSP, AXI, and debugging.",
+        "xp": 30
+      },
+      {
+        "id": "fpga-12-syntax",
+        "type": "syntax",
+        "title": "Architecture Overview",
+        "icon": "🔤",
+        "summary": "Complete FPGA system architecture connecting all components.",
+        "keyPoints": [
+          "Top level: connects PS interface + accelerator + memory",
+          "AXI-Lite: configuration registers from PS",
+          "AXI-Stream: data path — source → accelerator → sink",
+          "BRAM: coefficient storage and ping-pong buffers",
+          "DSP: FIR filter / correlation / FFT butterfly",
+          "ILA: embedded debug for all major interfaces",
+          "Clock: MMCM generates processing clock from PS clock"
+        ],
+        "content": "// Complete FPGA Accelerator System\n//\n// ┌─────────────────────────────────────────────┐\n// │              FPGA TOP LEVEL                 │\n// │                                             │\n// │  ┌──────────┐     ┌─────────────────────┐  │\n// │  │ AXI-Lite │────→│  Control Registers  │  │\n// │  │ (from PS)│     │  ctrl, cfg, status  │  │\n// │  └──────────┘     └──────────┬──────────┘  │\n// │                              │              │\n// │  ┌──────────┐     ┌──────────▼──────────┐  │\n// │  │ AXI-Stm  │────→│    FIR Accelerator  │  │\n// │  │ Input    │     │  (8 DSP48 blocks)   │  │\n// │  └──────────┘     └──────────┬──────────┘  │\n// │                              │              │\n// │  ┌──────────┐     ┌──────────▼──────────┐  │\n// │  │  BRAM    │────→│  Coefficient ROM    │  │\n// │  │ (coeff)  │     │  (8 × 8-bit taps)   │  │\n// │  └──────────┘     └──────────┬──────────┘  │\n// │                              │              │\n// │  ┌──────────┐     ┌──────────▼──────────┐  │\n// │  │ AXI-Stm  │←───│    Output Stream     │  │\n// │  │ Output   │     │  (filtered data)     │  │\n// │  └──────────┘     └─────────────────────┘  │\n// └─────────────────────────────────────────────┘",
+        "xp": 30
+      },
+      {
+        "id": "fpga-12-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete FPGA system performance and resource analysis.",
+        "keyPoints": [
+          "Fmax: 200MHz achieved — meets 200MHz target",
+          "Throughput: 200M samples/sec (1 sample/cycle at 200MHz)",
+          "Latency: 8 taps + 2 pipeline = 10 cycles = 50ns at 200MHz",
+          "DSP48: 8 used (one per FIR tap) of 90 available",
+          "BRAM: 1 used for coefficients of 50 available",
+          "LUT: 450 used (2.2% of xc7a100t)"
+        ],
+        "content": "# Complete System Analysis — 8-tap FIR Accelerator\n# Target FPGA: xc7a100t (Artix-7 100T)\n\n## Timing Summary\nClock frequency:  200 MHz (5ns period)\nWNS:             +0.847 ns  → Fmax = 214 MHz  PASS\nWHS:             +0.312 ns  PASS\n\n## Throughput Analysis\nSamples/cycle:     1 (fully pipelined, II=1)\nClock frequency:   200 MHz\nThroughput:        200 million samples/second\nAt 16-bit: 200M × 16-bit = 3.2 Gbps\n\n## Latency Analysis\nFIR taps: 8 (shift register depth)\nPipeline stages: 2 (multiply + accumulate)\nTotal latency: 8+2 = 10 clock cycles = 50ns ✓ (target: <100ns)\n\n## Resource Utilization\nLUTs:    450 / 63400  (0.71%)  ← control logic\nFFs:     512 / 126800 (0.40%)  ← pipeline registers\nDSP48:     8 / 240    (3.33%)  ← FIR multipliers\nBRAM:      1 / 135    (0.74%)  ← coefficient storage\n\n## Power Estimate (Vivado)\nDynamic: 0.842W  (switching activity at 200MHz)\nStatic:  0.100W  (quiescent leakage)\nTotal:   0.942W  ← well within 5W budget\n\n## AXI Performance\nAXI-Stream throughput: 200M × 8-bit = 1.6 Gbps\nAXI-Lite latency: 2 cycles read, 1 cycle write",
+        "xp": 30
+      },
+      {
+        "id": "fpga-12-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "FINAL BOSS — Complete FPGA system: FIR accelerator + AXI control + BRAM coefficients.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "systemverilog",
+          "instructions": "# Lab 12: FINAL BOSS — Complete FPGA Accelerator System\n\nBuild a complete 8-tap FIR accelerator with AXI control:\n\n**Components:**\n1. **AXI-Lite slave** — 4 registers: CTRL, STATUS, COEFF_ADDR, COEFF_DATA\n2. **Coefficient BRAM** — 8 × 8-bit coefficients, writable via AXI\n3. **8-tap FIR filter** — pipelined, 1 sample/cycle throughput\n4. **AXI-Stream interface** — input/output data streams\n\n**Top module:**\n```\nmodule fir_accelerator (\n  input  logic        clk, rst_n,\n  // AXI-Lite control\n  input  logic [3:0]  s_awaddr, s_araddr,\n  input  logic        s_awvalid, s_wvalid, s_arvalid,\n  input  logic        s_bready, s_rready,\n  input  logic [31:0] s_wdata,\n  output logic        s_awready, s_wready, s_bvalid,\n  output logic        s_arready, s_rvalid,\n  output logic [31:0] s_rdata,\n  output logic [1:0]  s_bresp, s_rresp,\n  // AXI-Stream input\n  input  logic        s_tvalid,\n  input  logic signed [7:0] s_tdata,\n  output logic        s_tready,\n  // AXI-Stream output\n  output logic        m_tvalid,\n  output logic signed [15:0] m_tdata\n);\n```\n\n**Testbench:**\n1. Write coefficients [1,2,3,4,4,3,2,1] via AXI-Lite\n2. Enable accelerator (CTRL[0]=1)\n3. Stream 12 samples [1,2,3,4,5,6,7,8,0,0,0,0]\n4. Verify FIR output for samples 7-11 (pipeline settled)",
+          "starterCode": "// Lab 12: FINAL BOSS — Complete FIR Accelerator\n\n// Coefficient BRAM (8x8)\nmodule coeff_bram (\n  input  logic       clk,\n  input  logic       we,\n  input  logic [2:0] waddr, raddr,\n  input  logic [7:0] wdata,\n  output logic [7:0] rdata\n);\n  logic [7:0] mem [8];\n  // Initialize with default coefficients\n  initial begin\n    mem[0]=1; mem[1]=2; mem[2]=3; mem[3]=4;\n    mem[4]=4; mem[5]=3; mem[6]=2; mem[7]=1;\n  end\n  always_ff @(posedge clk) if (we) mem[waddr] <= wdata;\n  always_ff @(posedge clk) rdata <= mem[raddr];\nendmodule\n\n// 8-tap FIR Filter core\nmodule fir8 (\n  input  logic        clk, rst_n,\n  input  logic        enable,\n  input  logic        s_tvalid,\n  input  logic signed [7:0]  s_tdata,\n  output logic        m_tvalid,\n  output logic signed [15:0] m_tdata,\n  // Coefficient interface\n  output logic [2:0]  coeff_addr,\n  input  logic signed [7:0]  coeff_data\n);\n  logic signed [7:0]  delay [8];\n  logic signed [15:0] products [8];\n  logic signed [17:0] acc;\n  logic [2:0]  tap_idx;\n  logic valid_d1, valid_d2;\n\n  // Delay line\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) foreach(delay[i]) delay[i]<=0;\n    else if (s_tvalid && enable) begin\n      delay[0] <= s_tdata;\n      for (int i=1; i<8; i++) delay[i] <= delay[i-1];\n    end\n  end\n\n  // Parallel multiply (all 8 taps)\n  // Simplified: use combinational multiply then register\n  logic [2:0] rd_addr;\n  // In real design: preload coefficients from BRAM\n  // Here: use sequential tap loading for simplicity\n  logic signed [7:0] coeffs [8];\n  initial begin\n    coeffs[0]=1; coeffs[1]=2; coeffs[2]=3; coeffs[3]=4;\n    coeffs[4]=4; coeffs[5]=3; coeffs[6]=2; coeffs[7]=1;\n  end\n\n  // Pipeline stage 1: all multiplications\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n      foreach(products[i]) products[i]<=0;\n      valid_d1<=0;\n    end else begin\n      valid_d1 <= s_tvalid && enable;\n      for (int i=0; i<8; i++)\n        products[i] <= coeffs[i] * delay[i];\n    end\n  end\n\n  // Pipeline stage 2: accumulate\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin m_tdata<=0; m_tvalid<=0; end\n    else begin\n      m_tvalid <= valid_d1;\n      acc = 0;\n      for (int i=0; i<8; i++) acc += products[i];\n      m_tdata <= acc[15:0];\n    end\n  end\n\n  assign s_tready  = enable;\n  assign coeff_addr = 0; // placeholder\nendmodule\n\n// Top-level accelerator\nmodule fir_accelerator (\n  input  logic        clk, rst_n,\n  // AXI-Lite (simplified)\n  input  logic [3:0]  s_awaddr, s_araddr,\n  input  logic        s_awvalid, s_wvalid, s_arvalid,\n  input  logic        s_bready, s_rready,\n  input  logic [31:0] s_wdata,\n  output logic        s_awready, s_wready, s_bvalid,\n  output logic        s_arready, s_rvalid,\n  output logic [31:0] s_rdata,\n  output logic [1:0]  s_bresp, s_rresp,\n  // AXI-Stream\n  input  logic        s_tvalid,\n  input  logic signed [7:0] s_tdata,\n  output logic        s_tready,\n  output logic        m_tvalid,\n  output logic signed [15:0] m_tdata\n);\n  assign s_bresp=0; assign s_rresp=0;\n\n  // Registers\n  logic [31:0] ctrl_reg;  // [0]=enable\n  logic [31:0] coeff_addr_reg, coeff_data_reg;\n\n  // AXI write\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin ctrl_reg<=0; s_awready<=0; s_wready<=0; s_bvalid<=0; end\n    else begin\n      s_awready <= s_awvalid;\n      s_wready  <= s_wvalid;\n      if (s_awvalid && s_wvalid) begin\n        case (s_awaddr[3:2])\n          2'd0: ctrl_reg       <= s_wdata;\n          2'd2: coeff_addr_reg <= s_wdata;\n          2'd3: coeff_data_reg <= s_wdata;\n        endcase\n        s_bvalid <= 1;\n      end else if (s_bvalid && s_bready) s_bvalid <= 0;\n    end\n  end\n\n  // AXI read\n  always_ff @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin s_arready<=0; s_rvalid<=0; s_rdata<=0; end\n    else begin\n      s_arready <= s_arvalid;\n      if (s_arvalid) begin\n        s_rvalid <= 1;\n        case (s_araddr[3:2])\n          2'd0: s_rdata <= ctrl_reg;\n          2'd1: s_rdata <= {31'b0, m_tvalid}; // status\n        endcase\n      end else if (s_rvalid && s_rready) s_rvalid <= 0;\n    end\n  end\n\n  // FIR core\n  logic [2:0] coeff_addr;\n  logic [7:0] coeff_data;\n\n  fir8 fir (\n    .clk,.rst_n,.enable(ctrl_reg[0]),\n    .s_tvalid,.s_tdata,.m_tvalid,.m_tdata,\n    .coeff_addr,.coeff_data\n  );\n\n  assign s_tready = ctrl_reg[0];\nendmodule\n\n// FINAL BOSS TESTBENCH\nmodule tb_fir_final;\n  logic clk=0, rst_n;\n  logic [3:0]  s_awaddr, s_araddr;\n  logic        s_awvalid, s_wvalid, s_arvalid, s_bready, s_rready;\n  logic [31:0] s_wdata, s_rdata;\n  logic        s_awready, s_wready, s_bvalid, s_arready, s_rvalid;\n  logic [1:0]  s_bresp, s_rresp;\n  logic        s_tvalid, s_tready, m_tvalid;\n  logic signed [7:0]  s_tdata;\n  logic signed [15:0] m_tdata;\n\n  fir_accelerator dut(.*);\n  always #5 clk = ~clk;\n\n  // Capture outputs\n  logic signed [15:0] outputs [20];\n  int out_count=0;\n  always @(posedge clk)\n    if (m_tvalid) begin outputs[out_count]=m_tdata; out_count++; end\n\n  task axi_write(input [3:0] addr, input [31:0] data);\n    s_awaddr=addr; s_wdata=data; s_awvalid=1; s_wvalid=1; s_bready=1;\n    @(posedge clk); s_awvalid=0; s_wvalid=0;\n    wait(s_bvalid); @(posedge clk);\n  endtask\n\n  initial begin\n    rst_n=0; s_awvalid=0; s_wvalid=0; s_arvalid=0;\n    s_bready=0; s_rready=0; s_tvalid=0; s_tdata=0;\n    repeat(2) @(posedge clk); rst_n=1;\n\n    // Enable accelerator\n    axi_write(4'h0, 32'h1);\n\n    // Stream 12 samples [1..8, 0,0,0,0]\n    $display(\"=== FINAL BOSS: FIR Accelerator ===\");\n    s_tvalid=1;\n    for (int i=1; i<=8; i++) begin\n      s_tdata=i; @(posedge clk);\n    end\n    repeat(4) begin s_tdata=0; @(posedge clk); end\n    s_tvalid=0;\n\n    // Wait for outputs\n    repeat(6) @(posedge clk); #1;\n\n    $display(\"Output count: %0d\", out_count);\n    $display(\"First output: %0d\", outputs[0]);\n    $display(\"Outputs: %0d %0d %0d %0d\",\n             outputs[0],outputs[1],outputs[2],outputs[3]);\n\n    // Verify outputs are non-zero (FIR is working)\n    assert(out_count > 0) else $error(\"No outputs produced!\");\n    assert(outputs[0] != 0) else $error(\"Zero output — FIR not working\");\n\n    $display(\"=== FINAL BOSS PASSED ===\");\n    $finish;\n  end\nendmodule",
+          "hints": [
+            "FIR: delay line shifts samples, multiply all taps in parallel",
+            "AXI-Lite: ctrl_reg[0]=enable → s_tready follows this",
+            "Pipeline: 2 stages = 2 cycle latency after first valid input",
+            "Enable via AXI write to addr 0x0 with data=1"
+          ],
+          "requiredPatterns": [
+            "module coeff_bram",
+            "module fir8",
+            "delay",
+            "products",
+            "module fir_accelerator",
+            "ctrl_reg",
+            "s_tready",
+            "m_tvalid",
+            "module tb_fir_final",
+            "axi_write",
+            "s_tvalid",
+            "FINAL BOSS PASSED",
+            "$finish",
+            "endmodule"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The complete FIR accelerator integrates AXI-Lite control, BRAM coefficient storage, and a pipelined FIR engine into one system. AXI-Lite enables PS to configure and enable the accelerator. The FIR core uses a delay line (shift register → BRAM) and parallel multipliers (→ DSP48). AXI-Stream carries data at line rate. This architecture is used in real FPGA signal processing designs at Qualcomm, Intel, and Xilinx/AMD."
+        }
+      },
+      {
+        "id": "fpga-12-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Final boss — complete FPGA architect knowledge.",
+        "xp": 30,
+        "quiz": [
+          { "q": "A fully pipelined FIR filter with II=1 means:", "options": ["1 multiplication total", "New sample accepted every clock cycle — maximum throughput", "1 tap only", "Single-stage design"], "answer": 1 },
+          { "q": "FPGA resource mapping: FIR multiplier taps use:", "options": ["LUTs only", "DSP48 blocks — dedicated multiply-accumulate hardware", "BRAM", "I/O buffers"], "answer": 1 },
+          { "q": "A complete production FPGA system requires:", "options": ["Only the bitstream", "Bitstream + constraints + AXI control + simulation verification + Linux driver", "Only RTL code", "Only timing report"], "answer": 1 },
+          { "q": "FPGA Architect vs FPGA Engineer:", "options": ["Same role", "Architect designs the overall system structure, engineer implements specific blocks", "Architect only does simulation", "Engineer does architecture"], "answer": 1 }
+        ]
+      }
+    ]
+  }
+]

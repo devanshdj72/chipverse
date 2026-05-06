@@ -1,0 +1,250 @@
+[
+  {
+    "id": "rtl",
+    "name": "RTL Design",
+    "iconType": "rtl",
+    "color": "#00f5ff",
+    "tagline": "Design digital hardware using Verilog/SystemVerilog.",
+    "salaryMin": 6,
+    "salaryMax": 22,
+    "salaryDisplay": "\u20b96 \u2013 \u20b922 LPA",
+    "roadmap": "4\u20138 Months",
+    "roadmapMonths": 6,
+    "difficulty": 2,
+    "difficultyLabel": "Medium",
+    "prereqs": [
+      "Digital Logic",
+      "Verilog"
+    ],
+    "companies": [
+      "Qualcomm",
+      "Intel",
+      "AMD",
+      "MediaTek"
+    ],
+    "route": "/path/rtl",
+    "btnLabel": "Explore RTL Path",
+    "tags": [
+      "beginner",
+      "coding"
+    ],
+    "recommended": "ECE Student"
+  },
+  {
+    "id": "verification",
+    "name": "Verification",
+    "iconType": "verification",
+    "color": "#a855f7",
+    "tagline": "Verify chip functionality before fabrication.",
+    "salaryMin": 7,
+    "salaryMax": 28,
+    "salaryDisplay": "\u20b97 \u2013 \u20b928 LPA",
+    "roadmap": "6\u201310 Months",
+    "roadmapMonths": 8,
+    "difficulty": 3,
+    "difficultyLabel": "Medium-High",
+    "prereqs": [
+      "RTL Basics",
+      "SystemVerilog"
+    ],
+    "companies": [
+      "NVIDIA",
+      "Intel",
+      "MediaTek",
+      "Synopsys",
+      "Cadence"
+    ],
+    "route": "/path/verification",
+    "btnLabel": "Explore Verification Path",
+    "tags": [
+      "coding"
+    ],
+    "recommended": "Coder"
+  },
+  {
+    "id": "physical-design",
+    "name": "Physical Design",
+    "iconType": "pd",
+    "color": "#3b82f6",
+    "tagline": "Transform RTL into silicon-ready chip layout.",
+    "salaryMin": 8,
+    "salaryMax": 30,
+    "salaryDisplay": "\u20b98 \u2013 \u20b930 LPA",
+    "roadmap": "8\u201312 Months",
+    "roadmapMonths": 10,
+    "difficulty": 4,
+    "difficultyLabel": "High",
+    "prereqs": [
+      "ASIC Flow",
+      "Linux",
+      "STA"
+    ],
+    "companies": [
+      "Qualcomm",
+      "Apple",
+      "MediaTek",
+      "Intel",
+      "NVIDIA"
+    ],
+    "route": "/path/physical-design",
+    "btnLabel": "Explore PD Path",
+    "tags": [
+      "hardware"
+    ],
+    "recommended": "Design Oriented"
+  },
+  {
+    "id": "analog",
+    "name": "Analog IC Design",
+    "iconType": "analog",
+    "color": "#f59e0b",
+    "tagline": "Design amplifiers, PLLs, ADCs, DACs.",
+    "salaryMin": 10,
+    "salaryMax": 35,
+    "salaryDisplay": "\u20b910 \u2013 \u20b935 LPA",
+    "roadmap": "10\u201318 Months",
+    "roadmapMonths": 14,
+    "difficulty": 5,
+    "difficultyLabel": "Very High",
+    "prereqs": [
+      "Analog Electronics",
+      "MOS Physics"
+    ],
+    "companies": [
+      "Texas Instruments",
+      "ADI",
+      "MediaTek",
+      "Qualcomm"
+    ],
+    "route": "/path/analog",
+    "btnLabel": "Explore Analog Path",
+    "tags": [
+      "hardware"
+    ],
+    "recommended": "Circuits Lover"
+  },
+  {
+    "id": "fpga",
+    "name": "FPGA Design",
+    "iconType": "fpga",
+    "color": "#10b981",
+    "tagline": "Build hardware on reconfigurable programmable chips.",
+    "salaryMin": 6,
+    "salaryMax": 20,
+    "salaryDisplay": "\u20b96 \u2013 \u20b920 LPA",
+    "roadmap": "4\u20137 Months",
+    "roadmapMonths": 5,
+    "difficulty": 2,
+    "difficultyLabel": "Medium",
+    "prereqs": [
+      "Verilog",
+      "Digital Logic"
+    ],
+    "companies": [
+      "AMD Xilinx",
+      "Lattice",
+      "Intel PSG",
+      "MediaTek"
+    ],
+    "route": "/path/fpga",
+    "btnLabel": "Explore FPGA Path",
+    "tags": [
+      "beginner",
+      "hardware"
+    ],
+    "recommended": null
+  },
+  {
+    "id": "dft",
+    "name": "DFT",
+    "iconType": "dft",
+    "color": "#ec4899",
+    "tagline": "Insert test logic for chip manufacturability.",
+    "salaryMin": 8,
+    "salaryMax": 25,
+    "salaryDisplay": "\u20b98 \u2013 \u20b925 LPA",
+    "roadmap": "6\u20139 Months",
+    "roadmapMonths": 7,
+    "difficulty": 3,
+    "difficultyLabel": "Medium-High",
+    "prereqs": [
+      "Digital Design",
+      "Scan Concepts"
+    ],
+    "companies": [
+      "Synopsys",
+      "Siemens Tessent",
+      "Qualcomm",
+      "MediaTek"
+    ],
+    "route": "/path/dft",
+    "btnLabel": "Explore DFT Path",
+    "tags": [
+      "hardware"
+    ],
+    "recommended": null
+  },
+  {
+    "id": "embedded",
+    "name": "Embedded Systems",
+    "iconType": "embedded",
+    "color": "#f97316",
+    "tagline": "Hardware + firmware integration for products.",
+    "salaryMin": 5,
+    "salaryMax": 22,
+    "salaryDisplay": "\u20b95 \u2013 \u20b922 LPA",
+    "roadmap": "4\u20138 Months",
+    "roadmapMonths": 6,
+    "difficulty": 2,
+    "difficultyLabel": "Medium",
+    "prereqs": [
+      "C",
+      "Controllers",
+      "Interfaces"
+    ],
+    "companies": [
+      "Bosch",
+      "Qualcomm",
+      "TI",
+      "MediaTek"
+    ],
+    "route": "/path/embedded",
+    "btnLabel": "Explore Embedded Path",
+    "tags": [
+      "beginner",
+      "coding"
+    ],
+    "recommended": null
+  },
+  {
+    "id": "research",
+    "name": "Semiconductor Research",
+    "iconType": "research",
+    "color": "#fbbf24",
+    "tagline": "Work on TFET, GAA, AI accelerators, advanced nodes.",
+    "salaryMin": 10,
+    "salaryMax": 40,
+    "salaryDisplay": "\u20b910 \u2013 \u20b940+ LPA",
+    "roadmap": "Long Term",
+    "roadmapMonths": 36,
+    "difficulty": 6,
+    "difficultyLabel": "Elite",
+    "prereqs": [
+      "Strong fundamentals",
+      "Research mindset"
+    ],
+    "companies": [
+      "TSMC",
+      "Intel",
+      "IMEC",
+      "MediaTek",
+      "Samsung"
+    ],
+    "route": "/path/research",
+    "btnLabel": "Explore Research Path",
+    "tags": [
+      "research"
+    ],
+    "recommended": null
+  }
+]

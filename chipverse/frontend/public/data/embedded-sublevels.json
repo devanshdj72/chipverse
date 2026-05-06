@@ -1,0 +1,1410 @@
+[
+  {
+    "levelId": 0,
+    "bonusXp": 80,
+    "badge": "Embedded Initiate",
+    "subLevels": [
+      {
+        "id": "emb-0-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What embedded systems are and how they differ from desktop computing.",
+        "keyPoints": [
+          "Embedded system: dedicated computer inside a product with a specific function",
+          "Examples: microwave, car ECU, smartwatch, router, medical device",
+          "Constraints: limited RAM (KB-MB), limited flash, low power, real-time requirements",
+          "Bare-metal: no OS, code runs directly on hardware",
+          "RTOS: Real-Time OS — lightweight OS with deterministic scheduling",
+          "MCU: Microcontroller Unit — CPU + RAM + Flash + peripherals on one chip",
+          "Popular families: ARM Cortex-M (STM32, NXP), AVR (Arduino), ESP32, PIC"
+        ],
+        "content": "Embedded systems are purpose-built computers that control physical devices. Unlike a PC that runs general software, an embedded system is tightly coupled to its hardware — it reads sensors, drives actuators, and communicates with the physical world. Constraints are severe: a typical MCU has 64KB-512KB of Flash for code, 8KB-256KB of RAM for data, and must run on milliwatts of power from a battery. This means every byte matters. C is the dominant language because it gives hardware-level control while remaining portable. ARM Cortex-M is the industry standard architecture — billions of devices use it.",
+        "xp": 20
+      },
+      {
+        "id": "emb-0-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Embedded C fundamentals — registers, bit manipulation, and volatile.",
+        "keyPoints": [
+          "volatile: tells compiler not to optimize away hardware register reads",
+          "uint8_t, uint32_t: fixed-width types — critical in embedded",
+          "Bit manipulation: SET bit n: reg |= (1<<n), CLEAR: reg &= ~(1<<n)",
+          "CHECK bit n: (reg >> n) & 1",
+          "Memory-mapped I/O: peripherals accessed like memory addresses",
+          "#define REG (*((volatile uint32_t*)0x40000000))",
+          "Bitfields: struct with : syntax for hardware register mapping"
+        ],
+        "content": "// Embedded C fundamentals\n#include <stdint.h>  // uint8_t, uint32_t etc.\n\n// Memory-mapped register access\n#define GPIOA_BASE    0x40020000UL\n#define GPIOA_MODER   (*((volatile uint32_t*)(GPIOA_BASE + 0x00)))\n#define GPIOA_ODR     (*((volatile uint32_t*)(GPIOA_BASE + 0x14)))\n\n// Bit manipulation macros\n#define SET_BIT(reg, bit)    ((reg) |=  (1UL << (bit)))\n#define CLEAR_BIT(reg, bit)  ((reg) &= ~(1UL << (bit)))\n#define READ_BIT(reg, bit)   (((reg) >> (bit)) & 1UL)\n#define TOGGLE_BIT(reg, bit) ((reg) ^=  (1UL << (bit)))\n\n// Bitfield struct for register mapping\ntypedef struct {\n  volatile uint32_t MODER;   // Mode register\n  volatile uint32_t OTYPER;  // Output type\n  volatile uint32_t OSPEEDR; // Speed\n  volatile uint32_t PUPDR;   // Pull-up/down\n  volatile uint32_t IDR;     // Input data\n  volatile uint32_t ODR;     // Output data\n} GPIO_TypeDef;\n\n#define GPIOA  ((GPIO_TypeDef*)GPIOA_BASE)\n\n// Configure PA5 as output\nGPIOA->MODER |= (1 << 10);  // bits [11:10] = 01 (output)\nGPIOA->MODER &= ~(1 << 11);\n// Toggle PA5\nGPIOA->ODR ^= (1 << 5);",
+        "xp": 20
+      },
+      {
+        "id": "emb-0-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace a bare-metal LED blink on STM32 step by step.",
+        "keyPoints": [
+          "Step 1: Enable GPIO clock in RCC register",
+          "Step 2: Configure GPIO pin as output",
+          "Step 3: Set/clear pin in output data register",
+          "Step 4: Software delay loop",
+          "Step 5: Repeat forever in main loop",
+          "Key: always enable peripheral clock before using it"
+        ],
+        "content": "// STM32 Bare-Metal LED Blink (no HAL, no libraries)\n// LED on PA5 (Nucleo board)\n\n#include <stdint.h>\n\n// RCC and GPIO register addresses\n#define RCC_AHB1ENR  (*((volatile uint32_t*)0x40023830))\n#define GPIOA_MODER  (*((volatile uint32_t*)0x40020000))\n#define GPIOA_ODR    (*((volatile uint32_t*)0x40020014))\n\nvoid delay(uint32_t count) {\n  while (count--) __asm(\"nop\"); // do nothing N times\n}\n\nint main(void) {\n  // Step 1: Enable GPIOA clock (bit 0 of AHB1ENR)\n  RCC_AHB1ENR |= (1 << 0);\n\n  // Step 2: Configure PA5 as output\n  // MODER bits [11:10] = 01 (general purpose output)\n  GPIOA_MODER |=  (1 << 10); // set bit 10\n  GPIOA_MODER &= ~(1 << 11); // clear bit 11\n\n  // Step 3: Blink forever\n  while (1) {\n    GPIOA_ODR |=  (1 << 5); // LED ON\n    delay(1000000);\n    GPIOA_ODR &= ~(1 << 5); // LED OFF\n    delay(1000000);\n  }\n  return 0;\n}\n// Key observations:\n// 1. Must enable clock before any GPIO operation\n// 2. volatile prevents compiler from removing register access\n// 3. Bit manipulation sets individual bits without affecting others\n// 4. No OS, no scheduler — this code runs forever",
+        "xp": 20
+      },
+      {
+        "id": "emb-0-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Write a GPIO bit manipulation library in C.",
+        "xp": 30,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 0: GPIO Bit Manipulation Library\n\nWrite a C library for GPIO pin control:\n\n```c\n// Simulate hardware registers\n#include <stdint.h>\n#include <stdio.h>\n\nuint32_t GPIO_ODR = 0;   // Output data register\nuint32_t GPIO_IDR = 0;   // Input data register\nuint32_t GPIO_MODER = 0; // Mode register\n\n// Functions to implement:\nvoid gpio_set_output(uint8_t pin);  // configure pin as output\nvoid gpio_set(uint8_t pin);         // set pin HIGH\nvoid gpio_clear(uint8_t pin);       // set pin LOW\nvoid gpio_toggle(uint8_t pin);      // toggle pin\nuint8_t gpio_read(uint8_t pin);     // read input pin\n```\n\nThen write a test:\n1. Configure pins 5 and 13 as outputs\n2. Set pin 5, clear pin 13\n3. Verify GPIO_ODR has bit 5 set and bit 13 clear\n4. Toggle pin 5 twice — verify it returns to original state\n5. Read GPIO_IDR bit 3 (simulate input=1 by setting IDR manually)",
+          "starterCode": "// Lab 0: GPIO Bit Manipulation Library\n#include <stdint.h>\n#include <stdio.h>\n#include <assert.h>\n\n// Simulated hardware registers\nuint32_t GPIO_ODR   = 0;\nuint32_t GPIO_IDR   = 0;\nuint32_t GPIO_MODER = 0;\n\n// Configure pin as output (MODER bits = 01)\nvoid gpio_set_output(uint8_t pin) {\n    // Set bit (pin*2), clear bit (pin*2+1)\n    // Your code here\n}\n\n// Set pin HIGH\nvoid gpio_set(uint8_t pin) {\n    // Your code here\n}\n\n// Set pin LOW\nvoid gpio_clear(uint8_t pin) {\n    // Your code here\n}\n\n// Toggle pin\nvoid gpio_toggle(uint8_t pin) {\n    // Your code here\n}\n\n// Read input pin (returns 0 or 1)\nuint8_t gpio_read(uint8_t pin) {\n    // Your code here\n    return 0;\n}\n\nint main(void) {\n    // Configure pins 5 and 13 as outputs\n    gpio_set_output(5);\n    gpio_set_output(13);\n\n    // Set pin 5, clear pin 13\n    gpio_set(5);\n    gpio_clear(13);\n\n    // Verify\n    assert((GPIO_ODR >> 5) & 1);   // pin 5 should be HIGH\n    assert(!((GPIO_ODR >> 13) & 1)); // pin 13 should be LOW\n    printf(\"GPIO_ODR = 0x%08X (pin5=1, pin13=0)\\n\", GPIO_ODR);\n\n    // Toggle pin 5 twice\n    uint32_t original = GPIO_ODR;\n    gpio_toggle(5);\n    gpio_toggle(5);\n    assert(GPIO_ODR == original);\n    printf(\"Double toggle: PASSED\\n\");\n\n    // Read input (simulate IDR bit 3 = 1)\n    GPIO_IDR = (1 << 3);\n    assert(gpio_read(3) == 1);\n    printf(\"GPIO read: PASSED\\n\");\n\n    printf(\"All GPIO tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "SET bit: GPIO_ODR |= (1U << pin);",
+            "CLEAR bit: GPIO_ODR &= ~(1U << pin);",
+            "TOGGLE bit: GPIO_ODR ^= (1U << pin);",
+            "READ bit: return (GPIO_IDR >> pin) & 1U;",
+            "MODER output: GPIO_MODER |= (1U << (pin*2)); GPIO_MODER &= ~(1U << (pin*2+1));"
+          ],
+          "requiredPatterns": [
+            "void gpio_set_output",
+            "void gpio_set",
+            "void gpio_clear",
+            "void gpio_toggle",
+            "gpio_read",
+            "1U <<",
+            "GPIO_ODR",
+            "assert",
+            "GPIO tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "GPIO control is pure bit manipulation. Set: OR with mask. Clear: AND with inverted mask. Toggle: XOR with mask. Read: shift right and AND with 1. The 1U (unsigned) prevents sign-extension bugs on 32-bit platforms. This pattern is the foundation of all embedded hardware control."
+        }
+      },
+      {
+        "id": "emb-0-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your embedded fundamentals.",
+        "xp": 25,
+        "quiz": [
+          { "q": "volatile keyword in embedded C means:", "options": ["The variable changes fast", "Do not optimize — always read from hardware register directly", "The variable is constant", "The variable is in RAM"], "answer": 1 },
+          { "q": "To set bit 5 of a register without affecting other bits:", "options": ["reg = (1 << 5)", "reg |= (1 << 5)", "reg &= (1 << 5)", "reg ^= 0"], "answer": 1 },
+          { "q": "uint32_t is preferred over int in embedded because:", "options": ["It is faster", "Fixed-width type — same size on all platforms, critical for hardware registers", "It uses less memory", "It supports negative numbers"], "answer": 1 },
+          { "q": "In a bare-metal embedded system:", "options": ["Linux kernel runs first", "Code runs directly on hardware with no operating system", "RTOS is mandatory", "Hardware handles everything automatically"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 1,
+    "bonusXp": 90,
+    "badge": "Peripheral Expert",
+    "subLevels": [
+      {
+        "id": "emb-1-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "UART, SPI, and I2C — the three fundamental MCU communication protocols.",
+        "keyPoints": [
+          "UART: asynchronous serial — TX/RX, no clock, fixed baud rate",
+          "SPI: synchronous serial — SCLK/MOSI/MISO/CS, full duplex, fast",
+          "I2C: two-wire — SDA/SCL, multi-master/multi-slave, addressed",
+          "UART baud rate: 9600, 115200, 921600 — must match on both ends",
+          "SPI modes: CPOL/CPHA defines clock polarity and phase",
+          "I2C address: 7-bit (128 devices) or 10-bit, pulled-up lines",
+          "HAL: Hardware Abstraction Layer — portable driver API"
+        ],
+        "content": "These three protocols appear in virtually every embedded system. UART is the simplest — two wires, no clock, data sent at fixed baud rate with start/stop bits. It's used for debug output, GPS modules, and Bluetooth modules. SPI is faster (MHz+) and full-duplex — the master generates clock and can read while writing. Used for fast sensors, displays, SD cards, and ADCs. I2C uses only two wires for multi-device communication — a 7-bit address identifies each device. Used for slower sensors (IMUs, temperature sensors, EEPROMs). Choosing the right protocol depends on speed requirements, pin count, and device support.",
+        "xp": 20
+      },
+      {
+        "id": "emb-1-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Protocol implementation patterns in C — UART, SPI, I2C.",
+        "keyPoints": [
+          "UART TX: wait TXE (TX empty), write to DR register",
+          "UART RX: wait RXNE (RX not empty), read from DR register",
+          "SPI transfer: write to DR, wait BSY flag, read DR",
+          "I2C write: START → address+W → data → STOP",
+          "I2C read: START → address+R → NACK on last byte → STOP",
+          "Timeout: always add timeout to avoid infinite loops",
+          "Ring buffer: circular buffer for UART RX interrupt handling"
+        ],
+        "content": "// UART bare-metal send/receive (STM32-style)\n#define USART2_SR   (*((volatile uint32_t*)0x40004400))\n#define USART2_DR   (*((volatile uint32_t*)0x40004404))\n#define TXE_BIT  7  // TX buffer empty\n#define RXNE_BIT 5  // RX not empty\n\nvoid uart_send_byte(uint8_t data) {\n    while (!((USART2_SR >> TXE_BIT) & 1)); // wait TX empty\n    USART2_DR = data;\n}\n\nuint8_t uart_recv_byte(void) {\n    while (!((USART2_SR >> RXNE_BIT) & 1)); // wait RX ready\n    return (uint8_t)USART2_DR;\n}\n\nvoid uart_print(const char* str) {\n    while (*str) uart_send_byte(*str++);\n}\n\n// SPI transfer (send and receive simultaneously)\nuint8_t spi_transfer(uint8_t data) {\n    while (!SPI_SR_TXE);   // wait TX empty\n    SPI_DR = data;          // send\n    while (SPI_SR_BSY);    // wait transfer complete\n    return SPI_DR;          // return received byte\n}\n\n// Ring buffer for UART RX interrupt\n#define RING_SIZE 64\nuint8_t ring_buf[RING_SIZE];\nvolatile uint8_t ring_head = 0, ring_tail = 0;\n\nvoid ring_push(uint8_t b) {\n    ring_buf[ring_head] = b;\n    ring_head = (ring_head + 1) % RING_SIZE;\n}\nuint8_t ring_pop(void) {\n    uint8_t b = ring_buf[ring_tail];\n    ring_tail = (ring_tail + 1) % RING_SIZE;\n    return b;\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-1-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read an I2C transaction trace for a temperature sensor.",
+        "keyPoints": [
+          "I2C START: SDA falls while SCL high",
+          "Address byte: 7-bit address + R/W bit",
+          "ACK: receiver pulls SDA low for 1 clock",
+          "NACK: SDA stays high — error or end of read",
+          "STOP: SDA rises while SCL high",
+          "LM75 temp sensor: addr 0x48, register 0x00 = temperature"
+        ],
+        "content": "// I2C Read from LM75 Temperature Sensor\n// Device address: 0x48 (7-bit)\n// Temperature register: 0x00\n// Returns 16-bit value, MSB first\n\n// Transaction trace:\n// [START]\n// [0x48<<1 | 0 = 0x90] [ACK]   ← write address\n// [0x00]               [ACK]   ← register pointer\n// [START] (repeated start)\n// [0x48<<1 | 1 = 0x91] [ACK]   ← read address\n// [MSB_DATA]           [ACK]   ← high byte (e.g. 0x18)\n// [LSB_DATA]           [NACK]  ← low byte (e.g. 0x00)\n// [STOP]\n//\n// Temperature calculation:\n// raw = (MSB << 8) | LSB\n// Temperature = raw >> 7  (LM75 is 9-bit, MSB=sign)\n// For 0x1800 raw: 0x1800 >> 7 = 0x30 = 48 → 24.0°C\n//   (each LSB = 0.5°C, so 48 * 0.5 = 24°C)\n\n// HAL-based read\nuint8_t buf[2];\nuint8_t reg = 0x00;\nHAL_I2C_Master_Transmit(&hi2c1, 0x90, &reg, 1, 100);\nHAL_I2C_Master_Receive(&hi2c1, 0x91, buf, 2, 100);\nint16_t raw = (buf[0] << 8) | buf[1];\nfloat temp = (raw >> 7) * 0.5f;\nprintf(\"Temperature: %.1f C\\n\", temp);",
+        "xp": 20
+      },
+      {
+        "id": "emb-1-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a ring buffer and UART driver in C.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 1: Ring Buffer + UART Driver\n\nImplement a ring buffer for UART reception:\n\n```c\n#define RING_SIZE 16\n\ntypedef struct {\n    uint8_t buf[RING_SIZE];\n    volatile uint8_t head;\n    volatile uint8_t tail;\n} RingBuffer;\n\nvoid     ring_init(RingBuffer* rb);\nvoid     ring_push(RingBuffer* rb, uint8_t byte);  // called from ISR\nint      ring_pop(RingBuffer* rb, uint8_t* byte);  // returns 0 if empty\nuint8_t  ring_available(RingBuffer* rb); // bytes available\nuint8_t  ring_full(RingBuffer* rb);\n```\n\nTest:\n1. Push 5 bytes: 'H','e','l','l','o'\n2. Verify ring_available() == 5\n3. Pop all 5 bytes and verify order ('H' first)\n4. Verify ring is empty after popping all\n5. Fill ring completely (16 bytes) — verify ring_full()==1\n6. Attempt push when full — must NOT overwrite data",
+          "starterCode": "// Lab 1: Ring Buffer\n#include <stdint.h>\n#include <stdio.h>\n#include <assert.h>\n#include <string.h>\n\n#define RING_SIZE 16\n\ntypedef struct {\n    uint8_t  buf[RING_SIZE];\n    volatile uint8_t head;  // write index\n    volatile uint8_t tail;  // read index\n} RingBuffer;\n\nvoid ring_init(RingBuffer* rb) {\n    rb->head = 0;\n    rb->tail = 0;\n    memset(rb->buf, 0, RING_SIZE);\n}\n\n// Returns 1 if full\nuint8_t ring_full(RingBuffer* rb) {\n    return ((rb->head + 1) % RING_SIZE) == rb->tail;\n}\n\n// Returns 0 if empty\nuint8_t ring_available(RingBuffer* rb) {\n    return (rb->head - rb->tail + RING_SIZE) % RING_SIZE;\n}\n\n// Push byte (from ISR) — drop if full\nvoid ring_push(RingBuffer* rb, uint8_t byte) {\n    if (ring_full(rb)) return; // drop if full\n    rb->buf[rb->head] = byte;\n    rb->head = (rb->head + 1) % RING_SIZE;\n}\n\n// Pop byte — returns 1 if successful, 0 if empty\nint ring_pop(RingBuffer* rb, uint8_t* byte) {\n    if (rb->head == rb->tail) return 0; // empty\n    *byte = rb->buf[rb->tail];\n    rb->tail = (rb->tail + 1) % RING_SIZE;\n    return 1;\n}\n\nint main(void) {\n    RingBuffer rb;\n    ring_init(&rb);\n\n    // Test 1: push 'Hello'\n    const char* msg = \"Hello\";\n    for (int i = 0; i < 5; i++) ring_push(&rb, msg[i]);\n    assert(ring_available(&rb) == 5);\n    printf(\"Available after push: %d\\n\", ring_available(&rb));\n\n    // Test 2: pop and verify order\n    uint8_t c;\n    for (int i = 0; i < 5; i++) {\n        assert(ring_pop(&rb, &c) == 1);\n        assert(c == msg[i]);\n        printf(\"Popped: %c\\n\", c);\n    }\n    assert(ring_available(&rb) == 0);\n    printf(\"Ring empty: PASSED\\n\");\n\n    // Test 3: fill completely\n    for (int i = 0; i < RING_SIZE-1; i++) ring_push(&rb, i);\n    assert(ring_full(&rb));\n    printf(\"Ring full: PASSED\\n\");\n\n    // Test 4: push when full — must not corrupt\n    uint8_t count_before = ring_available(&rb);\n    ring_push(&rb, 0xFF); // should be dropped\n    assert(ring_available(&rb) == count_before);\n    printf(\"Drop when full: PASSED\\n\");\n\n    printf(\"All ring buffer tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "full: ((head+1) % SIZE) == tail — one slot always empty",
+            "available: (head - tail + SIZE) % SIZE",
+            "push: buf[head]=byte; head=(head+1)%SIZE",
+            "pop: *byte=buf[tail]; tail=(tail+1)%SIZE; return 1"
+          ],
+          "requiredPatterns": [
+            "typedef struct",
+            "RingBuffer",
+            "ring_full",
+            "ring_available",
+            "ring_push",
+            "ring_pop",
+            "% RING_SIZE",
+            "assert",
+            "ring buffer tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A ring buffer (circular buffer) is the standard UART receive buffer. The head pointer advances on push (ISR writes here), tail advances on pop (main loop reads here). Full when head+1==tail (one slot wasted to distinguish full from empty). Drop when full prevents overwriting unread data. volatile head/tail ensures ISR and main code see consistent values."
+        }
+      },
+      {
+        "id": "emb-1-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your peripheral protocol knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "I2C uses how many wires?", "options": ["4 (SCLK, MOSI, MISO, CS)", "2 (SDA, SCL) — supports multiple devices on same bus", "1 (half-duplex)", "3 (TX, RX, CLK)"], "answer": 1 },
+          { "q": "SPI is preferred over I2C when:", "options": ["Power consumption matters", "High speed needed (MHz+) and pin count is not limited", "Many devices on one bus", "No clock is available"], "answer": 1 },
+          { "q": "In a ring buffer, volatile is needed on head/tail because:", "options": ["They are float types", "ISR and main code share them — compiler must not cache in registers", "They are large arrays", "volatile makes them faster"], "answer": 1 },
+          { "q": "UART baud rate mismatch causes:", "options": ["Slower communication", "Garbled data — bits sampled at wrong times", "No communication", "Higher power consumption"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 2,
+    "bonusXp": 100,
+    "badge": "Interrupt Engineer",
+    "subLevels": [
+      {
+        "id": "emb-2-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Interrupts — the foundation of responsive embedded systems.",
+        "keyPoints": [
+          "Interrupt: hardware signal that pauses main code to run ISR",
+          "ISR: Interrupt Service Routine — must be fast, no blocking",
+          "NVIC: Nested Vector Interrupt Controller (ARM Cortex-M)",
+          "Priority: lower number = higher priority (ARM convention)",
+          "Preemption: higher priority ISR interrupts lower priority ISR",
+          "Critical section: disable interrupts to protect shared data",
+          "IRQ latency: typically 12 cycles on Cortex-M (from signal to first ISR instruction)"
+        ],
+        "content": "Interrupts are what make embedded systems responsive. Without interrupts, you poll — constantly checking if a button is pressed or UART data arrived. With interrupts, the hardware tells you when something needs attention. The ISR runs immediately (12 cycles on Cortex-M), does the minimum necessary work, and returns. ISRs must never block — no while() waits, no malloc(), no printf(). Use flags or ring buffers to communicate between ISR and main loop. Critical sections (disable/enable interrupts) protect shared data from corruption when both ISR and main code access it.",
+        "xp": 20
+      },
+      {
+        "id": "emb-2-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "ISR implementation, critical sections, and interrupt-safe data sharing.",
+        "keyPoints": [
+          "ARM ISR: void EXTI0_IRQHandler(void) — specific function name",
+          "__disable_irq() / __enable_irq() — critical section",
+          "volatile flag: shared between ISR and main — must be volatile",
+          "atomic read: read volatile variable once into local copy",
+          "NVIC_SetPriority(IRQn, priority): set interrupt priority",
+          "NVIC_EnableIRQ(IRQn): enable interrupt in NVIC",
+          "pending flag: clear interrupt pending bit in ISR or it re-fires"
+        ],
+        "content": "// Interrupt-driven UART receive with flag\n#include <stdint.h>\n\nvolatile uint8_t  uart_rx_byte = 0;\nvolatile uint8_t  uart_rx_ready = 0;\n\n// ISR — called by hardware when UART byte received\nvoid USART2_IRQHandler(void) {\n    // Read byte (also clears interrupt flag)\n    uart_rx_byte  = USART2->DR;\n    uart_rx_ready = 1;  // signal main loop\n    // Keep ISR short — no processing here!\n}\n\n// Main loop\nint main(void) {\n    // ... setup UART with interrupt enabled ...\n\n    while (1) {\n        if (uart_rx_ready) {\n            uint8_t byte;\n            // Critical section: read shared variable atomically\n            __disable_irq();\n            byte          = uart_rx_byte;\n            uart_rx_ready = 0;\n            __enable_irq();\n\n            // Process byte (can take as long as needed)\n            process_byte(byte);\n        }\n        // Do other work here...\n    }\n}\n\n// Timer interrupt for periodic task\nvoid TIM2_IRQHandler(void) {\n    TIM2->SR &= ~(1 << 0);  // MUST clear interrupt flag first!\n    // 1ms tick handler\n    systick_count++;\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-2-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design an interrupt-driven button debouncer with timer.",
+        "keyPoints": [
+          "Button press: EXTI interrupt on falling edge",
+          "Start debounce timer (20ms)",
+          "Timer ISR: check button still pressed → confirm press",
+          "Flag set: main loop processes confirmed button press",
+          "State machine: IDLE → PRESSED → DEBOUNCING → CONFIRMED",
+          "This pattern eliminates mechanical bounce completely"
+        ],
+        "content": "// Interrupt-driven button debouncer\n// EXTI on PA0, Timer2 for 20ms debounce\n\ntypedef enum { IDLE, DEBOUNCING, CONFIRMED } btn_state_t;\nvolatile btn_state_t btn_state = IDLE;\nvolatile uint8_t     btn_pressed = 0;\n\n// EXTI ISR — fires on button falling edge\nvoid EXTI0_IRQHandler(void) {\n    EXTI->PR = (1 << 0); // clear pending bit\n    if (btn_state == IDLE) {\n        btn_state = DEBOUNCING;\n        // Start 20ms timer\n        TIM2->CNT = 0;\n        TIM2->CR1 |= TIM_CR1_CEN;\n    }\n}\n\n// Timer ISR — fires after 20ms\nvoid TIM2_IRQHandler(void) {\n    TIM2->SR &= ~TIM_SR_UIF; // clear flag\n    TIM2->CR1 &= ~TIM_CR1_CEN; // stop timer\n\n    // Check if button still pressed (active low)\n    if (!(GPIOA->IDR & (1 << 0))) {\n        btn_state  = CONFIRMED;\n        btn_pressed = 1; // signal main loop\n    } else {\n        btn_state = IDLE; // false press (bounce)\n    }\n}\n\n// Main loop\nwhile (1) {\n    if (btn_pressed) {\n        __disable_irq();\n        btn_pressed = 0;\n        btn_state   = IDLE;\n        __enable_irq();\n        // Handle button press\n        toggle_led();\n    }\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-2-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Simulate an interrupt-driven system with shared data protection.",
+        "xp": 35,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 2: Interrupt-Safe Event Queue\n\nSimulate an interrupt-driven system with an event queue:\n\n```c\n// Event types\ntypedef enum { EVT_NONE, EVT_BTN, EVT_UART, EVT_TIMER } event_t;\n\ntypedef struct {\n    event_t events[8];\n    volatile uint8_t head, tail;\n} EventQueue;\n\nvoid   eq_push(EventQueue* eq, event_t evt);  // called from 'ISR'\nevent_t eq_pop(EventQueue* eq);               // called from main\nuint8_t eq_empty(EventQueue* eq);\n```\n\nSimulate a system that receives:\n1. 2 button events (EVT_BTN)\n2. 3 UART events (EVT_UART)  \n3. 1 timer event (EVT_TIMER)\n\nProcess all events in main loop and verify:\n- Total events processed = 6\n- Events processed in order\n- BTN count = 2, UART count = 3, TIMER count = 1\n- Queue empty at end",
+          "starterCode": "// Lab 2: Interrupt-Safe Event Queue\n#include <stdint.h>\n#include <stdio.h>\n#include <assert.h>\n\ntypedef enum {\n    EVT_NONE  = 0,\n    EVT_BTN   = 1,\n    EVT_UART  = 2,\n    EVT_TIMER = 3\n} event_t;\n\n#define QUEUE_SIZE 8\n\ntypedef struct {\n    event_t          events[QUEUE_SIZE];\n    volatile uint8_t head;  // write (ISR)\n    volatile uint8_t tail;  // read (main)\n} EventQueue;\n\nvoid eq_init(EventQueue* eq) {\n    eq->head = 0;\n    eq->tail = 0;\n}\n\nuint8_t eq_empty(EventQueue* eq) {\n    return eq->head == eq->tail;\n}\n\nuint8_t eq_full(EventQueue* eq) {\n    return ((eq->head + 1) % QUEUE_SIZE) == eq->tail;\n}\n\n// Called from ISR (simulated here)\nvoid eq_push(EventQueue* eq, event_t evt) {\n    if (eq_full(eq)) return;\n    eq->events[eq->head] = evt;\n    eq->head = (eq->head + 1) % QUEUE_SIZE;\n}\n\n// Called from main loop\nevent_t eq_pop(EventQueue* eq) {\n    if (eq_empty(eq)) return EVT_NONE;\n    event_t evt = eq->events[eq->tail];\n    eq->tail = (eq->tail + 1) % QUEUE_SIZE;\n    return evt;\n}\n\n// Simulate critical section\n#define ENTER_CRITICAL()  // disable_irq()\n#define EXIT_CRITICAL()   // enable_irq()\n\nint main(void) {\n    EventQueue eq;\n    eq_init(&eq);\n\n    // Simulate ISR pushing events\n    eq_push(&eq, EVT_BTN);\n    eq_push(&eq, EVT_UART);\n    eq_push(&eq, EVT_BTN);\n    eq_push(&eq, EVT_UART);\n    eq_push(&eq, EVT_TIMER);\n    eq_push(&eq, EVT_UART);\n\n    // Main loop processes events\n    int total = 0, btn_cnt = 0, uart_cnt = 0, timer_cnt = 0;\n\n    while (!eq_empty(&eq)) {\n        event_t evt;\n        ENTER_CRITICAL();\n        evt = eq_pop(&eq);\n        EXIT_CRITICAL();\n\n        switch (evt) {\n            case EVT_BTN:   btn_cnt++;   break;\n            case EVT_UART:  uart_cnt++;  break;\n            case EVT_TIMER: timer_cnt++; break;\n            default: break;\n        }\n        total++;\n        printf(\"Processed event: %d\\n\", evt);\n    }\n\n    assert(total == 6);\n    assert(btn_cnt == 2);\n    assert(uart_cnt == 3);\n    assert(timer_cnt == 1);\n    assert(eq_empty(&eq));\n\n    printf(\"Total: %d events (BTN=%d UART=%d TIMER=%d)\\n\",\n           total, btn_cnt, uart_cnt, timer_cnt);\n    printf(\"Event queue tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "eq_full: ((head+1) % SIZE) == tail",
+            "eq_push: events[head]=evt; head=(head+1)%SIZE",
+            "eq_pop: evt=events[tail]; tail=(tail+1)%SIZE; return evt",
+            "volatile head/tail prevents compiler from caching values"
+          ],
+          "requiredPatterns": [
+            "typedef enum",
+            "EventQueue",
+            "volatile uint8_t head",
+            "volatile uint8_t tail",
+            "eq_push",
+            "eq_pop",
+            "eq_empty",
+            "% QUEUE_SIZE",
+            "assert(total == 6)",
+            "Event queue tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "An event queue decouples ISRs from main-loop processing. ISRs push events quickly and return. The main loop pops and processes at its own pace. Critical sections (disable/enable IRQ) protect the shared head/tail when accessed from both contexts. This pattern is the foundation of event-driven embedded architectures."
+        }
+      },
+      {
+        "id": "emb-2-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your interrupt knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "An ISR should:", "options": ["Do all processing inside", "Be as short as possible — set a flag and return", "Print debug messages", "Allocate memory"], "answer": 1 },
+          { "q": "Critical section in embedded C is needed when:", "options": ["Two tasks are running", "ISR and main code share data — must protect from partial reads/writes", "Timer fires too fast", "Heap is full"], "answer": 1 },
+          { "q": "If you don't clear the interrupt pending flag in an ISR:", "options": ["ISR runs once normally", "ISR fires again immediately after returning — infinite loop", "Interrupt is disabled", "Priority changes"], "answer": 1 },
+          { "q": "NVIC stands for:", "options": ["Non-Volatile Interrupt Controller", "Nested Vector Interrupt Controller — manages interrupts on Cortex-M", "Network Voltage Interface", "Non-Vector Interrupt Code"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 3,
+    "bonusXp": 110,
+    "badge": "RTOS Developer",
+    "subLevels": [
+      {
+        "id": "emb-3-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "FreeRTOS — tasks, scheduler, and synchronization primitives.",
+        "keyPoints": [
+          "FreeRTOS: most popular embedded RTOS — free, open source, widely supported",
+          "Task: lightweight thread with its own stack — preemptively scheduled",
+          "Scheduler: switches tasks based on priority and state",
+          "Semaphore: signaling between tasks/ISRs (binary or counting)",
+          "Mutex: mutual exclusion — only one task at a time",
+          "Queue: message passing between tasks — thread-safe FIFO",
+          "Tick: system timer tick — default 1ms on most configs"
+        ],
+        "content": "FreeRTOS runs on top of the bare metal and provides multiple concurrent tasks, each with its own stack. The scheduler runs every tick (1ms) and switches to the highest-priority ready task. Tasks communicate via queues (data transfer), semaphores (event signaling), and mutexes (shared resource protection). The key RTOS difference from bare-metal: instead of a super-loop with flags, you have tasks that block (sleep) until an event occurs. A blocked task consumes no CPU — the scheduler gives that time to other tasks. This makes complex embedded software much more manageable.",
+        "xp": 20
+      },
+      {
+        "id": "emb-3-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "FreeRTOS API — task creation, queues, semaphores, and delays.",
+        "keyPoints": [
+          "xTaskCreate(func, name, stack, param, priority, handle)",
+          "vTaskDelay(pdMS_TO_TICKS(100)) — delay 100ms",
+          "xQueueCreate(length, itemSize) — create queue",
+          "xQueueSend(queue, &item, timeout) — send to queue",
+          "xQueueReceive(queue, &item, timeout) — receive from queue",
+          "xSemaphoreGive/Take — signal/wait semaphore",
+          "portMAX_DELAY — block forever until event"
+        ],
+        "content": "// FreeRTOS task and queue example\n#include \"FreeRTOS.h\"\n#include \"task.h\"\n#include \"queue.h\"\n\nQueueHandle_t xDataQueue;\n\n// Producer task — reads sensor, sends to queue\nvoid vSensorTask(void* pvParams) {\n    uint32_t sensor_data;\n    for (;;) {\n        sensor_data = read_adc();     // read sensor\n        // Send to queue (block up to 10ms if full)\n        xQueueSend(xDataQueue, &sensor_data,\n                   pdMS_TO_TICKS(10));\n        vTaskDelay(pdMS_TO_TICKS(100)); // 100ms period\n    }\n}\n\n// Consumer task — receives from queue, processes\nvoid vProcessTask(void* pvParams) {\n    uint32_t data;\n    for (;;) {\n        // Block forever until data available\n        if (xQueueReceive(xDataQueue, &data,\n                          portMAX_DELAY) == pdTRUE) {\n            process_data(data);\n        }\n    }\n}\n\nint main(void) {\n    // Create queue: 10 items, each uint32_t\n    xDataQueue = xQueueCreate(10, sizeof(uint32_t));\n\n    // Create tasks\n    xTaskCreate(vSensorTask,  \"Sensor\",  256, NULL, 2, NULL);\n    xTaskCreate(vProcessTask, \"Process\", 512, NULL, 1, NULL);\n\n    vTaskStartScheduler(); // start RTOS, never returns\n    return 0;\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-3-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace a FreeRTOS task state machine and scheduler decisions.",
+        "keyPoints": [
+          "Task states: Running, Ready, Blocked, Suspended",
+          "Running → Blocked: task calls vTaskDelay or xQueueReceive",
+          "Blocked → Ready: delay expires or queue has data",
+          "Ready → Running: highest priority ready task picked",
+          "Context switch: saves registers, loads next task registers",
+          "Idle task: runs when no other task is ready — enter low power"
+        ],
+        "content": "// FreeRTOS scheduler trace (3 tasks)\n// Task A: priority 3 (highest), reads sensor every 10ms\n// Task B: priority 2, processes data\n// Task C: priority 1 (lowest), sends UART\n// Idle: priority 0\n\n// Time 0ms:\n//   Scheduler starts → Task A runs (highest priority)\n// Time 1ms:\n//   Task A calls vTaskDelay(10ms) → BLOCKED\n//   Scheduler picks Task B (next highest ready)\n// Time 2ms:\n//   Task B waits on queue (empty) → BLOCKED\n//   Scheduler picks Task C\n// Time 5ms:\n//   Task C finishes UART send → BLOCKED (vTaskDelay)\n//   Scheduler picks Idle task → CPU can enter sleep\n// Time 10ms:\n//   Task A delay expires → READY\n//   Scheduler preempts Idle → Task A RUNNING\n//   Task A sends data to queue → Task B becomes READY\n//   Task B priority > Task C → preempts when Task A blocks\n// Time 11ms:\n//   Task A calls vTaskDelay → Task B RUNNING (queue data)\n\n// Key insight: Higher priority tasks preempt lower ones\n// Tasks block voluntarily → others get CPU time\n// No busy-waiting → efficient CPU usage",
+        "xp": 20
+      },
+      {
+        "id": "emb-3-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Simulate a FreeRTOS producer-consumer system in C.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 3: FreeRTOS-Style Producer-Consumer\n\nSimulate a FreeRTOS producer-consumer without the actual RTOS (pure C):\n\n```c\n// Thread-safe queue (simulates FreeRTOS queue)\ntypedef struct {\n    int data[10];\n    int head, tail, count;\n} RTOSQueue;\n\nvoid   queue_send(RTOSQueue* q, int val);\nint    queue_receive(RTOSQueue* q, int* val); // 1=success\nint    queue_count(RTOSQueue* q);\n```\n\nSimulate the following scenario:\n1. Producer sends 5 sensor values: 10, 20, 30, 40, 50\n2. Consumer receives and processes each value (multiply by 2)\n3. Store results in array: 20, 40, 60, 80, 100\n4. Verify all 5 results are correct\n5. Simulate queue full condition (capacity=3): producer blocks (drops)\n6. Test: producer sends 5 items to capacity-3 queue → only 3 stored",
+          "starterCode": "// Lab 3: FreeRTOS-Style Queue Simulation\n#include <stdio.h>\n#include <assert.h>\n\n#define QUEUE_MAX 10\n\ntypedef struct {\n    int data[QUEUE_MAX];\n    int head, tail, count, capacity;\n} RTOSQueue;\n\nvoid queue_init(RTOSQueue* q, int cap) {\n    q->head = q->tail = q->count = 0;\n    q->capacity = cap;\n}\n\nint queue_full(RTOSQueue* q)  { return q->count >= q->capacity; }\nint queue_empty(RTOSQueue* q) { return q->count == 0; }\nint queue_count(RTOSQueue* q) { return q->count; }\n\n// Send to queue (returns 1=ok, 0=full)\nint queue_send(RTOSQueue* q, int val) {\n    if (queue_full(q)) return 0;\n    q->data[q->head] = val;\n    q->head = (q->head + 1) % QUEUE_MAX;\n    q->count++;\n    return 1;\n}\n\n// Receive from queue (returns 1=ok, 0=empty)\nint queue_receive(RTOSQueue* q, int* val) {\n    if (queue_empty(q)) return 0;\n    *val = q->data[q->tail];\n    q->tail = (q->tail + 1) % QUEUE_MAX;\n    q->count--;\n    return 1;\n}\n\n// Simulate producer task\nvoid producer_task(RTOSQueue* q, int* sensor_data, int n) {\n    for (int i = 0; i < n; i++) {\n        if (!queue_send(q, sensor_data[i]))\n            printf(\"Queue full! Dropped: %d\\n\", sensor_data[i]);\n        else\n            printf(\"Sent: %d\\n\", sensor_data[i]);\n    }\n}\n\n// Simulate consumer task\nint consumer_task(RTOSQueue* q, int* results, int max) {\n    int count = 0, val;\n    while (count < max && queue_receive(q, &val)) {\n        results[count++] = val * 2; // process: multiply by 2\n    }\n    return count;\n}\n\nint main(void) {\n    RTOSQueue q;\n    int sensor_data[] = {10, 20, 30, 40, 50};\n    int results[10] = {0};\n    int expected[]  = {20, 40, 60, 80, 100};\n\n    // Test 1: capacity 10 (all fit)\n    queue_init(&q, 10);\n    producer_task(&q, sensor_data, 5);\n    int count = consumer_task(&q, results, 10);\n\n    assert(count == 5);\n    for (int i = 0; i < 5; i++)\n        assert(results[i] == expected[i]);\n    printf(\"Test1 PASSED: %d results correct\\n\", count);\n\n    // Test 2: capacity 3 (queue overflow)\n    queue_init(&q, 3);\n    producer_task(&q, sensor_data, 5); // sends 5, only 3 fit\n    assert(queue_count(&q) == 3);\n    printf(\"Test2 PASSED: queue held %d/3 items\\n\", queue_count(&q));\n\n    printf(\"All RTOS queue tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "queue_send: data[head]=val; head=(head+1)%MAX; count++",
+            "queue_receive: *val=data[tail]; tail=(tail+1)%MAX; count--",
+            "queue_full: count >= capacity",
+            "queue_empty: count == 0"
+          ],
+          "requiredPatterns": [
+            "RTOSQueue",
+            "queue_send",
+            "queue_receive",
+            "queue_full",
+            "queue_empty",
+            "count++",
+            "count--",
+            "producer_task",
+            "consumer_task",
+            "assert(count == 5)",
+            "RTOS queue tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The RTOS queue decouples producer and consumer. The producer sends at its own rate (sensor sampling). The consumer processes at its own rate. When the queue is full (capacity exceeded), the producer drops the item — in real FreeRTOS, it would block for a timeout. The circular buffer with head/tail/count tracks items efficiently."
+        }
+      },
+      {
+        "id": "emb-3-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your RTOS knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "A FreeRTOS task in BLOCKED state:", "options": ["Is using CPU", "Is waiting for an event (delay, queue, semaphore) — uses zero CPU", "Has been deleted", "Is at highest priority"], "answer": 1 },
+          { "q": "FreeRTOS mutex vs semaphore:", "options": ["They are identical", "Mutex has ownership — only the task that takes it can give it; semaphore has no ownership", "Semaphore is faster", "Mutex is for ISRs"], "answer": 1 },
+          { "q": "vTaskDelay(pdMS_TO_TICKS(100)) will:", "options": ["Waste 100ms in a loop", "Block the current task for 100ms — other tasks run during this time", "Delay the whole system", "Set a timer"], "answer": 1 },
+          { "q": "The FreeRTOS Idle task runs when:", "options": ["System boots", "No other task is ready — good place to enter low-power sleep", "Highest priority task finishes", "Queue is empty"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 4,
+    "bonusXp": 120,
+    "badge": "Timer & ADC Expert",
+    "subLevels": [
+      {
+        "id": "emb-4-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Timers and ADC — time measurement, PWM generation, and analog input.",
+        "keyPoints": [
+          "Timer: hardware counter that generates interrupts or PWM",
+          "Prescaler: divides system clock before timer counter",
+          "Auto-reload register (ARR): timer period value",
+          "PWM: Pulse Width Modulation — motor control, LED dimming",
+          "Duty cycle: percentage of time signal is HIGH",
+          "ADC: Analog-to-Digital Converter — 12-bit = 4096 levels on STM32",
+          "ADC resolution: 3.3V / 4096 = 0.8mV per step"
+        ],
+        "content": "Hardware timers are the workhorses of embedded systems. A timer counts clock pulses and generates interrupts or PWM signals. For PWM motor control: set ARR for period (say 1000 for 1kHz), set CCR (capture/compare register) for duty cycle (500 = 50%). The ADC converts an analog voltage to a digital number. A 12-bit ADC reading of 2048 on a 3.3V reference means the input is approximately 1.65V. ADC is used for reading potentiometers, temperature sensors, battery voltage, and any analog sensor. Most MCUs have 12-16 ADC channels that share one ADC hardware block.",
+        "xp": 20
+      },
+      {
+        "id": "emb-4-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Timer PWM setup and ADC reading patterns.",
+        "keyPoints": [
+          "Timer period = (Prescaler+1) × (ARR+1) / fCLK",
+          "PWM duty = CCR / ARR × 100%",
+          "ADC voltage = (reading / 4096) × VREF",
+          "DMA + ADC: continuous sampling without CPU involvement",
+          "Timer input capture: measure external pulse width",
+          "Output compare: generate precise timing outputs",
+          "HAL_TIM_PWM_Start: starts PWM on specific channel"
+        ],
+        "content": "// PWM setup for motor control (STM32 HAL)\n// Timer2, Channel1, 1kHz PWM, 25% duty cycle\n// System clock: 72MHz\n\n// Period = (PSC+1)*(ARR+1)/fCLK\n// Want 1kHz: (71+1)*(999+1)/72MHz = 72000/72MHz = 1ms ✓\nhtim2.Instance          = TIM2;\nhtim2.Init.Prescaler    = 71;    // 72MHz/72 = 1MHz timer clock\nhtim2.Init.Period       = 999;   // 1MHz/1000 = 1kHz\nhtim2.Init.CounterMode  = TIM_COUNTERMODE_UP;\nHAL_TIM_PWM_Init(&htim2);\n\n// Set 25% duty cycle\nsConfig.OCMode     = TIM_OCMODE_PWM1;\nsConfig.Pulse      = 250;  // 250/1000 = 25%\nHAL_TIM_PWM_ConfigChannel(&htim2, &sConfig, TIM_CHANNEL_1);\nHAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);\n\n// Change duty cycle at runtime\n__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 750); // 75%\n\n// ADC read (blocking, single conversion)\nuint32_t adc_read(void) {\n    HAL_ADC_Start(&hadc1);\n    HAL_ADC_PollForConversion(&hadc1, 10); // 10ms timeout\n    uint32_t raw = HAL_ADC_GetValue(&hadc1);\n    HAL_ADC_Stop(&hadc1);\n    return raw; // 0-4095\n}\n\n// Convert to voltage\nfloat adc_voltage(uint32_t raw) {\n    return (raw / 4095.0f) * 3.3f; // assuming 3.3V reference\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-4-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Calculate PWM frequency and duty cycle from timer register values.",
+        "keyPoints": [
+          "Given: fCLK=72MHz, PSC=71, ARR=999",
+          "Timer clock = 72MHz / (71+1) = 1MHz",
+          "PWM period = 1MHz / (999+1) = 1kHz = 1ms",
+          "If CCR=250: duty = 250/(999+1) = 25%",
+          "If CCR=0: always LOW (0% duty)",
+          "If CCR=ARR: always HIGH (100% duty)"
+        ],
+        "content": "// PWM Calculation Examples\n// System clock: 72MHz\n// Timer2 registers\n\n// EXAMPLE 1: 1kHz PWM, 50% duty\n// PSC = 71 → Timer clock = 72MHz/(71+1) = 1MHz\n// ARR = 999 → Period = 1MHz/(999+1) = 1kHz ✓\n// CCR = 500 → Duty = 500/1000 = 50% ✓\n\n// EXAMPLE 2: 20kHz PWM (servo control)\n// Want 20kHz → period = 50μs\n// Timer clock at 1MHz → ARR = 1MHz/20kHz - 1 = 49\n// PSC = 71, ARR = 49, CCR = 25 → 25/50 = 50%\n\n// EXAMPLE 3: Servo control (50Hz, 1-2ms pulse)\n// Servo period = 20ms (50Hz)\n// PSC = 71, ARR = 19999 (20ms at 1MHz)\n// Min: CCR = 1000 (1ms = 0°)\n// Max: CCR = 2000 (2ms = 180°)\n// Center: CCR = 1500 (1.5ms = 90°)\n\n// ADC Calculation:\n// 12-bit ADC, VREF = 3.3V\n// Raw reading = 2048\n// Voltage = 2048/4095 × 3.3V = 1.65V\n\n// Temperature sensor (NTC thermistor)\n// Steinhart-Hart: 1/T = A + B*ln(R) + C*ln(R)³\n// Simpler: use lookup table with interpolation",
+        "xp": 20
+      },
+      {
+        "id": "emb-4-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a PWM controller and ADC averaging filter in C.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 4: PWM + ADC System\n\nImplement a PWM duty cycle controller driven by ADC input:\n\n```c\n// PWM controller\ntypedef struct {\n    uint32_t arr;      // auto-reload value (period)\n    uint32_t ccr;      // capture/compare (duty)\n} PWM;\n\nvoid pwm_set_duty_percent(PWM* pwm, float duty_pct);\nfloat pwm_get_duty_percent(const PWM* pwm);\n\n// ADC averaging filter (removes noise)\ntypedef struct {\n    uint32_t samples[8];\n    uint8_t  index;\n    uint8_t  count;\n} ADCFilter;\n\nvoid    adc_filter_add(ADCFilter* f, uint32_t sample);\nuint32_t adc_filter_average(const ADCFilter* f);\nfloat   adc_to_voltage(uint32_t raw, float vref);\n```\n\nTest:\n1. Set PWM ARR=999, set 25%, 50%, 75% duty — verify CCR values\n2. Add 8 ADC samples: 1000,1010,990,1005,995,1008,998,1004\n3. Verify average ≈ 1001\n4. Map ADC 0-4095 to PWM 0-100% — test with ADC=2048 → 50%",
+          "starterCode": "// Lab 4: PWM + ADC Controller\n#include <stdint.h>\n#include <stdio.h>\n#include <assert.h>\n#include <math.h>\n\n// PWM structure\ntypedef struct {\n    uint32_t arr;  // period register\n    uint32_t ccr;  // compare register (duty)\n} PWM;\n\nvoid pwm_set_duty_percent(PWM* pwm, float duty_pct) {\n    if (duty_pct < 0.0f)   duty_pct = 0.0f;\n    if (duty_pct > 100.0f) duty_pct = 100.0f;\n    pwm->ccr = (uint32_t)((duty_pct / 100.0f) * (pwm->arr + 1));\n}\n\nfloat pwm_get_duty_percent(const PWM* pwm) {\n    return ((float)pwm->ccr / (float)(pwm->arr + 1)) * 100.0f;\n}\n\n// ADC averaging filter\n#define ADC_FILTER_SIZE 8\n\ntypedef struct {\n    uint32_t samples[ADC_FILTER_SIZE];\n    uint8_t  index;\n    uint8_t  count;\n} ADCFilter;\n\nvoid adc_filter_init(ADCFilter* f) {\n    f->index = 0;\n    f->count = 0;\n    for (int i=0; i<ADC_FILTER_SIZE; i++) f->samples[i]=0;\n}\n\nvoid adc_filter_add(ADCFilter* f, uint32_t sample) {\n    f->samples[f->index] = sample;\n    f->index = (f->index + 1) % ADC_FILTER_SIZE;\n    if (f->count < ADC_FILTER_SIZE) f->count++;\n}\n\nuint32_t adc_filter_average(const ADCFilter* f) {\n    if (f->count == 0) return 0;\n    uint32_t sum = 0;\n    for (int i=0; i<f->count; i++) sum += f->samples[i];\n    return sum / f->count;\n}\n\nfloat adc_to_voltage(uint32_t raw, float vref) {\n    return ((float)raw / 4095.0f) * vref;\n}\n\nint main(void) {\n    // Test PWM\n    PWM pwm = {.arr = 999, .ccr = 0};\n\n    pwm_set_duty_percent(&pwm, 25.0f);\n    assert(pwm.ccr == 250);\n    printf(\"25%% duty: CCR=%u PASSED\\n\", pwm.ccr);\n\n    pwm_set_duty_percent(&pwm, 50.0f);\n    assert(pwm.ccr == 500);\n    printf(\"50%% duty: CCR=%u PASSED\\n\", pwm.ccr);\n\n    pwm_set_duty_percent(&pwm, 75.0f);\n    assert(pwm.ccr == 750);\n    printf(\"75%% duty: CCR=%u PASSED\\n\", pwm.ccr);\n\n    // Test ADC filter\n    ADCFilter f;\n    adc_filter_init(&f);\n    uint32_t samples[] = {1000,1010,990,1005,995,1008,998,1004};\n    for (int i=0; i<8; i++) adc_filter_add(&f, samples[i]);\n\n    uint32_t avg = adc_filter_average(&f);\n    printf(\"ADC average: %u\\n\", avg);\n    assert(avg >= 999 && avg <= 1003); // ≈1001\n    printf(\"ADC filter PASSED\\n\");\n\n    // Test ADC to PWM mapping\n    // ADC=2048 → 50% duty\n    uint32_t adc_raw = 2048;\n    float duty = (adc_raw / 4095.0f) * 100.0f;\n    pwm_set_duty_percent(&pwm, duty);\n    printf(\"ADC=%u → duty=%.1f%% CCR=%u\\n\", adc_raw, duty, pwm.ccr);\n    assert(pwm.ccr >= 499 && pwm.ccr <= 501);\n\n    printf(\"All PWM+ADC tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "pwm.ccr = (duty/100.0) * (arr+1) — multiply by period",
+            "average: sum all samples, divide by count",
+            "adc_to_voltage: (raw/4095.0) * vref",
+            "ADC→duty: (adc_raw/4095.0) * 100.0"
+          ],
+          "requiredPatterns": [
+            "typedef struct",
+            "PWM",
+            "ADCFilter",
+            "pwm_set_duty_percent",
+            "pwm_get_duty_percent",
+            "adc_filter_add",
+            "adc_filter_average",
+            "adc_to_voltage",
+            "assert(pwm.ccr == 250)",
+            "PWM+ADC tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "PWM duty cycle = CCR/(ARR+1). For ARR=999 and 25%: CCR=250. The +1 accounts for zero-based counting. ADC averaging reduces noise by averaging N samples — essential for stable readings from noisy sensors. Mapping ADC to PWM lets a potentiometer directly control motor speed or LED brightness — a very common embedded control pattern."
+        }
+      },
+      {
+        "id": "emb-4-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your timer and ADC knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Timer with fCLK=72MHz, PSC=71, ARR=999 gives PWM frequency of:", "options": ["72kHz", "1MHz", "1kHz", "100Hz"], "answer": 2 },
+          { "q": "ADC raw value 2048 on a 12-bit ADC with 3.3V reference equals:", "options": ["3.3V", "1.65V", "0.8V", "2.5V"], "answer": 1 },
+          { "q": "ADC averaging filter is used to:", "options": ["Increase ADC resolution", "Reduce noise in ADC readings by averaging multiple samples", "Speed up ADC conversion", "Select ADC channel"], "answer": 1 },
+          { "q": "PWM duty cycle of 0% means:", "options": ["Maximum power", "Signal is always HIGH", "Signal is always LOW — zero power delivery", "50% power"], "answer": 2 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 5,
+    "bonusXp": 130,
+    "badge": "Memory Management Expert",
+    "subLevels": [
+      {
+        "id": "emb-5-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Embedded memory management — stack, heap, flash, and memory-mapped I/O.",
+        "keyPoints": [
+          "MCU memory map: Flash (code), SRAM (data), peripheral registers",
+          "Stack: grows downward, holds local variables and function call frames",
+          "Heap: dynamic allocation with malloc/free — avoid in embedded",
+          "Stack overflow: stack grows into heap or other memory — catastrophic",
+          ".data section: initialized globals — copied from Flash to SRAM at startup",
+          ".bss section: uninitialized globals — zeroed at startup",
+          "Memory pool: pre-allocated fixed-size blocks — safer than malloc"
+        ],
+        "content": "Embedded memory management is critical because MCUs have very limited RAM (often 32-256KB). The stack holds local variables and grows downward from the top of SRAM. Stack overflow (local arrays too large, deep recursion) corrupts other memory silently. Dynamic allocation (malloc) is dangerous in embedded because it fragments memory over time and can fail unpredictably — use memory pools instead. The linker script (*.ld) defines the memory map: where code goes (Flash), where data goes (SRAM), where the stack is. Understanding your memory usage is essential — use the map file from the linker to see exactly where everything lives.",
+        "xp": 20
+      },
+      {
+        "id": "emb-5-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Memory pool, static allocation, and linker section attributes.",
+        "keyPoints": [
+          "__attribute__((section(\".ccmram\"))): place in specific memory region",
+          "static: global scope but file-local visibility",
+          "const: place in Flash (read-only) — saves RAM",
+          "Memory pool: pre-allocated array of fixed-size blocks",
+          "__attribute__((aligned(4))): ensure 4-byte alignment",
+          "extern char _estack: linker symbol for stack top",
+          "Stack canary: pattern placed at bottom to detect overflow"
+        ],
+        "content": "// Memory-efficient embedded patterns\n\n// Place large constant table in Flash (saves RAM)\nconst uint8_t sine_table[256] __attribute__((section(\".rodata\"))) = {\n    128, 131, 134, 137, // ... 256 entries\n};\n\n// Memory pool — fixed-size block allocator\n#define POOL_BLOCK_SIZE 32\n#define POOL_BLOCK_COUNT 16\n\ntypedef struct {\n    uint8_t  blocks[POOL_BLOCK_COUNT][POOL_BLOCK_SIZE];\n    uint16_t free_mask; // bit=1 means block is free\n} MemPool;\n\nvoid* pool_alloc(MemPool* p) {\n    for (int i = 0; i < POOL_BLOCK_COUNT; i++) {\n        if (p->free_mask & (1 << i)) {\n            p->free_mask &= ~(1 << i); // mark used\n            return p->blocks[i];\n        }\n    }\n    return NULL; // pool exhausted\n}\n\nvoid pool_free(MemPool* p, void* ptr) {\n    for (int i = 0; i < POOL_BLOCK_COUNT; i++) {\n        if (ptr == p->blocks[i]) {\n            p->free_mask |= (1 << i); // mark free\n            return;\n        }\n    }\n}\n\n// Stack usage check (at runtime)\nextern char _estack; // linker symbol\nuint32_t get_stack_remaining(void) {\n    volatile char stack_marker;\n    return (char*)&_estack - &stack_marker;\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-5-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Analyze a memory map and identify a stack overflow risk.",
+        "keyPoints": [
+          "MCU: STM32F103, 20KB SRAM, 64KB Flash",
+          ".data: 1.2KB (initialized globals copied to SRAM)",
+          ".bss: 0.8KB (zeroed globals)",
+          "Heap: 4KB (malloc pool, avoid!)",
+          "Stack: 2KB — remaining = 20-1.2-0.8-4 = 14KB available... but stack is only 2KB!",
+          "Risk: local array of 3KB would overflow 2KB stack",
+          "Fix: make large arrays static or global"
+        ],
+        "content": "// STM32F103 Memory Map Analysis\n// Total SRAM: 20480 bytes (20KB)\n//\n// Section    Start      Size\n// .data      0x20000000  1228 bytes  (initialized globals)\n// .bss       0x200004CC   819 bytes  (zero-initialized)\n// heap       0x200007FF  4096 bytes  (dynamic alloc)\n// -----      ----------  ----\n// Used by data/heap:     6143 bytes\n// Remaining:            14337 bytes\n// Stack pointer init:   0x20005000 (top of SRAM)\n// Stack size configured: 2048 bytes (in startup code)\n//\n// DANGER: if main() calls func() calls func2() with:\n// void func2() {\n//     char big_buf[3000]; // 3000 byte local array!\n//     // STACK OVERFLOW: 3000 > 2048 configured stack!\n// }\n//\n// FIX OPTIONS:\n// 1. static char big_buf[3000]; // moves to .bss (zero-init global)\n// 2. Use heap: char* buf = malloc(3000); // risky but controlled\n// 3. Increase stack size in startup_stm32.s\n// 4. Redesign to use smaller buffers\n//\n// DETECT: add stack high watermark check in FreeRTOS\n// uxTaskGetStackHighWaterMark(NULL); // FreeRTOS\n// Or use MPU (Memory Protection Unit) to trap stack overflow",
+        "xp": 20
+      },
+      {
+        "id": "emb-5-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a memory pool allocator and track usage.",
+        "xp": 40,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 5: Memory Pool Allocator\n\nImplement a fixed-size memory pool:\n\n```c\n#define POOL_SIZE 8\n#define BLOCK_SIZE 16\n\ntypedef struct {\n    uint8_t  blocks[POOL_SIZE][BLOCK_SIZE];\n    uint8_t  used[POOL_SIZE];  // 0=free, 1=used\n    uint8_t  alloc_count;      // total allocations\n    uint8_t  free_count;       // total frees\n} MemPool;\n\nvoid*   pool_alloc(MemPool* p);\nvoid    pool_free(MemPool* p, void* ptr);\nuint8_t pool_used_count(const MemPool* p);\nuint8_t pool_free_count(const MemPool* p);\n```\n\nTest:\n1. Allocate 4 blocks — verify used_count=4\n2. Free block 1 and 3 — verify used_count=2\n3. Allocate again — verify reuse of freed blocks\n4. Try allocate all 8 blocks — all succeed\n5. Allocate 9th — returns NULL (pool exhausted)\n6. Verify alloc_count and free_count tracking",
+          "starterCode": "// Lab 5: Memory Pool\n#include <stdint.h>\n#include <stdio.h>\n#include <assert.h>\n#include <string.h>\n\n#define POOL_SIZE   8\n#define BLOCK_SIZE  16\n\ntypedef struct {\n    uint8_t blocks[POOL_SIZE][BLOCK_SIZE];\n    uint8_t used[POOL_SIZE];\n    uint8_t alloc_count;\n    uint8_t free_count;\n} MemPool;\n\nvoid pool_init(MemPool* p) {\n    memset(p, 0, sizeof(*p));\n}\n\n// Returns pointer to free block or NULL\nvoid* pool_alloc(MemPool* p) {\n    for (int i = 0; i < POOL_SIZE; i++) {\n        if (!p->used[i]) {\n            p->used[i] = 1;\n            p->alloc_count++;\n            return p->blocks[i];\n        }\n    }\n    return NULL;\n}\n\n// Free a previously allocated block\nvoid pool_free(MemPool* p, void* ptr) {\n    for (int i = 0; i < POOL_SIZE; i++) {\n        if (ptr == p->blocks[i] && p->used[i]) {\n            p->used[i] = 0;\n            p->free_count++;\n            return;\n        }\n    }\n}\n\nuint8_t pool_used_count(const MemPool* p) {\n    uint8_t count = 0;\n    for (int i=0; i<POOL_SIZE; i++) if (p->used[i]) count++;\n    return count;\n}\n\nuint8_t pool_avail_count(const MemPool* p) {\n    return POOL_SIZE - pool_used_count(p);\n}\n\nint main(void) {\n    MemPool pool;\n    pool_init(&pool);\n\n    // Test 1: allocate 4 blocks\n    void* ptrs[POOL_SIZE];\n    for (int i=0; i<4; i++) {\n        ptrs[i] = pool_alloc(&pool);\n        assert(ptrs[i] != NULL);\n        // Write to verify usable\n        ((uint8_t*)ptrs[i])[0] = i;\n    }\n    assert(pool_used_count(&pool) == 4);\n    printf(\"Test1: 4 allocs, used=%d PASSED\\n\",pool_used_count(&pool));\n\n    // Test 2: free blocks 1 and 3\n    pool_free(&pool, ptrs[1]);\n    pool_free(&pool, ptrs[3]);\n    assert(pool_used_count(&pool) == 2);\n    printf(\"Test2: 2 frees, used=%d PASSED\\n\",pool_used_count(&pool));\n\n    // Test 3: allocate fills freed slots\n    void* p5 = pool_alloc(&pool);\n    void* p6 = pool_alloc(&pool);\n    assert(p5 != NULL && p6 != NULL);\n    assert(pool_used_count(&pool) == 4);\n    printf(\"Test3: realloc freed slots PASSED\\n\");\n\n    // Test 4: fill pool completely\n    pool_init(&pool);\n    for (int i=0; i<POOL_SIZE; i++) {\n        ptrs[i] = pool_alloc(&pool);\n        assert(ptrs[i] != NULL);\n    }\n    assert(pool_used_count(&pool) == POOL_SIZE);\n\n    // Test 5: exhausted pool\n    void* extra = pool_alloc(&pool);\n    assert(extra == NULL);\n    printf(\"Test5: exhausted returns NULL PASSED\\n\");\n\n    printf(\"alloc_count=%d free_count=%d\\n\",\n           pool.alloc_count, pool.free_count);\n    printf(\"All memory pool tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "pool_alloc: find first used[i]==0, set used[i]=1, return blocks[i]",
+            "pool_free: find blocks[i]==ptr, set used[i]=0",
+            "pool_used_count: count where used[i]==1",
+            "alloc_count++ on each successful alloc, free_count++ on each free"
+          ],
+          "requiredPatterns": [
+            "typedef struct",
+            "MemPool",
+            "pool_alloc",
+            "pool_free",
+            "pool_used_count",
+            "used[i]",
+            "blocks[i]",
+            "alloc_count",
+            "assert(extra == NULL)",
+            "memory pool tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A memory pool pre-allocates a fixed number of same-size blocks. Allocation finds the first free block (O(N) scan). Free marks the block available for reuse. Key advantages over malloc: no fragmentation, deterministic timing, bounded memory usage. Track alloc/free counts to detect memory leaks (alloc_count - free_count should approach 0 at steady state)."
+        }
+      },
+      {
+        "id": "emb-5-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your embedded memory management knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Stack overflow in embedded systems is dangerous because:", "options": ["Program runs slowly", "Stack silently corrupts adjacent memory — no error, wrong behavior", "System resets cleanly", "Compiler catches it"], "answer": 1 },
+          { "q": "Memory pools are preferred over malloc() in embedded because:", "options": ["malloc is not available", "Pools avoid fragmentation and have deterministic allocation time", "Pools use less memory", "malloc requires an OS"], "answer": 1 },
+          { "q": ".bss section contains:", "options": ["Code (compiled functions)", "Initialized global variables", "Zero-initialized or uninitialized global variables", "Constants in Flash"], "answer": 2 },
+          { "q": "const uint8_t table[256] in embedded C:", "options": ["Places data in SRAM", "Places data in Flash — saves RAM", "Is not allowed", "Creates a copy in both Flash and RAM"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 6,
+    "bonusXp": 140,
+    "badge": "Linux BSP Engineer",
+    "subLevels": [
+      {
+        "id": "emb-6-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Embedded Linux — device tree, kernel drivers, and user-space interaction.",
+        "keyPoints": [
+          "Embedded Linux runs on MPUs (Raspberry Pi, BeagleBone, i.MX8)",
+          "BSP: Board Support Package — Linux ported to specific hardware",
+          "Device Tree: describes hardware to kernel (DT blob = .dtb file)",
+          "Kernel module: driver loaded at runtime (insmod/modprobe)",
+          "Character device: /dev/mydevice — read/write interface to hardware",
+          "sysfs: /sys/class/ — expose hardware state to user space",
+          "mmap: map physical memory (peripheral registers) to user space"
+        ],
+        "content": "Embedded Linux runs on more powerful processors (ARM Cortex-A) and provides full Linux capabilities — file system, network stack, USB, and thousands of existing drivers. The Device Tree is the glue between hardware and kernel — it describes which peripherals are connected, their addresses, and which driver to use. Writing a Linux kernel module allows custom hardware to appear as a /dev/ file. User-space applications interact with hardware through standard file I/O (open, read, write, ioctl). This is the foundation of platforms like Raspberry Pi, BeagleBone, and industrial computers.",
+        "xp": 20
+      },
+      {
+        "id": "emb-6-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Linux kernel module structure and character device driver patterns.",
+        "keyPoints": [
+          "module_init/module_exit: called on insmod/rmmod",
+          "alloc_chrdev_region: dynamically allocate device number",
+          "cdev_init/cdev_add: register character device",
+          "class_create/device_create: create /dev/name entry",
+          "copy_to_user/copy_from_user: safe kernel↔user data transfer",
+          "ioctl: device-specific commands beyond read/write",
+          "platform_driver: driver for Device Tree described hardware"
+        ],
+        "content": "// Minimal Linux Kernel Module\n#include <linux/module.h>\n#include <linux/kernel.h>\n#include <linux/fs.h>\n#include <linux/cdev.h>\n#include <linux/uaccess.h>\n\n#define DEVICE_NAME \"myled\"\n\nstatic dev_t    dev_num;\nstatic struct cdev my_cdev;\nstatic struct class* my_class;\n\n// Called when user opens /dev/myled\nstatic int my_open(struct inode* inode, struct file* file) {\n    pr_info(\"myled: opened\\n\");\n    return 0;\n}\n\n// Called when user writes to /dev/myled\nstatic ssize_t my_write(struct file* f, const char __user* buf,\n                        size_t len, loff_t* off) {\n    char kbuf[4];\n    if (copy_from_user(kbuf, buf, min(len, sizeof(kbuf))))\n        return -EFAULT;\n    // Control LED based on kbuf[0]\n    if (kbuf[0] == '1')  gpio_set_value(LED_GPIO, 1);\n    else                  gpio_set_value(LED_GPIO, 0);\n    return len;\n}\n\nstatic struct file_operations fops = {\n    .open  = my_open,\n    .write = my_write,\n    .owner = THIS_MODULE,\n};\n\nstatic int __init my_init(void) {\n    alloc_chrdev_region(&dev_num, 0, 1, DEVICE_NAME);\n    cdev_init(&my_cdev, &fops);\n    cdev_add(&my_cdev, dev_num, 1);\n    my_class = class_create(THIS_MODULE, DEVICE_NAME);\n    device_create(my_class, NULL, dev_num, NULL, DEVICE_NAME);\n    pr_info(\"myled: loaded\\n\");\n    return 0;\n}\nmodule_init(my_init);\n// Usage: echo '1' > /dev/myled",
+        "xp": 20
+      },
+      {
+        "id": "emb-6-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a Device Tree snippet and understand hardware description.",
+        "keyPoints": [
+          "compatible: matches driver to hardware (string must match driver)",
+          "reg: physical base address and size of registers",
+          "interrupts: IRQ number and type (edge/level)",
+          "clocks: clock source for the peripheral",
+          "status = \"okay\": enables this node (disabled by default)",
+          "label: shorthand name used in overlays"
+        ],
+        "content": "// Device Tree Snippet — UART peripheral on custom SoC\n// File: arch/arm/boot/dts/my_board.dts\n\n/ {\n    model = \"My Custom Board\";\n    compatible = \"mycompany,myboard\";\n\n    uart1: serial@40011000 {          // label: uart1\n        compatible = \"myco,uart-1.0\"; // must match driver\n        reg = <0x40011000 0x400>;    // base addr, size\n        interrupts = <37 2>;         // IRQ 37, falling edge\n        clocks = <&rcc 0>;           // clock source\n        baudrate = <115200>;         // board-specific config\n        status = \"okay\";             // enable this node\n    };\n\n    i2c0: i2c@40005400 {\n        compatible = \"myco,i2c-1.0\";\n        reg = <0x40005400 0x100>;\n        interrupts = <31 1>;\n        clock-frequency = <400000>; // 400kHz fast mode\n        status = \"okay\";\n\n        // I2C devices on this bus\n        temp_sensor: lm75@48 {\n            compatible = \"national,lm75\";\n            reg = <0x48>;  // I2C address 0x48\n            status = \"okay\";\n        };\n    };\n};\n\n// After compiling DTS to DTB:\n// dtc -O dtb -o my_board.dtb my_board.dts\n// Boot kernel with: mem=256M console=ttyS0 dtb=my_board.dtb\n// Kernel reads DTB → loads uart-1.0 driver → /dev/ttyS1 appears",
+        "xp": 20
+      },
+      {
+        "id": "emb-6-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Simulate a Linux character device driver in user-space C.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 6: Simulated Character Device Driver\n\nSimulate a Linux character device for an LED controller (user-space simulation):\n\n```c\n// Simulated device state\ntypedef struct {\n    uint8_t  led_state[8];  // 8 LEDs\n    uint32_t write_count;\n    uint32_t read_count;\n} LEDDevice;\n\n// Simulated kernel driver functions\nint  dev_open(LEDDevice* dev);\nint  dev_write(LEDDevice* dev, const char* buf, size_t len);\nint  dev_read(LEDDevice* dev, char* buf, size_t maxlen);\nint  dev_ioctl(LEDDevice* dev, int cmd, unsigned long arg);\n```\n\nProtocol:\n- write \"L5=1\" → set LED 5 ON\n- write \"L5=0\" → set LED 5 OFF\n- read → returns current state \"L0=0,L1=0,...,L7=0\"\n- ioctl cmd=1: turn ALL LEDs ON\n- ioctl cmd=0: turn ALL LEDs OFF\n\nTest all 4 operations and verify state.",
+          "starterCode": "// Lab 6: Simulated Linux Character Device\n#include <stdio.h>\n#include <stdint.h>\n#include <string.h>\n#include <assert.h>\n\ntypedef struct {\n    uint8_t  led_state[8];\n    uint32_t write_count;\n    uint32_t read_count;\n} LEDDevice;\n\nvoid dev_init(LEDDevice* dev) {\n    memset(dev, 0, sizeof(*dev));\n}\n\nint dev_open(LEDDevice* dev) {\n    printf(\"[driver] /dev/led opened\\n\");\n    return 0;\n}\n\n// Parse \"L5=1\" or \"L5=0\" and set LED\nint dev_write(LEDDevice* dev, const char* buf, size_t len) {\n    int led_num;\n    int led_val;\n    if (sscanf(buf, \"L%d=%d\", &led_num, &led_val) == 2) {\n        if (led_num >= 0 && led_num < 8) {\n            dev->led_state[led_num] = led_val ? 1 : 0;\n            dev->write_count++;\n            printf(\"[driver] LED%d = %d\\n\", led_num, led_val);\n            return len;\n        }\n    }\n    return -1; // EINVAL\n}\n\n// Return state string \"L0=0,L1=1,...\"\nint dev_read(LEDDevice* dev, char* buf, size_t maxlen) {\n    int offset = 0;\n    for (int i = 0; i < 8 && offset < (int)maxlen - 8; i++) {\n        if (i > 0) buf[offset++] = ',';\n        offset += sprintf(buf + offset, \"L%d=%d\", i, dev->led_state[i]);\n    }\n    buf[offset] = '\\0';\n    dev->read_count++;\n    return offset;\n}\n\n// ioctl: cmd=1 all ON, cmd=0 all OFF\nint dev_ioctl(LEDDevice* dev, int cmd, unsigned long arg) {\n    (void)arg;\n    uint8_t val = (cmd == 1) ? 1 : 0;\n    for (int i = 0; i < 8; i++) dev->led_state[i] = val;\n    printf(\"[driver] ioctl: all LEDs %s\\n\", val ? \"ON\" : \"OFF\");\n    return 0;\n}\n\nvoid dev_close(LEDDevice* dev) {\n    printf(\"[driver] /dev/led closed (writes=%u reads=%u)\\n\",\n           dev->write_count, dev->read_count);\n}\n\nint main(void) {\n    LEDDevice dev;\n    dev_init(&dev);\n    dev_open(&dev);\n\n    // Test writes\n    dev_write(&dev, \"L0=1\", 4);\n    dev_write(&dev, \"L3=1\", 4);\n    dev_write(&dev, \"L7=1\", 4);\n    assert(dev.led_state[0] == 1);\n    assert(dev.led_state[3] == 1);\n    assert(dev.led_state[7] == 1);\n    assert(dev.led_state[1] == 0);\n    printf(\"Write test PASSED\\n\");\n\n    // Test read\n    char buf[128];\n    dev_read(&dev, buf, sizeof(buf));\n    printf(\"State: %s\\n\", buf);\n    assert(strstr(buf, \"L0=1\") != NULL);\n    assert(strstr(buf, \"L3=1\") != NULL);\n    printf(\"Read test PASSED\\n\");\n\n    // Test ioctl: all OFF\n    dev_ioctl(&dev, 0, 0);\n    for (int i=0; i<8; i++) assert(dev.led_state[i] == 0);\n    printf(\"ioctl OFF test PASSED\\n\");\n\n    // Test ioctl: all ON\n    dev_ioctl(&dev, 1, 0);\n    for (int i=0; i<8; i++) assert(dev.led_state[i] == 1);\n    printf(\"ioctl ON test PASSED\\n\");\n\n    dev_close(&dev);\n    printf(\"All driver tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "sscanf(buf, \"L%d=%d\", &led_num, &led_val) parses \"L5=1\"",
+            "sprintf(buf+offset, \"L%d=%d\", i, led_state[i]) formats state",
+            "ioctl cmd=1: all LEDs ON, cmd=0: all OFF",
+            "copy_from_user in real kernel — here just use buf directly"
+          ],
+          "requiredPatterns": [
+            "LEDDevice",
+            "dev_write",
+            "dev_read",
+            "dev_ioctl",
+            "led_state",
+            "write_count",
+            "read_count",
+            "sscanf",
+            "assert(dev.led_state[0] == 1)",
+            "driver tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A Linux character device exposes hardware through standard file operations. write() receives commands from user space. read() returns device state. ioctl() handles device-specific commands. In a real kernel module, copy_from_user/copy_to_user safely transfer data between kernel and user address spaces. This pattern — simple string protocol over /dev/ — is used by GPIO, LED, and custom hardware drivers."
+        }
+      },
+      {
+        "id": "emb-6-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your embedded Linux knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Device Tree in embedded Linux:", "options": ["Replaces the kernel", "Describes hardware to the kernel so drivers can bind to devices", "Provides file system", "Is a filesystem type"], "answer": 1 },
+          { "q": "copy_from_user() in kernel driver is used because:", "options": ["It is faster than memcpy", "User-space and kernel-space have different address spaces — direct pointer access is unsafe", "It validates the data", "It compresses the data"], "answer": 1 },
+          { "q": "A platform_driver in Linux matches a hardware device when:", "options": ["Device is powered on", "compatible string in driver matches compatible string in Device Tree node", "Module is loaded", "IRQ fires"], "answer": 1 },
+          { "q": "sysfs (/sys/class/) is used to:", "options": ["Store kernel code", "Expose device attributes and state to user space as files", "Boot the system", "Load kernel modules"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 7,
+    "bonusXp": 150,
+    "badge": "Bootloader Expert",
+    "subLevels": [
+      {
+        "id": "emb-7-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Bootloaders — startup code, memory initialization, and firmware updates.",
+        "keyPoints": [
+          "Bootloader: first code to run after reset — initializes hardware, jumps to app",
+          "Startup code: sets up stack pointer, copies .data, zeros .bss",
+          "Reset vector: address at 0x00000004 (ARM Cortex-M) — first instruction",
+          "Vector table: array of function pointers at 0x00000000",
+          "DFU: Device Firmware Update — update firmware over USB/UART",
+          "Secure boot: cryptographically verify firmware before running",
+          "U-Boot: most popular embedded Linux bootloader"
+        ],
+        "content": "The bootloader is the unsung hero of embedded systems. On reset, the processor reads the stack pointer from 0x00000000 and the reset handler address from 0x00000004, then jumps to the reset handler. The reset handler (startup code) copies initialized data from Flash to SRAM, zeros the BSS section, and calls main(). A custom bootloader adds: checking for firmware update requests, verifying firmware integrity (CRC/hash), copying new firmware from update storage to application area, and jumping to the application. U-Boot is the standard bootloader for embedded Linux — it initializes DDR RAM, loads the kernel from SD/eMMC/network, and boots Linux.",
+        "xp": 20
+      },
+      {
+        "id": "emb-7-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Startup code, vector table, and bootloader jump patterns.",
+        "keyPoints": [
+          "Vector table: array of ISR pointers placed at 0x00000000",
+          "__attribute__((section(\".isr_vector\"))): place in vector section",
+          "Jump to app: set MSP, jump to reset handler",
+          "CRC32: verify firmware integrity before jump",
+          "Magic word: flag in Flash to request update on next boot",
+          "SCB->VTOR: relocate vector table for app (when bootloader exists)",
+          "Watchdog: always kick before long operations"
+        ],
+        "content": "// ARM Cortex-M Vector Table\ntypedef void (*irq_handler_t)(void);\n\n// Placed at 0x08000000 (Flash start) by linker script\n__attribute__((section(\".isr_vector\")))\nconst irq_handler_t vector_table[] = {\n    (irq_handler_t)&_estack,     // [0] initial stack pointer\n    Reset_Handler,                // [1] reset\n    NMI_Handler,                  // [2] NMI\n    HardFault_Handler,            // [3] hard fault\n    // ... more handlers\n};\n\n// Reset handler — first code to run\nvoid Reset_Handler(void) {\n    // Copy .data from Flash to SRAM\n    extern uint32_t _sdata, _edata, _sidata;\n    uint32_t *src = &_sidata;\n    for (uint32_t *dst = &_sdata; dst < &_edata;)\n        *dst++ = *src++;\n\n    // Zero .bss\n    extern uint32_t _sbss, _ebss;\n    for (uint32_t *p = &_sbss; p < &_ebss;)\n        *p++ = 0;\n\n    main(); // jump to application\n}\n\n// Bootloader jump to application\nvoid bootloader_jump_to_app(uint32_t app_addr) {\n    uint32_t* app_vector = (uint32_t*)app_addr;\n    uint32_t  app_sp     = app_vector[0]; // stack pointer\n    uint32_t  app_reset  = app_vector[1]; // reset handler\n\n    // Relocate vector table\n    SCB->VTOR = app_addr;\n\n    // Set stack pointer and jump\n    __set_MSP(app_sp);\n    ((void(*)(void))app_reset)(); // never returns\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-7-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Trace the complete boot sequence from reset to main().",
+        "keyPoints": [
+          "Reset: CPU loads SP from [0x00000000], PC from [0x00000004]",
+          "Reset_Handler: copies .data, zeros .bss",
+          "SystemInit: configure clocks (PLL, etc.)",
+          "__libc_init_array: call C++ constructors",
+          "main(): application starts",
+          "Bootloader check: is update requested? If yes, DFU mode"
+        ],
+        "content": "// Complete ARM Cortex-M Boot Sequence\n\n// 1. HARDWARE RESET\n//    CPU reads:\n//    - Stack pointer: Flash[0x08000000] = 0x20005000 (top of SRAM)\n//    - Reset handler: Flash[0x08000004] = 0x08000141 (Reset_Handler addr)\n\n// 2. RESET_HANDLER executes:\nvoid Reset_Handler(void) {\n    // a. Copy initialized data Flash → SRAM\n    //    .data section: global int x = 5; → copies value 5\n    memcpy(&_sdata, &_sidata, (&_edata - &_sdata) * 4);\n\n    // b. Zero BSS (uninitialized globals)\n    memset(&_sbss, 0, (&_ebss - &_sbss) * 4);\n\n    // c. Initialize system clocks\n    SystemInit(); // setup PLL: 8MHz crystal → 72MHz CPU\n\n    // d. Call global constructors (C++)\n    __libc_init_array();\n\n    // e. Jump to application\n    main();\n\n    // f. Should never reach here\n    while (1);\n}\n\n// 3. MAIN() starts:\n//    RCC enables → GPIO init → UART init → ... → superloop\n\n// BOOTLOADER scenario:\nint main(void) {\n    // Check magic word in backup register\n    if (RTC->BKP0R == 0xDEADBEEF) {\n        RTC->BKP0R = 0; // clear flag\n        dfu_mode();      // enter update mode\n    } else {\n        bootloader_jump_to_app(0x08010000); // app at 64KB offset\n    }\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-7-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a firmware CRC checker for bootloader use.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 7: Firmware Integrity Checker\n\nImplement a bootloader firmware verifier:\n\n```c\n// Firmware header at start of application\ntypedef struct __attribute__((packed)) {\n    uint32_t magic;       // 0xDEADC0DE\n    uint32_t version;     // firmware version\n    uint32_t size;        // firmware size in bytes\n    uint32_t crc32;       // CRC32 of firmware data\n    uint8_t  name[16];    // firmware name\n} FirmwareHeader;\n\nuint32_t crc32_compute(const uint8_t* data, uint32_t len);\nint      fw_verify(const uint8_t* fw_data, uint32_t fw_size);\n```\n\nTest:\n1. Create a test firmware header + 256 bytes of data\n2. Compute CRC32 of the data\n3. Store in header\n4. Verify with fw_verify() → should return 1 (OK)\n5. Corrupt one byte of data → fw_verify() returns 0 (FAIL)\n6. Test with wrong magic → returns 0",
+          "starterCode": "// Lab 7: Firmware CRC Verifier\n#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n\n#define FW_MAGIC 0xDEADC0DEUL\n\ntypedef struct __attribute__((packed)) {\n    uint32_t magic;\n    uint32_t version;\n    uint32_t size;\n    uint32_t crc32;\n    uint8_t  name[16];\n} FirmwareHeader;\n\n// Standard CRC32 (Ethernet polynomial 0xEDB88320)\nuint32_t crc32_compute(const uint8_t* data, uint32_t len) {\n    uint32_t crc = 0xFFFFFFFF;\n    for (uint32_t i = 0; i < len; i++) {\n        crc ^= data[i];\n        for (int j = 0; j < 8; j++) {\n            if (crc & 1)\n                crc = (crc >> 1) ^ 0xEDB88320;\n            else\n                crc >>= 1;\n        }\n    }\n    return ~crc;\n}\n\n// Verify firmware: check magic + CRC\n// fw_data points to FirmwareHeader followed by firmware bytes\n// Returns 1 if valid, 0 if invalid\nint fw_verify(const uint8_t* fw_data, uint32_t total_size) {\n    const FirmwareHeader* hdr = (const FirmwareHeader*)fw_data;\n\n    // Check magic\n    if (hdr->magic != FW_MAGIC) {\n        printf(\"[boot] Invalid magic: 0x%08X\\n\", hdr->magic);\n        return 0;\n    }\n\n    // Check size is reasonable\n    uint32_t hdr_size = sizeof(FirmwareHeader);\n    if (hdr->size + hdr_size > total_size) {\n        printf(\"[boot] Size mismatch\\n\");\n        return 0;\n    }\n\n    // Compute CRC over firmware data (after header)\n    const uint8_t* fw_code = fw_data + hdr_size;\n    uint32_t computed_crc = crc32_compute(fw_code, hdr->size);\n\n    if (computed_crc != hdr->crc32) {\n        printf(\"[boot] CRC FAIL: got 0x%08X exp 0x%08X\\n\",\n               computed_crc, hdr->crc32);\n        return 0;\n    }\n\n    printf(\"[boot] FW OK: '%s' v%u size=%u CRC=0x%08X\\n\",\n           hdr->name, hdr->version, hdr->size, hdr->crc32);\n    return 1;\n}\n\nint main(void) {\n    // Build test firmware: header + 256 bytes data\n    #define FW_DATA_SIZE 256\n    uint8_t firmware[sizeof(FirmwareHeader) + FW_DATA_SIZE];\n    memset(firmware, 0, sizeof(firmware));\n\n    // Fill data section with test pattern\n    uint8_t* fw_code = firmware + sizeof(FirmwareHeader);\n    for (int i=0; i<FW_DATA_SIZE; i++) fw_code[i] = i & 0xFF;\n\n    // Build header\n    FirmwareHeader* hdr = (FirmwareHeader*)firmware;\n    hdr->magic   = FW_MAGIC;\n    hdr->version = 1;\n    hdr->size    = FW_DATA_SIZE;\n    strncpy((char*)hdr->name, \"TestFirmware\", 16);\n    hdr->crc32   = crc32_compute(fw_code, FW_DATA_SIZE);\n\n    printf(\"CRC32 = 0x%08X\\n\", hdr->crc32);\n\n    // Test 1: valid firmware\n    assert(fw_verify(firmware, sizeof(firmware)) == 1);\n    printf(\"Test1 PASSED: valid firmware\\n\");\n\n    // Test 2: corrupt one data byte\n    fw_code[128] ^= 0xFF;\n    assert(fw_verify(firmware, sizeof(firmware)) == 0);\n    fw_code[128] ^= 0xFF; // restore\n    printf(\"Test2 PASSED: corruption detected\\n\");\n\n    // Test 3: wrong magic\n    hdr->magic = 0x12345678;\n    assert(fw_verify(firmware, sizeof(firmware)) == 0);\n    hdr->magic = FW_MAGIC; // restore\n    printf(\"Test3 PASSED: wrong magic detected\\n\");\n\n    printf(\"All bootloader verifier tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "CRC32: crc ^= data[i]; then 8 iterations of (crc&1) ? (crc>>1)^poly : crc>>1",
+            "fw_verify: check magic first, then compute CRC, compare to stored",
+            "hdr->crc32 = crc32_compute(fw_code, FW_DATA_SIZE) stores computed CRC",
+            "Corrupting one byte changes CRC — detected by mismatch"
+          ],
+          "requiredPatterns": [
+            "FirmwareHeader",
+            "crc32_compute",
+            "fw_verify",
+            "FW_MAGIC",
+            "0xEDB88320",
+            "magic != FW_MAGIC",
+            "assert(fw_verify(firmware",
+            "assert(fw_verify(firmware, sizeof(firmware)) == 0)",
+            "bootloader verifier tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Firmware verification is mandatory in production bootloaders. CRC32 detects any single-bit or multi-bit error in firmware data. The firmware header contains the expected CRC — the bootloader computes the actual CRC and compares. A magic number catches uninitialized Flash (all 0xFF) or accidentally overwritten firmware. Real bootloaders also use cryptographic signatures (SHA256+RSA) for secure boot."
+        }
+      },
+      {
+        "id": "emb-7-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your bootloader knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "On ARM Cortex-M reset, the CPU first reads:", "options": ["The first instruction at address 0", "Stack pointer from [0x00000000], then PC from [0x00000004]", "The clock configuration register", "The flash ID register"], "answer": 1 },
+          { "q": "The startup code copies .data section because:", "options": [".data is too large for Flash", "Initialized globals must be in writable SRAM — initial values stored in Flash", ".data is faster in SRAM", "The compiler requires it"], "answer": 1 },
+          { "q": "CRC32 in a bootloader is used to:", "options": ["Speed up loading", "Verify firmware integrity — detect corruption or tampering", "Compress firmware", "Encrypt firmware"], "answer": 1 },
+          { "q": "SCB->VTOR in a bootloader context is set to:", "options": ["The stack pointer", "The application's Flash start address — relocate vector table from boot to app", "The RAM start", "The peripheral base"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 8,
+    "bonusXp": 160,
+    "badge": "Power Management Expert",
+    "subLevels": [
+      {
+        "id": "emb-8-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Embedded power management — sleep modes, low-power design, and battery optimization.",
+        "keyPoints": [
+          "MCU sleep modes: Sleep, Stop, Standby — deeper = more current reduction",
+          "Run mode: ~20mA at 72MHz; Stop mode: ~2μA; Standby: ~1μA",
+          "Wake sources: RTC alarm, GPIO interrupt, LPUART, watchdog",
+          "Dynamic voltage scaling: reduce voltage at lower frequencies",
+          "Clock gating: disable peripheral clocks when not in use",
+          "DCDC vs LDO: DCDC converter more efficient at heavy loads",
+          "Energy harvesting: solar, RF, vibration — power from environment"
+        ],
+        "content": "Battery life is often the primary constraint in IoT and wearable devices. A CR2032 coin cell has ~220mAh capacity. At 20mA (active MCU), it lasts ~11 hours. With proper sleep modes — MCU sleeping 99% of the time and waking every second — average current can drop to <10μA, giving years of battery life. The key techniques: enter the deepest possible sleep mode when idle, minimize wake frequency, process data quickly and return to sleep, disable all unnecessary peripherals, and reduce clock speed to the minimum needed. Every milliamp saved multiplies battery life.",
+        "xp": 20
+      },
+      {
+        "id": "emb-8-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Sleep mode entry, clock gating, and wake configuration patterns.",
+        "keyPoints": [
+          "__WFI(): Wait For Interrupt — enter sleep mode (ARM instruction)",
+          "__WFE(): Wait For Event — enter sleep, wake on event",
+          "HAL_PWR_EnterSLEEPMode: STM32 HAL sleep entry",
+          "HAL_PWR_EnterSTOPMode: deep sleep, retain SRAM",
+          "HAL_PWR_EnterSTANDBYMode: deepest, only RTC/WKUP pin wake",
+          "Clock gating: RCC->APB1ENR &= ~RCC_APB1ENR_USART2EN",
+          "RTC alarm: configure for periodic wake from stop mode"
+        ],
+        "content": "// Low-power periodic sensor reading pattern\n// Target: read sensor every 10 seconds, minimize active time\n\n#include \"stm32f4xx_hal.h\"\n\nvoid configure_rtc_wakeup_10s(void) {\n    // RTC wakeup timer: 10 second interval\n    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 10,\n                                 RTC_WAKEUPCLOCK_CK_SPRE_16BITS);\n}\n\nvoid low_power_task(void) {\n    // 1. Disable unused peripheral clocks\n    __HAL_RCC_USART2_CLK_DISABLE();  // disable debug UART\n    __HAL_RCC_SPI1_CLK_DISABLE();    // disable SPI\n\n    // 2. Configure GPIO to analog input (lowest leakage)\n    GPIO_InitTypeDef GPIO_Init = {0};\n    GPIO_Init.Mode = GPIO_MODE_ANALOG;\n    GPIO_Init.Pull = GPIO_NOPULL;\n    GPIO_Init.Pin  = GPIO_PIN_All & ~(SENSOR_PIN | LED_PIN);\n    HAL_GPIO_Init(GPIOA, &GPIO_Init);\n\n    // 3. Enter Stop mode (2μA typical)\n    // Wake on RTC alarm or external interrupt\n    HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON,\n                           PWR_STOPENTRY_WFI);\n    // ... CPU resumes here after wakeup ...\n\n    // 4. Re-initialize clocks after Stop mode\n    SystemClock_Config(); // PLL stops in Stop mode\n\n    // 5. Quickly read sensor, transmit, sleep again\n    uint32_t data = read_sensor();\n    transmit_ble(data);   // fast BLE advertisement\n    configure_rtc_wakeup_10s();\n    // loop back to Step 1\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-8-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Calculate battery life for a low-power IoT sensor node.",
+        "keyPoints": [
+          "Battery: 1000mAh AA cell",
+          "Active: 15mA for 10ms every 60 seconds",
+          "Sleep: 5μA for remaining 59.99 seconds",
+          "Average current calculation",
+          "Battery life estimation",
+          "Optimization: reduce active time → huge benefit"
+        ],
+        "content": "// Battery Life Calculation\n// IoT sensor node: temperature + BLE transmission\n\n// Device behavior:\n// Wake every 60 seconds:\n//   - Wake up: 2ms at 20mA (clock init)\n//   - Read ADC: 1ms at 10mA\n//   - BLE transmit: 7ms at 15mA\n//   - Total active: 10ms\n// Sleep: 59.99 seconds at 5μA\n\n// Average current calculation:\n// Iactive = (2ms×20mA + 1ms×10mA + 7ms×15mA) / 10ms\n//         = (40 + 10 + 105) / 10 = 15.5mA average while active\n// Active duty = 10ms / 60000ms = 0.0167%\n// Isleep = 5μA = 0.005mA\n\n// Average current = (0.0167/100)×15.5mA + (99.983/100)×0.005mA\n//                 = 0.00259mA + 0.00499mA\n//                 = 0.00758mA ≈ 7.58μA average!\n\n// Battery life:\n// Battery = 1000mAh\n// Life = 1000mAh / 0.00758mA = 131,926 hours\n//      = 131,926 / 8760 = ~15 YEARS!\n\n// Compare to always-on (no sleep): 1000/15.5 = 64 hours!\n// Sleep modes give 15 years vs 64 hours = 2060x improvement!\n\nprintf(\"Average current: %.2f uA\\n\", 7.58);\nprintf(\"Battery life: %.1f years\\n\", 15.0);",
+        "xp": 20
+      },
+      {
+        "id": "emb-8-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement a battery life calculator and duty cycle optimizer.",
+        "xp": 45,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 8: Battery Life Calculator\n\nBuild a power analysis tool for embedded devices:\n\n```c\ntypedef struct {\n    float active_current_mA;  // current when active\n    float sleep_current_uA;   // current when sleeping\n    float active_time_ms;     // active duration per cycle\n    float cycle_period_ms;    // total cycle period\n} PowerProfile;\n\nfloat calc_average_current_uA(const PowerProfile* p);\nfloat calc_battery_life_hours(const PowerProfile* p, float battery_mAh);\nfloat calc_optimal_period_ms(float target_life_years,\n                              float battery_mAh,\n                              float active_mA,\n                              float sleep_uA,\n                              float active_ms);\n```\n\nTest:\n1. IoT sensor: active=15mA/10ms, sleep=5μA, period=60s\n   → average ~7.6μA, life ~15 years on 1000mAh\n2. Wearable: active=50mA/100ms, sleep=10μA, period=1s\n   → calculate average and life on 200mAh\n3. Find optimal period for 2-year life target",
+          "starterCode": "// Lab 8: Battery Life Calculator\n#include <stdio.h>\n#include <assert.h>\n#include <math.h>\n\ntypedef struct {\n    float active_current_mA;\n    float sleep_current_uA;\n    float active_time_ms;\n    float cycle_period_ms;\n} PowerProfile;\n\n// Average current in microamps\nfloat calc_average_current_uA(const PowerProfile* p) {\n    float active_ratio = p->active_time_ms / p->cycle_period_ms;\n    float sleep_ratio  = 1.0f - active_ratio;\n    float i_active_uA  = p->active_current_mA * 1000.0f;\n    return active_ratio * i_active_uA + sleep_ratio * p->sleep_current_uA;\n}\n\n// Battery life in hours\nfloat calc_battery_life_hours(const PowerProfile* p, float battery_mAh) {\n    float avg_uA = calc_average_current_uA(p);\n    float avg_mA = avg_uA / 1000.0f;\n    return battery_mAh / avg_mA;\n}\n\n// Find period that gives target battery life\nfloat calc_optimal_period_ms(float target_life_years,\n                              float battery_mAh,\n                              float active_mA,\n                              float sleep_uA,\n                              float active_ms) {\n    float target_hours = target_life_years * 8760.0f;\n    float target_mA    = battery_mAh / target_hours;\n    float target_uA    = target_mA * 1000.0f;\n    // target_uA = (active_ms/T) * active_mA*1000 + (1-active_ms/T) * sleep_uA\n    // Solve for T:\n    float active_uA = active_mA * 1000.0f;\n    // target_uA = (active_ms/T)*(active_uA - sleep_uA) + sleep_uA\n    // T = active_ms * (active_uA - sleep_uA) / (target_uA - sleep_uA)\n    return active_ms * (active_uA - sleep_uA) / (target_uA - sleep_uA);\n}\n\nint main(void) {\n    // Test 1: IoT sensor node\n    PowerProfile iot = {\n        .active_current_mA = 15.0f,\n        .sleep_current_uA  = 5.0f,\n        .active_time_ms    = 10.0f,\n        .cycle_period_ms   = 60000.0f  // 60 seconds\n    };\n    float avg_uA = calc_average_current_uA(&iot);\n    float life_h = calc_battery_life_hours(&iot, 1000.0f);\n    float life_y = life_h / 8760.0f;\n    printf(\"IoT Node:\\n\");\n    printf(\"  Average: %.2f uA\\n\", avg_uA);\n    printf(\"  Life: %.1f hours = %.1f years\\n\", life_h, life_y);\n    assert(avg_uA > 5.0f && avg_uA < 20.0f);\n    assert(life_y > 10.0f); // should be ~15 years\n    printf(\"Test1 PASSED\\n\");\n\n    // Test 2: Wearable\n    PowerProfile wearable = {\n        .active_current_mA = 50.0f,\n        .sleep_current_uA  = 10.0f,\n        .active_time_ms    = 100.0f,\n        .cycle_period_ms   = 1000.0f  // 1 second\n    };\n    float w_avg = calc_average_current_uA(&wearable);\n    float w_life = calc_battery_life_hours(&wearable, 200.0f) / 24.0f;\n    printf(\"Wearable:\\n\");\n    printf(\"  Average: %.1f uA\\n\", w_avg);\n    printf(\"  Life: %.1f days\\n\", w_life);\n    assert(w_avg > 1000.0f); // active 10% of time at 50mA\n    printf(\"Test2 PASSED\\n\");\n\n    // Test 3: Optimal period for 2-year target\n    float opt_period_ms = calc_optimal_period_ms(\n        2.0f,    // 2 years\n        1000.0f, // 1000mAh battery\n        15.0f,   // 15mA active\n        5.0f,    // 5uA sleep\n        10.0f    // 10ms active time\n    );\n    printf(\"Optimal period for 2yr life: %.0f ms = %.1f sec\\n\",\n           opt_period_ms, opt_period_ms/1000.0f);\n    assert(opt_period_ms > 1000.0f);\n    printf(\"Test3 PASSED\\n\");\n\n    printf(\"All battery calculator tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "avg_uA = (active_ms/period_ms) * active_uA + (1-ratio) * sleep_uA",
+            "life_hours = battery_mAh / (avg_uA/1000)",
+            "life_years = life_hours / 8760",
+            "Optimal period: solve for T given target average current"
+          ],
+          "requiredPatterns": [
+            "PowerProfile",
+            "calc_average_current_uA",
+            "calc_battery_life_hours",
+            "calc_optimal_period_ms",
+            "active_ratio",
+            "sleep_ratio",
+            "assert(life_y > 10.0f)",
+            "battery calculator tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Average current = (active_time/period) × I_active + (1 - active_time/period) × I_sleep. Battery life = capacity / average_current. The key insight: reducing active duty by 2x roughly doubles battery life. The optimal period calculation inverts this formula — given a target life, what wakeup period achieves it?"
+        }
+      },
+      {
+        "id": "emb-8-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your power management knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Standby mode vs Stop mode on STM32:", "options": ["Same power consumption", "Standby (~1μA) is deeper than Stop (~2μA) but loses SRAM contents", "Stop loses SRAM, Standby keeps it", "Stop is only for CPU, Standby for all peripherals"], "answer": 1 },
+          { "q": "Clock gating helps power consumption by:", "options": ["Slowing the clock", "Disabling clock to unused peripherals — no switching activity = no dynamic power", "Increasing voltage", "Reducing leakage current"], "answer": 1 },
+          { "q": "A device active at 20mA for 1% of the time with 1μA sleep averages:", "options": ["20mA", "10mA", "~0.2mA (200μA)", "~1μA"], "answer": 2 },
+          { "q": "__WFI() instruction:", "options": ["Terminates the program", "Waits for the next interrupt — enters low-power sleep mode", "Waits for 1 millisecond", "Disables all interrupts"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 9,
+    "bonusXp": 180,
+    "badge": "IoT Connectivity Expert",
+    "subLevels": [
+      {
+        "id": "emb-9-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "IoT connectivity — MQTT, Wi-Fi, BLE, LoRa, and Zigbee.",
+        "keyPoints": [
+          "MQTT: lightweight pub/sub protocol over TCP/IP — IoT standard",
+          "Broker: central server (Mosquitto, AWS IoT) routes messages",
+          "Topic: hierarchical string like 'home/bedroom/temperature'",
+          "QoS 0/1/2: at-most-once, at-least-once, exactly-once delivery",
+          "BLE: Bluetooth Low Energy — 10-100m, ~1μA in advertising mode",
+          "LoRa/LoRaWAN: 1-15km range, ultra-low power — ideal for rural IoT",
+          "Zigbee: mesh networking — hundreds of nodes, smart home"
+        ],
+        "content": "IoT connectivity determines where and how far data can travel. Wi-Fi is ubiquitous but power-hungry (50-150mA active). BLE is energy-efficient and ideal for wearables and proximity sensors. LoRa achieves incredible range (15km in rural areas) at very low power by trading bandwidth (250bps-50kbps). MQTT over any TCP/IP transport is the de facto IoT application protocol — devices publish sensor readings to topics, subscribers receive them in real time. Modern IoT platforms (AWS IoT, Azure IoT Hub, Google Cloud IoT) all speak MQTT and provide device management, data storage, and analytics.",
+        "xp": 20
+      },
+      {
+        "id": "emb-9-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "MQTT publish/subscribe, JSON payload, and ESP32 Wi-Fi patterns.",
+        "keyPoints": [
+          "mqtt_connect: connect to broker with client_id",
+          "mqtt_publish: send data to topic",
+          "mqtt_subscribe: register callback for topic",
+          "JSON: lightweight data format {'temp': 25.4, 'hum': 60}",
+          "cJSON: popular C JSON library for embedded",
+          "TLS: encrypt MQTT with SSL/TLS (port 8883)",
+          "LWT: Last Will Testament — message sent if device disconnects"
+        ],
+        "content": "// MQTT IoT Sensor Node (ESP32/Arduino style)\n#include <WiFi.h>\n#include <PubSubClient.h>\n\n#define WIFI_SSID     \"MyNetwork\"\n#define WIFI_PASS     \"password\"\n#define MQTT_BROKER   \"192.168.1.100\"\n#define MQTT_TOPIC_T  \"home/sensor1/temperature\"\n#define MQTT_TOPIC_H  \"home/sensor1/humidity\"\n\nWiFiClient   wifi_client;\nPubSubClient mqtt(wifi_client);\n\nvoid publish_sensor(float temp, float humidity) {\n    char payload[64];\n    // JSON payload\n    snprintf(payload, sizeof(payload),\n             \"{\\\"temp\\\":%.1f,\\\"hum\\\":%.0f}\",\n             temp, humidity);\n    mqtt.publish(\"home/sensor1\", payload);\n    Serial.printf(\"Published: %s\\n\", payload);\n}\n\n// Callback for subscribed topics\nvoid on_message(char* topic, byte* payload, unsigned int len) {\n    payload[len] = '\\0';\n    Serial.printf(\"Received [%s]: %s\\n\", topic, payload);\n    // Parse command: {\"led\": 1}\n    if (strstr((char*)payload, \"\\\"led\\\":1\"))\n        digitalWrite(LED_PIN, HIGH);\n}\n\nvoid setup() {\n    WiFi.begin(WIFI_SSID, WIFI_PASS);\n    while (WiFi.status() != WL_CONNECTED) delay(500);\n    mqtt.setServer(MQTT_BROKER, 1883);\n    mqtt.setCallback(on_message);\n    mqtt.connect(\"sensor_node_1\");\n    mqtt.subscribe(\"home/sensor1/cmd\"); // subscribe to commands\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-9-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Design a complete IoT sensor network architecture.",
+        "keyPoints": [
+          "Edge: MCU sensors → BLE/Zigbee → Gateway",
+          "Gateway: Raspberry Pi with Wi-Fi → MQTT broker",
+          "Cloud: AWS IoT receives MQTT → Lambda processes → DynamoDB stores",
+          "Dashboard: Grafana/Node-RED visualizes time-series data",
+          "Alerts: AWS SNS sends SMS/email on threshold exceeded",
+          "OTA: AWS IoT Jobs pushes firmware updates to devices"
+        ],
+        "content": "// Complete IoT Architecture\n//\n// LAYER 1 — EDGE DEVICES (battery powered)\n// STM32 + temperature/humidity sensor\n// Sends data via BLE every 60 seconds\n// Battery life: 2 years on AA cell\n//\n// LAYER 2 — GATEWAY\n// Raspberry Pi with BLE + Wi-Fi\n// Receives BLE data from 20 sensors\n// Publishes to MQTT broker\n// Topic: home/{room}/temperature\n//\n// LAYER 3 — CLOUD (AWS IoT)\n// MQTT broker (AWS IoT Core)\n// Rule: IF temperature > 30 → trigger SNS alert\n// Lambda: store reading in DynamoDB time-series table\n//\n// LAYER 4 — DASHBOARD\n// Grafana connects to DynamoDB via Athena\n// Real-time temperature maps\n// Historical trending\n//\n// DATA FLOW:\n// Sensor → [BLE] → Gateway → [MQTT/TLS] → AWS IoT\n//       → Lambda → DynamoDB → Grafana\n//       → SNS Alert (if temp > 30°C)\n//\n// MQTT message example:\n// Topic: home/bedroom/temperature\n// Payload: {\"device\":\"sensor_001\",\"temp\":24.5,\n//           \"hum\":58.2,\"battery\":3.1,\n//           \"rssi\":-67,\"ts\":1698765432}",
+        "xp": 20
+      },
+      {
+        "id": "emb-9-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Implement an MQTT message serializer/parser for IoT payloads.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 9: IoT JSON Payload Library\n\nImplement a simple JSON serializer/parser for MQTT sensor data:\n\n```c\ntypedef struct {\n    char   device_id[16];\n    float  temperature;\n    float  humidity;\n    float  battery_v;\n    int32_t rssi;\n    uint32_t timestamp;\n} SensorData;\n\n// Serialize to JSON string\nint sensor_to_json(const SensorData* s, char* buf, size_t maxlen);\n\n// Parse JSON string back to struct\nint json_to_sensor(const char* json, SensorData* s);\n```\n\nJSON format:\n```json\n{\"id\":\"sensor_001\",\"temp\":24.5,\"hum\":58.2,\"bat\":3.1,\"rssi\":-67,\"ts\":1698765432}\n```\n\nTest:\n1. Create SensorData, serialize to JSON, verify format\n2. Parse the JSON string back\n3. Verify all fields match original\n4. Test edge cases: negative temp (-10.5°C), low battery (2.1V)",
+          "starterCode": "// Lab 9: IoT Sensor JSON Library\n#include <stdio.h>\n#include <stdint.h>\n#include <string.h>\n#include <assert.h>\n#include <math.h>\n\ntypedef struct {\n    char     device_id[16];\n    float    temperature;\n    float    humidity;\n    float    battery_v;\n    int32_t  rssi;\n    uint32_t timestamp;\n} SensorData;\n\n// Serialize SensorData to JSON\nint sensor_to_json(const SensorData* s, char* buf, size_t maxlen) {\n    return snprintf(buf, maxlen,\n        \"{\\\"id\\\":\\\"%s\\\",\\\"temp\\\":%.1f,\\\"hum\\\":%.1f,\"\n        \"\\\"bat\\\":%.2f,\\\"rssi\\\":%d,\\\"ts\\\":%u}\",\n        s->device_id,\n        s->temperature,\n        s->humidity,\n        s->battery_v,\n        s->rssi,\n        s->timestamp);\n}\n\n// Parse JSON to SensorData (simple parser)\nint json_to_sensor(const char* json, SensorData* s) {\n    memset(s, 0, sizeof(*s));\n    // Simple sscanf-based parser\n    int result = sscanf(json,\n        \"{\\\"id\\\":\\\"%15[^\\\"]\\\",\\\"temp\\\":%f,\\\"hum\\\":%f,\"\n        \"\\\"bat\\\":%f,\\\"rssi\\\":%d,\\\"ts\\\":%u}\",\n        s->device_id,\n        &s->temperature,\n        &s->humidity,\n        &s->battery_v,\n        &s->rssi,\n        &s->timestamp);\n    return (result == 6) ? 1 : 0;\n}\n\n// Compare floats with tolerance\nint float_eq(float a, float b, float tol) {\n    return fabsf(a-b) < tol;\n}\n\nint main(void) {\n    // Test 1: basic serialization\n    SensorData sensor = {\n        .device_id   = \"sensor_001\",\n        .temperature = 24.5f,\n        .humidity    = 58.2f,\n        .battery_v   = 3.1f,\n        .rssi        = -67,\n        .timestamp   = 1698765432\n    };\n\n    char json_buf[256];\n    int len = sensor_to_json(&sensor, json_buf, sizeof(json_buf));\n    assert(len > 0 && len < 256);\n    printf(\"JSON: %s\\n\", json_buf);\n    assert(strstr(json_buf, \"sensor_001\") != NULL);\n    assert(strstr(json_buf, \"24.5\") != NULL);\n    printf(\"Test1 PASSED: serialization\\n\");\n\n    // Test 2: parse JSON back\n    SensorData parsed = {0};\n    assert(json_to_sensor(json_buf, &parsed) == 1);\n    assert(strcmp(parsed.device_id, \"sensor_001\") == 0);\n    assert(float_eq(parsed.temperature, 24.5f, 0.1f));\n    assert(float_eq(parsed.humidity, 58.2f, 0.1f));\n    assert(parsed.rssi == -67);\n    assert(parsed.timestamp == 1698765432);\n    printf(\"Test2 PASSED: parsing\\n\");\n\n    // Test 3: negative temperature\n    sensor.temperature = -10.5f;\n    sensor_to_json(&sensor, json_buf, sizeof(json_buf));\n    assert(json_to_sensor(json_buf, &parsed) == 1);\n    assert(float_eq(parsed.temperature, -10.5f, 0.1f));\n    printf(\"Test3 PASSED: negative temp\\n\");\n\n    printf(\"All IoT JSON tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "snprintf formats the JSON: use \\\" for quotes inside string",
+            "sscanf parses: %15[^\\\"] reads string up to closing quote",
+            "Return 1 if sscanf matched 6 fields, 0 otherwise",
+            "float_eq: use fabsf(a-b) < tolerance for float comparison"
+          ],
+          "requiredPatterns": [
+            "SensorData",
+            "sensor_to_json",
+            "json_to_sensor",
+            "snprintf",
+            "sscanf",
+            "device_id",
+            "temperature",
+            "rssi",
+            "assert(strcmp(parsed.device_id",
+            "IoT JSON tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "JSON is the de facto IoT data format — human readable, self-describing, and widely supported. snprintf efficiently builds the JSON string. sscanf parses it back. In production, use a dedicated JSON library (cJSON, jsmn) for robustness. The key embedded concern: avoid heap allocation — use fixed-size buffers and stack allocation only."
+        }
+      },
+      {
+        "id": "emb-9-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your IoT knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "MQTT QoS 1 guarantees:", "options": ["Exactly-once delivery", "At-least-once delivery — message may be received multiple times", "At-most-once (fire and forget)", "Real-time delivery"], "answer": 1 },
+          { "q": "LoRa is chosen for IoT when:", "options": ["High data rate needed", "Long range (1-15km) with very low power is required", "Indoor use only", "Fast response time needed"], "answer": 1 },
+          { "q": "MQTT LWT (Last Will Testament):", "options": ["Stores firmware", "Message broker sends automatically when device disconnects unexpectedly", "Encrypts messages", "Schedules messages"], "answer": 1 },
+          { "q": "Why avoid heap allocation (malloc) in MCU IoT code:", "options": ["malloc is not available on MCUs", "Memory fragmentation causes unpredictable failures over time in long-running devices", "malloc is too slow", "It uses too much flash"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 10,
+    "bonusXp": 200,
+    "badge": "RTOS Advanced Expert",
+    "subLevels": [
+      {
+        "id": "emb-10-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Advanced RTOS patterns — priority inversion, deadlock, and real-time guarantees.",
+        "keyPoints": [
+          "Priority inversion: low-priority task holds resource needed by high-priority task",
+          "Priority inheritance: mutex temporarily raises holder's priority",
+          "Deadlock: two tasks each hold a resource the other needs — neither proceeds",
+          "Watchdog: hardware timer that resets MCU if not kicked — detects deadlock/hang",
+          "Stack overflow detection: FreeRTOS can detect task stack overflow",
+          "Jitter: variation in task execution timing — affects real-time systems",
+          "Rate monotonic: scheduling theory — shorter period = higher priority"
+        ],
+        "content": "Priority inversion is a subtle but dangerous RTOS bug. Mars Pathfinder (1997) experienced priority inversion in space — the high-priority communication task was starved because a low-priority science task held a mutex. FreeRTOS mutexes use priority inheritance to solve this: the mutex holder temporarily inherits the priority of the highest-priority task waiting for it. Deadlocks happen when Task A holds Mutex1 and waits for Mutex2 while Task B holds Mutex2 and waits for Mutex1. Prevention: always acquire mutexes in the same order. The watchdog timer is the ultimate safety net — if any task hangs (stuck in a loop, waiting on a broken peripheral), the watchdog resets the MCU.",
+        "xp": 20
+      },
+      {
+        "id": "emb-10-syntax",
+        "type": "syntax",
+        "title": "Syntax & Patterns",
+        "icon": "🔤",
+        "summary": "Advanced RTOS patterns — watchdog, task monitoring, and deadlock prevention.",
+        "keyPoints": [
+          "Watchdog: HAL_IWDG_Refresh(&hiwdg) must be called periodically",
+          "Task health monitor: dedicated task that checks all tasks are running",
+          "Event flags: xEventGroupSetBits / xEventGroupWaitBits",
+          "Task notification: lightweight alternative to semaphore",
+          "Timers: xTimerCreate for software timers (no hardware timer needed)",
+          "Stream buffer: byte-stream transfer (vs queue for fixed-size messages)",
+          "Task stats: uxTaskGetStackHighWaterMark — detect near-overflow"
+        ],
+        "content": "// Deadlock prevention pattern\n// Always acquire mutexes in consistent order\n\n// WRONG — deadlock risk:\nvoid task_a(void* p) {\n    xSemaphoreTake(mutex1, portMAX_DELAY);\n    xSemaphoreTake(mutex2, portMAX_DELAY); // Task B has mutex2!\n    // ... deadlock if Task B has mutex2 and wants mutex1\n}\nvoid task_b(void* p) {\n    xSemaphoreTake(mutex2, portMAX_DELAY);\n    xSemaphoreTake(mutex1, portMAX_DELAY); // Task A has mutex1!\n}\n\n// CORRECT — always acquire in same order:\nvoid task_a_fixed(void* p) {\n    xSemaphoreTake(mutex1, portMAX_DELAY);\n    xSemaphoreTake(mutex2, portMAX_DELAY); // consistent order\n}\nvoid task_b_fixed(void* p) {\n    xSemaphoreTake(mutex1, portMAX_DELAY); // same order!\n    xSemaphoreTake(mutex2, portMAX_DELAY);\n}\n\n// Watchdog pattern with FreeRTOS\n#define NUM_TASKS 3\nvolatile uint32_t task_heartbeat[NUM_TASKS] = {0};\n\nvoid vWatchdogTask(void* p) {\n    for (;;) {\n        // Check all tasks kicked in last 1 second\n        for (int i=0; i<NUM_TASKS; i++) {\n            if (task_heartbeat[i] == 0) {\n                // Task i hung! — log and reset\n                HAL_NVIC_SystemReset();\n            }\n            task_heartbeat[i] = 0; // reset for next check\n        }\n        HAL_IWDG_Refresh(&hiwdg); // kick hardware watchdog\n        vTaskDelay(pdMS_TO_TICKS(1000));\n    }\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-10-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Diagnose a priority inversion bug in a real embedded system.",
+        "keyPoints": [
+          "System: high-priority comm task, medium task, low-priority log task",
+          "Problem: comm task blocked for 500ms unexpectedly",
+          "Root cause: log task holds shared_buf mutex, gets preempted by medium task",
+          "Effect: medium task runs at medium priority, blocks high-priority comm",
+          "Fix: use mutex with priority inheritance (FreeRTOS xSemaphoreCreateMutex)",
+          "Verification: comm task response time back to <10ms"
+        ],
+        "content": "// Priority Inversion Scenario\n//\n// Tasks:\n// CommTask  (Priority 10) — must respond in <10ms\n// CalcTask  (Priority 5)  — long computation\n// LogTask   (Priority 1)  — writes to shared log buffer\n//\n// Shared resource: log_mutex protects log_buffer\n//\n// SEQUENCE (triggers priority inversion):\n// t=0:   LogTask takes log_mutex (priority 1)\n// t=1:   CommTask needs log_mutex → BLOCKS (waits for mutex)\n//        Without priority inheritance:\n//        LogTask still runs at priority 1\n// t=2:   CalcTask (priority 5) preempts LogTask!\n//        CalcTask runs for 200ms\n//        LogTask (priority 1) can't run\n//        CommTask (priority 10) can't run (waiting for mutex)\n// t=202: CalcTask finishes → LogTask runs\n// t=205: LogTask releases mutex → CommTask FINALLY runs\n//        Latency: 205ms instead of <10ms!  DISASTER!\n//\n// FIX: FreeRTOS mutex with priority inheritance\n// xSemaphoreCreateMutex()  (not xSemaphoreCreateBinary)\n// When CommTask waits for log_mutex:\n//   LogTask priority → temporarily raised to 10\n//   CalcTask (priority 5) CANNOT preempt LogTask (now priority 10)\n//   LogTask finishes quickly → CommTask runs at t=3ms ✓",
+        "xp": 20
+      },
+      {
+        "id": "emb-10-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Simulate priority inversion and demonstrate the fix.",
+        "xp": 50,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 10: Priority Inversion Simulation\n\nSimulate the priority inversion problem and demonstrate the fix:\n\n```c\ntypedef struct {\n    int owner_priority;    // current holder's priority\n    int original_priority; // before inheritance\n    int locked;           // 1=locked\n} SimMutex;\n\nvoid mutex_init(SimMutex* m);\nint  mutex_take(SimMutex* m, int task_priority, int use_inheritance);\nvoid mutex_give(SimMutex* m);\n\n// Simulate a task system\ntypedef struct {\n    int  id;\n    int  priority;         // 1=low, 10=high\n    int  response_time_ms; // how long to get mutex\n} Task;\n```\n\nSimulate 3 scenarios:\n1. LogTask (P1) holds mutex, CalcTask (P5) preempts, CommTask (P10) waits\n   - Without inheritance: CommTask waits 200ms\n2. Same scenario WITH priority inheritance\n   - LogTask priority raised to 10, CalcTask cannot preempt\n   - CommTask response time: <5ms\n3. Verify response time difference",
+          "starterCode": "// Lab 10: Priority Inversion Simulation\n#include <stdio.h>\n#include <assert.h>\n#include <string.h>\n\n// Simulated mutex\ntypedef struct {\n    int owner_id;          // task ID of holder\n    int owner_priority;    // current effective priority of holder\n    int original_priority; // holder's real priority\n    int locked;\n} SimMutex;\n\nvoid mutex_init(SimMutex* m) {\n    m->locked = 0;\n    m->owner_id = -1;\n    m->owner_priority = -1;\n    m->original_priority = -1;\n}\n\n// Try to take mutex. Returns cycles waited (0=immediate)\nint mutex_take_with_inheritance(SimMutex* m, int task_id,\n                                 int task_priority,\n                                 int calc_priority,\n                                 int calc_duration_cycles) {\n    if (!m->locked) {\n        // Mutex free — take immediately\n        m->locked = 1;\n        m->owner_id = task_id;\n        m->owner_priority = task_priority;\n        m->original_priority = m->owner_priority;\n        return 0;\n    }\n\n    // Mutex taken — priority inheritance\n    // Raise owner to our priority\n    if (task_priority > m->owner_priority) {\n        m->owner_priority = task_priority; // INHERITANCE!\n        printf(\"  [Inheritance] Owner raised to priority %d\\n\",\n               m->owner_priority);\n    }\n\n    // With inheritance: owner can't be preempted by calc_task\n    // because owner_priority (now raised) >= calc_priority\n    int preempted_cycles = 0;\n    if (m->owner_priority < calc_priority) {\n        // Without proper inheritance: calc preempts!\n        preempted_cycles = calc_duration_cycles;\n        printf(\"  [INVERSION] CalcTask preempts for %d cycles\\n\",\n               calc_duration_cycles);\n    } else {\n        printf(\"  [OK] Inheritance prevents preemption\\n\");\n    }\n\n    // LogTask finishes work (simulated as 3 cycles)\n    int log_cycles = 3;\n    int total_wait = preempted_cycles + log_cycles;\n    m->locked = 0;\n    return total_wait;\n}\n\nint main(void) {\n    SimMutex mutex;\n    mutex_init(&mutex);\n\n    // Simulate: LogTask (P1) holds mutex\n    printf(\"=== Scenario: LogTask (P1) holds mutex ===\\n\");\n    // LogTask takes mutex\n    mutex.locked = 1;\n    mutex.owner_id = 1;\n    mutex.owner_priority = 1; // low priority\n    mutex.original_priority = 1;\n\n    // Test 1: WITHOUT priority inheritance\n    printf(\"\\n--- Without Inheritance ---\\n\");\n    int wait_without = 0;\n    // CalcTask (P5) > LogTask (P1) → preempts for 200 cycles\n    if (mutex.owner_priority < 5) { // CalcTask priority\n        wait_without += 200;\n        printf(\"  CalcTask preempts LogTask for 200 cycles\\n\");\n    }\n    wait_without += 3; // LogTask finishes\n    printf(\"  CommTask total wait: %d cycles\\n\", wait_without);\n    assert(wait_without > 100); // priority inversion causes long wait\n    printf(\"Test1 PASSED: inversion demonstrated (%d cycles)\\n\", wait_without);\n\n    // Test 2: WITH priority inheritance\n    printf(\"\\n--- With Priority Inheritance ---\\n\");\n    mutex_init(&mutex);\n    mutex.locked = 1;\n    mutex.owner_id = 1;\n    mutex.owner_priority = 1;\n    mutex.original_priority = 1;\n\n    int wait_with = mutex_take_with_inheritance(\n        &mutex,\n        3,   // CommTask id\n        10,  // CommTask priority\n        5,   // CalcTask priority\n        200  // CalcTask duration\n    );\n    printf(\"  CommTask total wait: %d cycles\\n\", wait_with);\n    assert(wait_with < 10); // inheritance keeps wait short\n    printf(\"Test2 PASSED: inheritance works (%d cycles)\\n\", wait_with);\n\n    // Compare\n    printf(\"\\nSummary:\\n\");\n    printf(\"  Without inheritance: %d cycles wait\\n\", wait_without);\n    printf(\"  With inheritance:    %d cycles wait\\n\", wait_with);\n    printf(\"  Improvement: %dx\\n\", wait_without / wait_with);\n    assert(wait_without > wait_with * 10); // significant improvement\n\n    printf(\"\\nPriority inversion tests PASSED\\n\");\n    return 0;\n}",
+          "hints": [
+            "Without inheritance: CalcTask (P5) > LogTask (P1) → preempts",
+            "With inheritance: LogTask priority raised to CommTask (P10) > CalcTask (P5)",
+            "Raised priority prevents preemption by CalcTask",
+            "Wait with inheritance = just LogTask work (3 cycles), no CalcTask delay"
+          ],
+          "requiredPatterns": [
+            "SimMutex",
+            "owner_priority",
+            "original_priority",
+            "mutex_take_with_inheritance",
+            "Inheritance",
+            "assert(wait_without > 100)",
+            "assert(wait_with < 10)",
+            "assert(wait_without > wait_with * 10)",
+            "Priority inversion tests PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "Priority inversion causes a high-priority task to wait far longer than necessary because a low-priority task holding its resource gets preempted by a medium-priority task. Priority inheritance solves this by temporarily raising the mutex holder's priority to match the waiter's priority — preventing the medium task from preempting. FreeRTOS xSemaphoreCreateMutex() automatically implements priority inheritance."
+        }
+      },
+      {
+        "id": "emb-10-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Test your advanced RTOS knowledge.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Priority inversion occurs when:", "options": ["Two high-priority tasks run simultaneously", "A high-priority task is blocked waiting for a resource held by a low-priority task that gets preempted by a medium-priority task", "The scheduler assigns wrong priorities", "Tasks have no priority"], "answer": 1 },
+          { "q": "Priority inheritance solves priority inversion by:", "options": ["Raising the waiting task's priority", "Temporarily raising the mutex holder's priority to match the waiter", "Lowering medium-priority tasks", "Killing medium-priority tasks"], "answer": 1 },
+          { "q": "Watchdog timer in embedded systems:", "options": ["Measures code execution time", "Resets MCU if not refreshed within timeout — detects hangs/deadlocks", "Controls task scheduling", "Manages power modes"], "answer": 1 },
+          { "q": "Deadlock prevention rule:", "options": ["Always use the same mutex", "Always acquire multiple mutexes in a consistent global order", "Never use more than one mutex", "Use semaphores instead of mutexes"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 11,
+    "bonusXp": 220,
+    "badge": "Embedded Interview Ready",
+    "subLevels": [
+      {
+        "id": "emb-11-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "What embedded interviews at top companies actually test.",
+        "keyPoints": [
+          "C coding: bit manipulation, pointers, struct, function pointers",
+          "Hardware: GPIO, UART, SPI, I2C — explain and implement",
+          "RTOS: task, mutex, semaphore, queue — explain and code",
+          "Interrupts: ISR design, shared data, critical sections",
+          "Debugging: what tools (GDB, JTAG, logic analyzer, oscilloscope)",
+          "Companies: Texas Instruments, STMicroelectronics, NXP, Qualcomm, Tesla, Apple",
+          "Most common question: implement a circular buffer in C"
+        ],
+        "content": "Embedded interviews test both hardware knowledge and C coding ability. You must explain protocols (UART, SPI, I2C) from first principles, write bug-free C code under time pressure, understand RTOS concepts (priority inversion is a popular topic), and debug hardware issues. Common coding questions: implement a circular buffer, bit reversal, state machine, debouncer. Common concept questions: explain volatile, explain interrupt latency, design a UART driver, explain priority inversion. Know your tools: GDB for software debugging, JTAG for hardware debugging, oscilloscope for signal integrity, logic analyzer for protocol decoding.",
+        "xp": 20
+      },
+      {
+        "id": "emb-11-syntax",
+        "type": "syntax",
+        "title": "Common Interview Patterns",
+        "icon": "🔤",
+        "summary": "Top 10 embedded coding patterns asked in every interview.",
+        "keyPoints": [
+          "1. Circular/ring buffer — the classic embedded interview question",
+          "2. Bit reversal — reverse bits of uint32_t",
+          "3. Count set bits (popcount)",
+          "4. Swap without temp variable",
+          "5. Endian swap (big↔little endian)",
+          "6. State machine implementation",
+          "7. ISR-safe flag pattern",
+          "8. Debouncer in C",
+          "9. Fixed-point multiplication",
+          "10. CRC8 computation"
+        ],
+        "content": "// REFERENCE: Bit reversal\nuint32_t bit_reverse(uint32_t x) {\n    x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);\n    x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);\n    x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);\n    x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);\n    return (x >> 16) | (x << 16);\n}\n\n// REFERENCE: Count set bits\nint popcount(uint32_t x) {\n    int count = 0;\n    while (x) { count += x & 1; x >>= 1; }\n    return count;\n}\n// Or: __builtin_popcount(x) on GCC\n\n// REFERENCE: Endian swap\nuint32_t swap32(uint32_t x) {\n    return ((x & 0xFF000000) >> 24) |\n           ((x & 0x00FF0000) >>  8) |\n           ((x & 0x0000FF00) <<  8) |\n           ((x & 0x000000FF) << 24);\n}\n\n// REFERENCE: Fixed-point multiply (Q16 format)\n// Q16: integer where value = bits / 65536\n// 1.5 in Q16 = 98304 (65536 * 1.5)\nint32_t q16_mul(int32_t a, int32_t b) {\n    return (int32_t)(((int64_t)a * b) >> 16);\n}",
+        "xp": 20
+      },
+      {
+        "id": "emb-11-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Solve 5 classic embedded interview questions.",
+        "keyPoints": [
+          "Q: What does volatile do? When do you use it?",
+          "Q: Explain priority inversion and how to fix it",
+          "Q: Difference between mutex and semaphore",
+          "Q: How do you debug a system that hangs randomly?",
+          "Q: Design a UART driver from scratch"
+        ],
+        "content": "// Q1: volatile\n// volatile prevents compiler from caching register values\n// Use for: hardware registers, ISR-shared variables, DMA buffers\n// volatile uint32_t* const UART_DR = (uint32_t*)0x40004404;\n// Without volatile: compiler may cache UART_DR in CPU register\n// → misses new bytes arriving in hardware!\n\n// Q2: Priority inversion\n// Low-priority task holds mutex, preempted by medium task\n// High-priority task starves → response time explosion\n// Fix: priority inheritance mutex (FreeRTOS xSemaphoreCreateMutex)\n\n// Q3: Mutex vs Semaphore\n// Mutex: ownership — only taker can give. Binary. For exclusion.\n// Semaphore: no ownership. Binary or counting. For signaling.\n// Mutex: protects shared resource (I2C bus, log buffer)\n// Semaphore: signals event (ISR signals task)\n\n// Q4: Debug random hang\n// 1. Enable watchdog → system resets on hang → logs last state\n// 2. Add heartbeat LED → stops blinking when hung\n// 3. JTAG attach when hung → examine stack, PC, registers\n// 4. Add task stack high-watermark monitoring\n// 5. Check for stack overflow (most common cause)\n\n// Q5: UART driver design\n// TX: interrupt-driven with ring buffer output\n//     main pushes to ring, ISR pops and transmits\n// RX: ISR receives into ring buffer\n//     main pops from ring for processing\n// Error handling: framing, parity, overrun flags\n// API: uart_init(baud), uart_write(buf, len), uart_read(buf, maxlen)",
+        "xp": 20
+      },
+      {
+        "id": "emb-11-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "Classic embedded interview — implement a full UART driver with ring buffer.",
+        "xp": 55,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 11: Classic Interview — UART Driver\n\nImplement a complete UART driver simulation:\n\n```c\n#define TX_BUF_SIZE 64\n#define RX_BUF_SIZE 64\n\ntypedef struct {\n    // TX ring buffer\n    uint8_t  tx_buf[TX_BUF_SIZE];\n    volatile uint8_t tx_head, tx_tail;\n    // RX ring buffer\n    uint8_t  rx_buf[RX_BUF_SIZE];\n    volatile uint8_t rx_head, rx_tail;\n    // Stats\n    uint32_t tx_count, rx_count;\n    uint32_t overflow_count;\n} UART;\n\nvoid   uart_init(UART* u);\nint    uart_write(UART* u, const uint8_t* data, uint16_t len);\nint    uart_read(UART* u, uint8_t* data, uint16_t maxlen);\nvoid   uart_rx_isr(UART* u, uint8_t byte);  // called from ISR\nint    uart_tx_isr(UART* u, uint8_t* byte); // called from ISR\nuint16_t uart_available(const UART* u);\n```\n\nTest: send 'Hello World!', simulate ISR byte-by-byte transmission, verify all 12 bytes received.",
+          "starterCode": "// Lab 11: Complete UART Driver\n#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n\n#define TX_BUF_SIZE 64\n#define RX_BUF_SIZE 64\n\ntypedef struct {\n    uint8_t  tx_buf[TX_BUF_SIZE];\n    volatile uint8_t tx_head, tx_tail;\n    uint8_t  rx_buf[RX_BUF_SIZE];\n    volatile uint8_t rx_head, rx_tail;\n    uint32_t tx_count, rx_count, overflow_count;\n} UART;\n\nvoid uart_init(UART* u) {\n    memset(u, 0, sizeof(*u));\n}\n\nstatic uint8_t tx_full(const UART* u) {\n    return ((u->tx_head + 1) % TX_BUF_SIZE) == u->tx_tail;\n}\nstatic uint8_t rx_full(const UART* u) {\n    return ((u->rx_head + 1) % RX_BUF_SIZE) == u->rx_tail;\n}\nstatic uint8_t tx_empty(const UART* u) {\n    return u->tx_head == u->tx_tail;\n}\nstatic uint8_t rx_empty(const UART* u) {\n    return u->rx_head == u->rx_tail;\n}\n\n// Write to TX ring buffer (called by application)\nint uart_write(UART* u, const uint8_t* data, uint16_t len) {\n    int written = 0;\n    for (uint16_t i = 0; i < len; i++) {\n        if (tx_full(u)) break;\n        u->tx_buf[u->tx_head] = data[i];\n        u->tx_head = (u->tx_head + 1) % TX_BUF_SIZE;\n        written++;\n    }\n    return written;\n}\n\n// Read from RX ring buffer (called by application)\nint uart_read(UART* u, uint8_t* data, uint16_t maxlen) {\n    int read = 0;\n    while (read < maxlen && !rx_empty(u)) {\n        data[read++] = u->rx_buf[u->rx_tail];\n        u->rx_tail = (u->rx_tail + 1) % RX_BUF_SIZE;\n    }\n    return read;\n}\n\n// RX ISR: byte received from hardware\nvoid uart_rx_isr(UART* u, uint8_t byte) {\n    if (rx_full(u)) {\n        u->overflow_count++;\n        return; // drop byte\n    }\n    u->rx_buf[u->rx_head] = byte;\n    u->rx_head = (u->rx_head + 1) % RX_BUF_SIZE;\n    u->rx_count++;\n}\n\n// TX ISR: get next byte to transmit\n// Returns 1 if byte available, 0 if TX buffer empty\nint uart_tx_isr(UART* u, uint8_t* byte) {\n    if (tx_empty(u)) return 0;\n    *byte = u->tx_buf[u->tx_tail];\n    u->tx_tail = (u->tx_tail + 1) % TX_BUF_SIZE;\n    u->tx_count++;\n    return 1;\n}\n\nuint16_t uart_available(const UART* u) {\n    return (u->rx_head - u->rx_tail + RX_BUF_SIZE) % RX_BUF_SIZE;\n}\n\nint main(void) {\n    UART uart;\n    uart_init(&uart);\n\n    // Test TX: write string, simulate ISR draining it\n    const char* msg = \"Hello World!\";\n    int written = uart_write(&uart, (uint8_t*)msg, strlen(msg));\n    assert(written == (int)strlen(msg));\n    printf(\"Written %d bytes to TX buffer\\n\", written);\n\n    // Simulate TX ISR draining buffer byte by byte\n    char tx_output[64];\n    int tx_count = 0;\n    uint8_t byte;\n    while (uart_tx_isr(&uart, &byte)) {\n        tx_output[tx_count++] = byte;\n    }\n    tx_output[tx_count] = '\\0';\n    assert(strcmp(tx_output, msg) == 0);\n    printf(\"TX transmitted: '%s'\\n\", tx_output);\n    printf(\"TX test PASSED\\n\");\n\n    // Test RX: simulate ISR pushing bytes\n    const char* incoming = \"ACK OK\";\n    for (int i = 0; i < (int)strlen(incoming); i++)\n        uart_rx_isr(&uart, incoming[i]);\n\n    assert(uart_available(&uart) == (int)strlen(incoming));\n\n    char rx_buf[32];\n    int rx_count = uart_read(&uart, (uint8_t*)rx_buf, sizeof(rx_buf));\n    rx_buf[rx_count] = '\\0';\n    assert(strcmp(rx_buf, incoming) == 0);\n    printf(\"RX received: '%s'\\n\", rx_buf);\n    printf(\"RX test PASSED\\n\");\n\n    // Test overflow\n    for (int i = 0; i < 70; i++) uart_rx_isr(&uart, 'X');\n    assert(uart.overflow_count > 0);\n    printf(\"Overflow detected: %u drops\\n\", uart.overflow_count);\n    printf(\"Overflow test PASSED\\n\");\n\n    printf(\"** UART Driver Interview PASSED **\\n\");\n    return 0;\n}",
+          "hints": [
+            "tx_full: ((head+1)%SIZE)==tail — one slot always empty",
+            "uart_write: push to tx_buf[tx_head], advance tx_head",
+            "uart_tx_isr: pop from tx_buf[tx_tail], advance tx_tail",
+            "uart_rx_isr: push received byte to rx_buf[rx_head]"
+          ],
+          "requiredPatterns": [
+            "typedef struct",
+            "UART",
+            "tx_buf",
+            "rx_buf",
+            "tx_head",
+            "tx_tail",
+            "rx_head",
+            "rx_tail",
+            "uart_write",
+            "uart_read",
+            "uart_rx_isr",
+            "uart_tx_isr",
+            "overflow_count",
+            "UART Driver Interview PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "A production UART driver uses ring buffers for both TX and RX. Application writes to TX ring buffer; TX ISR pops bytes and sends them one at a time. RX ISR pushes received bytes to RX ring buffer; application reads at its own pace. Overflow tracking tells you if data was lost. volatile head/tail pointers prevent compiler from caching shared state between ISR and main contexts."
+        }
+      },
+      {
+        "id": "emb-11-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Embedded interview-style questions.",
+        "xp": 25,
+        "quiz": [
+          { "q": "Most common embedded interview coding question:", "options": ["Write a kernel module", "Implement a circular/ring buffer in C", "Write an RTOS scheduler", "Implement FFT"], "answer": 1 },
+          { "q": "Difference between semaphore and mutex:", "options": ["They are the same", "Mutex has ownership (only taker can give), semaphore has no ownership", "Semaphore is faster", "Mutex works in ISRs"], "answer": 1 },
+          { "q": "Why is malloc dangerous in production embedded firmware:", "options": ["It is too slow", "Heap fragmentation can cause unpredictable allocation failures in long-running systems", "It requires an OS", "It wastes stack space"], "answer": 1 },
+          { "q": "When debugging a random system hang, first step is:", "options": ["Rewrite all code", "Enable watchdog to reset on hang and log the reset reason", "Increase clock speed", "Add more RAM"], "answer": 1 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "levelId": 12,
+    "bonusXp": 500,
+    "badge": "Embedded Systems Architect",
+    "subLevels": [
+      {
+        "id": "emb-12-concept",
+        "type": "concept",
+        "title": "Concept",
+        "icon": "📚",
+        "summary": "Complete embedded system — the final boss challenge.",
+        "keyPoints": [
+          "System design: MCU selection, memory sizing, power budget, connectivity",
+          "RTOS architecture: task decomposition, IPC design, timing analysis",
+          "Driver layer: HAL abstraction, portability across MCU families",
+          "Application layer: business logic, state machines, protocol stacks",
+          "Production readiness: watchdog, fault handlers, OTA updates, logging",
+          "Safety: ISO 26262 (automotive), IEC 62443 (industrial), MISRA-C",
+          "Testing: unit tests (Unity), hardware-in-the-loop, static analysis"
+        ],
+        "content": "A production embedded system is far more than just making LEDs blink. It requires careful hardware-software co-design: choosing the right MCU for the power/performance/cost trade-off, partitioning software into well-defined layers (hardware abstraction, OS, drivers, application), designing for reliability (watchdog, fault recovery, graceful degradation), and meeting safety standards if applicable. The firmware architecture must be maintainable — clean APIs between layers, comprehensive logging, and testability from day one. OTA (Over-The-Air) firmware updates are now mandatory for any connected product — a bug in the field must be fixable without physical access.",
+        "xp": 30
+      },
+      {
+        "id": "emb-12-syntax",
+        "type": "syntax",
+        "title": "Architecture Overview",
+        "icon": "🔤",
+        "summary": "Complete embedded system software architecture.",
+        "keyPoints": [
+          "Layer 1: Hardware — MCU, sensors, actuators, power",
+          "Layer 2: HAL/BSP — portable hardware abstraction",
+          "Layer 3: RTOS — FreeRTOS tasks, queues, mutexes",
+          "Layer 4: Middleware — protocol stacks, filesystems",
+          "Layer 5: Application — business logic, state machines",
+          "Layer 6: Management — OTA, logging, diagnostics",
+          "Cross-cutting: error handling, watchdog, security"
+        ],
+        "content": "// Complete Embedded System Architecture\n//\n// ┌────────────────────────────────────────┐\n// │           APPLICATION LAYER            │\n// │  TemperatureApp  AlertApp  ConfigApp   │\n// ├────────────────────────────────────────┤\n// │          MIDDLEWARE LAYER              │\n// │  MQTT Client  JSON Parser  OTA Mgr    │\n// ├────────────────────────────────────────┤\n// │            RTOS LAYER                  │\n// │  SensorTask  CommTask  LogTask         │\n// │  Queues  Mutexes  Semaphores           │\n// ├────────────────────────────────────────┤\n// │           DRIVER LAYER                 │\n// │  UART  SPI  I2C  ADC  Timer  GPIO      │\n// ├────────────────────────────────────────┤\n// │             HAL/BSP                    │\n// │  STM32 HAL  Board-specific init        │\n// ├────────────────────────────────────────┤\n// │           HARDWARE                     │\n// │  STM32L4  Sensors  BLE module  Flash   │\n// └────────────────────────────────────────┘\n//\n// KEY DESIGN PRINCIPLES:\n// 1. Each layer only calls down (never up)\n// 2. Hardware-specific code isolated in HAL/BSP\n// 3. Application layer has no direct hardware access\n// 4. Error codes propagated up through all layers\n// 5. Watchdog kicked by dedicated monitoring task\n// 6. Persistent log for post-mortem analysis",
+        "xp": 30
+      },
+      {
+        "id": "emb-12-walkthrough",
+        "type": "walkthrough",
+        "title": "Walkthrough",
+        "icon": "👀",
+        "summary": "Read a complete embedded system specification and design decisions.",
+        "keyPoints": [
+          "Application: industrial temperature monitor, 5-year battery life",
+          "MCU: STM32L4 (ultra-low power ARM Cortex-M4)",
+          "Connectivity: LoRa for 10km range, no Wi-Fi (power budget)",
+          "RTOS: FreeRTOS, 4 tasks",
+          "Power: avg 8μA → 5+ years on 2× AA cells",
+          "OTA: firmware updates over LoRa (slow but reliable)"
+        ],
+        "content": "// System Design Document: Industrial Temp Monitor\n// ================================================\n\n// REQUIREMENTS:\n// - Measure temperature every 60 seconds\n// - Transmit data over LoRa to gateway 5km away\n// - 5-year battery life on 2×AA (3000mAh total)\n// - Operating temp: -40°C to +85°C\n// - IP67 waterproof enclosure\n\n// MCU SELECTION: STM32L476\n// - Ultra-low power: 100nA in Shutdown mode\n// - 80MHz Cortex-M4 with FPU\n// - 1MB Flash, 128KB SRAM\n// - Hardware AES for security\n// - Price: $3 in volume\n\n// POWER BUDGET (target 8μA average):\n// Activity        Current  Duration  Contribution\n// Temp sensor    200μA    10ms      0.03μA avg\n// MCU active     5mA      15ms      1.25μA avg\n// LoRa transmit  40mA     30ms      20μA for 30ms\n// LoRa @ 60s     40mA×0.03ms/60s = 0.02μA avg\n// MCU sleep      0.5μA    ~60s      0.5μA avg\n// Total                             ~1.8μA avg\n// Life = 3000mAh / 0.0018mA = 1,666,667h = 190 YEARS!\n// (accounting for real-world factors → ~5 years)\n\n// RTOS TASKS:\n// 1. SensorTask (P3): read ADC, i2c temperature sensor\n// 2. LoRaTask   (P2): queue management, TX scheduling\n// 3. WatchdogTask(P4): heartbeat all tasks, kick IWDG\n// 4. MainTask   (P1): coordinate, sleep management",
+        "xp": 30
+      },
+      {
+        "id": "emb-12-lab",
+        "type": "lab",
+        "title": "Lab",
+        "icon": "⚗️",
+        "summary": "FINAL BOSS — Complete embedded system: sensor + RTOS + MQTT + OTA.",
+        "xp": 80,
+        "lab": {
+          "editorLanguage": "c",
+          "instructions": "# Lab 12: FINAL BOSS — Complete Embedded System\n\nImplement a complete IoT temperature monitor system:\n\n**Components:**\n1. **Sensor driver**: read temperature (simulated ADC)\n2. **Ring buffer**: interrupt-safe data storage  \n3. **RTOS simulation**: cooperative multi-tasking\n4. **MQTT serializer**: JSON payload builder\n5. **OTA manager**: verify and apply firmware updates\n6. **Watchdog**: detect hung tasks\n\n```c\n// System state machine\ntypedef enum {\n    STATE_INIT, STATE_RUNNING,\n    STATE_OTA, STATE_ERROR\n} SystemState;\n\n// Complete system\ntypedef struct {\n    SystemState   state;\n    float         temperature;\n    uint32_t      sample_count;\n    uint32_t      tx_count;\n    uint32_t      error_count;\n    uint8_t       watchdog_flags; // bit per task\n    char          fw_version[8];\n} SystemContext;\n```\n\nImplement and test all 6 components working together.",
+          "starterCode": "// Lab 12: FINAL BOSS — Complete IoT Embedded System\n#include <stdio.h>\n#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>\n#include <assert.h>\n#include <math.h>\n\n// ── System State Machine ────────────────────────────────\ntypedef enum {\n    STATE_INIT, STATE_RUNNING, STATE_OTA, STATE_ERROR\n} SystemState;\n\ntypedef struct {\n    SystemState state;\n    float       temperature;\n    uint32_t    sample_count;\n    uint32_t    tx_count;\n    uint32_t    error_count;\n    uint8_t     watchdog_flags; // bit 0=sensor, bit 1=comm\n    char        fw_version[8];\n} SystemContext;\n\n// ── Sensor Driver (simulated) ───────────────────────────\n#define VREF 3.3f\n#define ADC_MAX 4095\n\nfloat sensor_read_temperature(uint32_t adc_raw) {\n    // Simplified: map ADC 0-4095 to -40 to +125°C\n    return -40.0f + ((float)adc_raw / ADC_MAX) * 165.0f;\n}\n\n// ── Ring Buffer ─────────────────────────────────────────\n#define SAMPLE_BUF_SIZE 8\n\ntypedef struct {\n    float    data[SAMPLE_BUF_SIZE];\n    uint8_t  head, tail, count;\n} SampleBuffer;\n\nvoid   sbuf_init(SampleBuffer* b) { memset(b, 0, sizeof(*b)); }\nvoid   sbuf_push(SampleBuffer* b, float v) {\n    if (b->count >= SAMPLE_BUF_SIZE) return;\n    b->data[b->head] = v;\n    b->head = (b->head + 1) % SAMPLE_BUF_SIZE;\n    b->count++;\n}\nfloat  sbuf_average(const SampleBuffer* b) {\n    if (!b->count) return 0;\n    float s = 0;\n    for (int i=0; i<b->count; i++)\n        s += b->data[(b->tail+i) % SAMPLE_BUF_SIZE];\n    return s / b->count;\n}\n\n// ── MQTT JSON Serializer ────────────────────────────────\nint build_mqtt_payload(const SystemContext* ctx, char* buf, int maxlen) {\n    return snprintf(buf, maxlen,\n        \"{\\\"fw\\\":\\\"%s\\\",\\\"temp\\\":%.1f,\"\n        \"\\\"samples\\\":%u,\\\"tx\\\":%u,\\\"err\\\":%u}\",\n        ctx->fw_version,\n        ctx->temperature,\n        ctx->sample_count,\n        ctx->tx_count,\n        ctx->error_count);\n}\n\n// ── OTA Manager ─────────────────────────────────────────\n#define OTA_MAGIC 0xC0DE1234\n\ntypedef struct {\n    uint32_t magic;\n    uint32_t version;\n    uint32_t size;\n    uint32_t crc; // simplified\n    uint8_t  data[64];\n} OTAPacket;\n\nuint32_t simple_checksum(const uint8_t* d, uint32_t len) {\n    uint32_t sum = 0;\n    for (uint32_t i=0; i<len; i++) sum += d[i];\n    return sum;\n}\n\nint ota_verify(const OTAPacket* pkt) {\n    if (pkt->magic != OTA_MAGIC) return 0;\n    uint32_t crc = simple_checksum(pkt->data, pkt->size);\n    return (crc == pkt->crc) ? 1 : 0;\n}\n\nint ota_apply(SystemContext* ctx, const OTAPacket* pkt) {\n    if (!ota_verify(pkt)) return -1;\n    // In real system: erase flash, write new firmware\n    // Here: update version string\n    snprintf(ctx->fw_version, sizeof(ctx->fw_version),\n             \"v%u\", pkt->version);\n    return 0;\n}\n\n// ── Watchdog ────────────────────────────────────────────\n#define TASK_SENSOR_BIT 0x01\n#define TASK_COMM_BIT   0x02\n#define ALL_TASKS_MASK  0x03\n\nvoid watchdog_kick(SystemContext* ctx, uint8_t task_bit) {\n    ctx->watchdog_flags |= task_bit;\n}\n\nint watchdog_check(SystemContext* ctx) {\n    if ((ctx->watchdog_flags & ALL_TASKS_MASK) == ALL_TASKS_MASK) {\n        ctx->watchdog_flags = 0; // reset for next check\n        return 1; // all tasks alive\n    }\n    return 0; // some task hung!\n}\n\n// ── Main System Test ────────────────────────────────────\nint main(void) {\n    SystemContext sys = {0};\n    sys.state = STATE_INIT;\n    strncpy(sys.fw_version, \"v1.0.0\", sizeof(sys.fw_version));\n\n    SampleBuffer samples;\n    sbuf_init(&samples);\n\n    printf(\"=== FINAL BOSS: Complete IoT Embedded System ===\\n\");\n\n    // ── INIT STATE ──\n    sys.state = STATE_RUNNING;\n    printf(\"System initialized: FW=%s\\n\", sys.fw_version);\n\n    // ── SENSOR TASK ──\n    printf(\"\\n--- Sensor Task ---\\n\");\n    uint32_t adc_readings[] = {2048, 2100, 2090, 2070, 2080};\n    for (int i=0; i<5; i++) {\n        float temp = sensor_read_temperature(adc_readings[i]);\n        sbuf_push(&samples, temp);\n        sys.sample_count++;\n        watchdog_kick(&sys, TASK_SENSOR_BIT);\n        printf(\"Sample %d: ADC=%u → %.1f°C\\n\", i+1, adc_readings[i], temp);\n    }\n    sys.temperature = sbuf_average(&samples);\n    printf(\"Average temp: %.1f°C\\n\", sys.temperature);\n    assert(sys.sample_count == 5);\n\n    // ── COMM TASK ──\n    printf(\"\\n--- Comm Task (MQTT) ---\\n\");\n    char mqtt_payload[256];\n    int plen = build_mqtt_payload(&sys, mqtt_payload, sizeof(mqtt_payload));\n    assert(plen > 0);\n    printf(\"MQTT payload: %s\\n\", mqtt_payload);\n    assert(strstr(mqtt_payload, sys.fw_version) != NULL);\n    assert(strstr(mqtt_payload, \"temp\") != NULL);\n    sys.tx_count++;\n    watchdog_kick(&sys, TASK_COMM_BIT);\n\n    // ── WATCHDOG CHECK ──\n    printf(\"\\n--- Watchdog Check ---\\n\");\n    assert(watchdog_check(&sys) == 1);\n    printf(\"All tasks alive: PASSED\\n\");\n\n    // ── OTA UPDATE ──\n    printf(\"\\n--- OTA Update ---\\n\");\n    OTAPacket ota = {\n        .magic   = OTA_MAGIC,\n        .version = 2,\n        .size    = 10\n    };\n    for (int i=0; i<10; i++) ota.data[i] = i*2;\n    ota.crc = simple_checksum(ota.data, ota.size);\n\n    sys.state = STATE_OTA;\n    assert(ota_apply(&sys, &ota) == 0);\n    assert(strcmp(sys.fw_version, \"v2\") == 0);\n    sys.state = STATE_RUNNING;\n    printf(\"OTA applied: FW now = %s\\n\", sys.fw_version);\n\n    // ── CORRUPT OTA ──\n    OTAPacket bad_ota = ota;\n    bad_ota.data[0] ^= 0xFF; // corrupt\n    assert(ota_apply(&sys, &bad_ota) == -1);\n    printf(\"Corrupt OTA rejected: PASSED\\n\");\n\n    // ── FINAL REPORT ──\n    printf(\"\\n=== System Report ===\\n\");\n    printf(\"FW Version:  %s\\n\", sys.fw_version);\n    printf(\"Temperature: %.1f°C\\n\", sys.temperature);\n    printf(\"Samples:     %u\\n\", sys.sample_count);\n    printf(\"TX count:    %u\\n\", sys.tx_count);\n    printf(\"Errors:      %u\\n\", sys.error_count);\n\n    assert(sys.sample_count == 5);\n    assert(sys.tx_count == 1);\n    assert(sys.error_count == 0);\n\n    printf(\"\\n=== FINAL BOSS PASSED ===\");\n    printf(\" All embedded system components working! ===\\n\");\n    return 0;\n}",
+          "hints": [
+            "sensor_read_temperature: map ADC 0-4095 to -40..+125°C linearly",
+            "sbuf_average: sum all count items, divide by count",
+            "build_mqtt_payload: snprintf JSON with fw, temp, samples, tx, err",
+            "ota_verify: check magic + compute checksum vs stored"
+          ],
+          "requiredPatterns": [
+            "SystemContext",
+            "SampleBuffer",
+            "OTAPacket",
+            "sensor_read_temperature",
+            "sbuf_push",
+            "sbuf_average",
+            "build_mqtt_payload",
+            "ota_verify",
+            "ota_apply",
+            "watchdog_kick",
+            "watchdog_check",
+            "FINAL BOSS PASSED"
+          ],
+          "forbiddenPatterns": [],
+          "solutionExplanation": "The complete embedded system integrates all concepts: ADC sensor reading with averaging filter (noise reduction), ring buffer for sample storage, MQTT JSON serialization for IoT connectivity, OTA firmware update with integrity verification, and watchdog for system health monitoring. This architecture handles real-world embedded requirements: reliability, maintainability, and field upgradability."
+        }
+      },
+      {
+        "id": "emb-12-quiz",
+        "type": "quiz",
+        "title": "Quiz",
+        "icon": "🧠",
+        "summary": "Final boss — complete embedded systems architect knowledge.",
+        "xp": 30,
+        "quiz": [
+          { "q": "The most important quality of production embedded firmware:", "options": ["Maximum performance", "Reliability — must work correctly for years without maintenance", "Minimum code size", "Maximum features"], "answer": 1 },
+          { "q": "OTA (Over-The-Air) update requires:", "options": ["Wi-Fi only", "CRC/hash verification + dual-bank flash for atomic update + rollback capability", "Physical access", "OS support"], "answer": 1 },
+          { "q": "MISRA-C is:", "options": ["A microcontroller brand", "Coding standard for safety-critical embedded C — restricts dangerous language features", "A memory allocation library", "An RTOS"], "answer": 1 },
+          { "q": "Hardware-in-the-Loop (HIL) testing:", "options": ["Tests software only", "Tests firmware against real or simulated hardware to catch hardware-software integration bugs", "Is the same as unit testing", "Requires no hardware"], "answer": 1 }
+        ]
+      }
+    ]
+  }
+]

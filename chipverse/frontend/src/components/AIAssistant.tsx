@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, Loader2, Minimize2, Maximize2, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserContext } from "@/lib/user";
@@ -59,7 +59,6 @@ function TypingIndicator() {
 function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
 
-  // Simple markdown-like rendering
   const renderContent = (text: string) => {
     const parts = text.split(/(```[\s\S]*?```|`[^`]+`)/g);
     return parts.map((part, i) => {
@@ -74,7 +73,6 @@ function MessageBubble({ msg }: { msg: Message }) {
       if (part.startsWith("`") && part.endsWith("`")) {
         return <code key={i} className="bg-black/40 text-blue-300 px-1.5 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
       }
-      // Handle bold **text**
       const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
       return (
         <span key={i}>
@@ -127,6 +125,80 @@ export default function AIAssistant() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // ── Drag state ──────────────────────────────────────────────────────────
+  // pos is stored as { right, bottom } distance from viewport edges
+  const [pos, setPos] = useState({ right: 24, bottom: 24 });
+  const dragging = useRef(false);
+  const hasDragged = useRef(false);
+  const dragStart = useRef({ mouseX: 0, mouseY: 0, right: 24, bottom: 24 });
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    dragging.current = true;
+    hasDragged.current = false;
+    dragStart.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      right: pos.right,
+      bottom: pos.bottom,
+    };
+    e.preventDefault();
+  }, [pos]);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    dragging.current = true;
+    hasDragged.current = false;
+    const t = e.touches[0];
+    dragStart.current = {
+      mouseX: t.clientX,
+      mouseY: t.clientY,
+      right: pos.right,
+      bottom: pos.bottom,
+    };
+  }, [pos]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      hasDragged.current = true;
+      const dx = e.clientX - dragStart.current.mouseX;
+      const dy = e.clientY - dragStart.current.mouseY;
+      setPos({
+        right:  Math.max(8, Math.min(dragStart.current.right  - dx, window.innerWidth  - 60)),
+        bottom: Math.max(8, Math.min(dragStart.current.bottom - dy, window.innerHeight - 60)),
+      });
+    };
+    const onMouseUp = () => { dragging.current = false; };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragging.current) return;
+      hasDragged.current = true;
+      const t = e.touches[0];
+      const dx = t.clientX - dragStart.current.mouseX;
+      const dy = t.clientY - dragStart.current.mouseY;
+      setPos({
+        right:  Math.max(8, Math.min(dragStart.current.right  - dx, window.innerWidth  - 60)),
+        bottom: Math.max(8, Math.min(dragStart.current.bottom - dy, window.innerHeight - 60)),
+      });
+    };
+    const onTouchEnd = () => { dragging.current = false; };
+
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+  // ────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (open) {
@@ -175,8 +247,6 @@ export default function AIAssistant() {
       const reply = data.choices?.[0]?.message?.content ?? "Sorry, I couldn't generate a response. Please try again.";
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-
-      // Show badge on bubble if chat is closed
       if (!open) setHasNewMessage(true);
 
     } catch (err) {
@@ -200,10 +270,6 @@ export default function AIAssistant() {
     }
   };
 
-  const handleSuggestion = (s: string) => {
-    sendMessage(s);
-  };
-
   const clearChat = () => {
     setMessages([
       {
@@ -213,46 +279,83 @@ export default function AIAssistant() {
     ]);
   };
 
-  // Must be after all hooks — no early returns above this line
   if (!isAuthenticated) return null;
+
+  // ── Smart chat window positioning ──────────────────────────────────────
+  // Decide whether to open left/right and up/down based on button position
+  const CHAT_W = 380;
+  const CHAT_H = 560;
+  const BTN    = 52;
+
+  // Button's left edge from left of screen
+  const btnLeft = window.innerWidth - pos.right - BTN;
+  // Button's top edge from top of screen
+  const btnTop  = window.innerHeight - pos.bottom - BTN;
+
+  // Horizontal: open to right if more space on right, else to left
+  const spaceRight = window.innerWidth - btnLeft - BTN;
+  const spaceLeft  = btnLeft;
+  const openRight  = spaceRight >= CHAT_W || spaceRight >= spaceLeft;
+
+  // Vertical: open upward if more space above, else downward
+  const spaceAbove = btnTop;
+  const spaceBelow = window.innerHeight - btnTop - BTN;
+  const openUp     = spaceAbove >= CHAT_H || spaceAbove >= spaceBelow;
+
+  const chatStyle: React.CSSProperties = {
+    position: "fixed",
+    zIndex: 9998,
+    width: `clamp(300px, 90vw, ${CHAT_W}px)`,
+    height: minimized ? "52px" : `clamp(400px, 70vh, ${CHAT_H}px)`,
+    // Horizontal
+    ...(openRight
+      ? { left: `${Math.min(btnLeft, window.innerWidth - CHAT_W - 8)}px` }
+      : { right: `${Math.min(pos.right, window.innerWidth - CHAT_W - 8)}px` }),
+    // Vertical
+    ...(openUp
+      ? { bottom: `${pos.bottom + BTN + 12}px` }
+      : { top:    `${Math.min(btnTop + BTN + 12, window.innerHeight - CHAT_H - 8)}px` }),
+  };
+  // ────────────────────────────────────────────────────────────────────────
 
   return (
     <>
-      {/* ── Floating bubble button ── */}
+      {/* ── Draggable floating button ── */}
       <button
-        onClick={() => { setOpen((v) => !v); setHasNewMessage(false); }}
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onClick={() => {
+          if (!hasDragged.current) {
+            setOpen((v) => !v);
+            setHasNewMessage(false);
+          }
+        }}
         style={{
           position: "fixed",
-          bottom: "24px",
-          left: "24px",
+          bottom: `${pos.bottom}px`,
+          right: `${pos.right}px`,
           zIndex: 9998,
           width: "52px",
           height: "52px",
           borderRadius: "50%",
           background: "linear-gradient(135deg, #2563eb, #7c3aed)",
           border: "none",
-          cursor: "pointer",
+          cursor: "grab",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 0 24px rgba(37,99,235,0.5), 0 4px 16px rgba(0,0,0,0.4)",
-          transition: "transform 0.2s, box-shadow 0.2s",
+          userSelect: "none",
+          touchAction: "none",
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = "scale(1.1)";
           (e.currentTarget as HTMLElement).style.boxShadow = "0 0 32px rgba(37,99,235,0.7), 0 4px 20px rgba(0,0,0,0.5)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = "scale(1)";
           (e.currentTarget as HTMLElement).style.boxShadow = "0 0 24px rgba(37,99,235,0.5), 0 4px 16px rgba(0,0,0,0.4)";
         }}
       >
-        {open ? (
-          <X className="w-5 h-5 text-white" />
-        ) : (
-          <Cpu className="w-5 h-5 text-white" />
-        )}
-        {/* New message badge */}
+        {open ? <X className="w-5 h-5 text-white" /> : <Cpu className="w-5 h-5 text-white" />}
         {hasNewMessage && !open && (
           <span style={{
             position: "absolute", top: "-2px", right: "-2px",
@@ -262,33 +365,13 @@ export default function AIAssistant() {
         )}
       </button>
 
-      {/* Tooltip */}
-      {!open && (
-        <div style={{
-          position: "fixed", bottom: "82px", left: "24px", zIndex: 9997,
-          background: "rgba(10,10,20,0.95)", border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: "8px", padding: "5px 10px",
-          color: "#ccc", fontSize: "11px", fontWeight: 600,
-          pointerEvents: "none", whiteSpace: "nowrap",
-          opacity: 0,
-          animation: "none",
-        }}
-          className="chipbot-tooltip"
-        >
-          Ask ChipBot 🤖
-        </div>
-      )}
+      {/* ── Chat window — smart positioning ── */}
 
-      {/* ── Chat window ── */}
+      {/* ── Chat window — smart positioning ── */}
       {open && (
         <div
           style={{
-            position: "fixed",
-            bottom: "88px",
-            left: "24px",
-            zIndex: 9998,
-            width: "clamp(300px, 90vw, 380px)",
-            height: minimized ? "52px" : "clamp(400px, 70vh, 560px)",
+            ...chatStyle,
             background: "rgba(8,8,18,0.97)",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "20px",
@@ -312,8 +395,7 @@ export default function AIAssistant() {
               width: "32px", height: "32px", borderRadius: "50%",
               background: "linear-gradient(135deg,#2563eb,#7c3aed)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-              boxShadow: "0 0 12px rgba(37,99,235,0.4)",
+              flexShrink: 0, boxShadow: "0 0 12px rgba(37,99,235,0.4)",
             }}>
               <Cpu className="w-4 h-4 text-white" />
             </div>
@@ -325,25 +407,19 @@ export default function AIAssistant() {
               </div>
             </div>
             <div style={{ display: "flex", gap: "4px" }}>
-              <button
-                onClick={clearChat}
-                title="Clear chat"
+              <button onClick={clearChat} title="Clear chat"
                 style={{ padding: "4px", borderRadius: "6px", background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: "10px" }}
                 onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = "#aaa"}
                 onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = "#666"}
-              >
-                🗑
-              </button>
-              <button
-                onClick={() => setMinimized((v) => !v)}
+              >🗑</button>
+              <button onClick={() => setMinimized((v) => !v)}
                 style={{ padding: "4px", borderRadius: "6px", background: "none", border: "none", color: "#666", cursor: "pointer" }}
                 onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = "#aaa"}
                 onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = "#666"}
               >
                 {minimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
               </button>
-              <button
-                onClick={() => setOpen(false)}
+              <button onClick={() => setOpen(false)}
                 style={{ padding: "4px", borderRadius: "6px", background: "none", border: "none", color: "#666", cursor: "pointer" }}
                 onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = "#aaa"}
                 onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = "#666"}
@@ -357,16 +433,12 @@ export default function AIAssistant() {
             <>
               {/* Messages */}
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px 8px", scrollbarWidth: "thin" }}>
-
-                {messages.map((msg, i) => (
-                  <MessageBubble key={i} msg={msg} />
-                ))}
-
+                {messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
                 {loading && <TypingIndicator />}
                 <div ref={bottomRef} />
               </div>
 
-              {/* Suggestions — only show when only greeting exists */}
+              {/* Suggestions */}
               {messages.length === 1 && !loading && (
                 <div style={{ padding: "0 14px 8px" }}>
                   <div style={{ color: "#555", fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "6px" }}>
@@ -374,42 +446,25 @@ export default function AIAssistant() {
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                     {SUGGESTIONS.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => handleSuggestion(s)}
+                      <button key={s} onClick={() => sendMessage(s)}
                         style={{
                           padding: "4px 9px", borderRadius: "999px", fontSize: "10.5px",
                           background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.25)",
-                          color: "#93c5fd", cursor: "pointer", transition: "all 0.2s",
-                          textAlign: "left",
+                          color: "#93c5fd", cursor: "pointer", transition: "all 0.2s", textAlign: "left",
                         }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.2)";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.5)";
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.1)";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.25)";
-                        }}
-                      >
-                        {s}
-                      </button>
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.2)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.1)"; }}
+                      >{s}</button>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Input */}
-              <div style={{
-                padding: "10px 14px 14px",
-                borderTop: "1px solid rgba(255,255,255,0.07)",
-                flexShrink: 0,
-              }}>
+              <div style={{ padding: "10px 14px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
                 <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
                   <textarea
-                    ref={inputRef}
-                    rows={1}
-                    value={input}
+                    ref={inputRef} rows={1} value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask about VLSI, careers, concepts..."
@@ -426,24 +481,17 @@ export default function AIAssistant() {
                     onFocus={(e) => (e.target.style.borderColor = "rgba(37,99,235,0.5)")}
                     onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
                   />
-                  <button
-                    onClick={() => sendMessage(input)}
-                    disabled={!input.trim() || loading}
+                  <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
                     style={{
                       width: "38px", height: "38px", borderRadius: "12px",
-                      background: input.trim() && !loading
-                        ? "linear-gradient(135deg,#2563eb,#7c3aed)"
-                        : "rgba(255,255,255,0.06)",
+                      background: input.trim() && !loading ? "linear-gradient(135deg,#2563eb,#7c3aed)" : "rgba(255,255,255,0.06)",
                       border: "none", cursor: input.trim() && !loading ? "pointer" : "not-allowed",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       flexShrink: 0, transition: "all 0.2s",
                       boxShadow: input.trim() && !loading ? "0 0 14px rgba(37,99,235,0.4)" : "none",
                     }}
                   >
-                    {loading
-                      ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                      : <Send className="w-4 h-4 text-white" />
-                    }
+                    {loading ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" /> : <Send className="w-4 h-4 text-white" />}
                   </button>
                 </div>
                 <div style={{ color: "#333", fontSize: "9.5px", textAlign: "center", marginTop: "6px" }}>
