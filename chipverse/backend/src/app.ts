@@ -2,8 +2,6 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import adminRoutes from "./routes/admin.routes";
-import resourceRoutes from "./routes/resource.routes";
 
 import { config } from './config/env';
 import './config/passport';
@@ -16,6 +14,8 @@ import notificationRoutes from './routes/notification.routes';
 import chatRoutes from './routes/chat.routes';
 import placementRoutes from './routes/placement.routes';
 import labRoutes from './routes/lab.routes';
+import adminRoutes from './routes/admin.routes';
+import resourceRoutes from './routes/resource.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
@@ -53,6 +53,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), env: config.env });
 });
 
+// ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/friends', friendsRoutes);
@@ -61,10 +62,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/placement', placementRoutes);
 app.use('/api/lab', labRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/resources', resourceRoutes);
 
+// ── Error handlers (must be LAST) ─────────────────────────────────────────────
 app.use(notFoundHandler);
 app.use(errorHandler);
-app.use("/api/admin", adminRoutes);
-app.use("/api/resources", resourceRoutes);
 
 export default app;
