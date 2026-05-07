@@ -22,11 +22,16 @@ import Placement from "@/pages/Placement";
 import Messages from "@/pages/Messages";
 import AIAssistant from "@/components/AIAssistant";
 import VerificationPath from "@/pages/paths/VerificationPath";
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminResources from "@/pages/admin/AdminResources";
+
+const isAdminRoute = () => window.location.pathname.startsWith("/admin");
 
 export default function App() {
   return (
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-      <Navbar />
+      {!isAdminRoute() && <Navbar />}
       <main className="min-h-screen bg-black">
         <Switch>
           <Route path="/" component={Landing} />
@@ -48,13 +53,17 @@ export default function App() {
           <Route path="/achievements" component={Achievements} />
           <Route path="/placement" component={Placement} />
           <Route path="/profile" component={Profile} />
-          <Route path="/path/verification" component={VerificationPath} />
           <Route path="/messages" component={Messages} />
+
+          {/* Admin Panel — no Navbar, no AIAssistant */}
+          <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin/dashboard" component={AdminDashboard} />
+          <Route path="/admin/resources" component={AdminResources} />
+
           <Route component={NotFound} />
         </Switch>
       </main>
-      {/* AIAssistant handles its own auth check internally */}
-      <AIAssistant />
+      {!isAdminRoute() && <AIAssistant />}
     </WouterRouter>
   );
 }
