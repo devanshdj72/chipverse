@@ -2,6 +2,8 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import adminRoutes from "./routes/admin.routes";
+import resourceRoutes from "./routes/resource.routes";
 
 import { config } from './config/env';
 import './config/passport';
@@ -62,5 +64,7 @@ app.use('/api/lab', labRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+app.use("/api/admin", adminRoutes);
+app.use("/api/resources", resourceRoutes);
 
 export default app;
