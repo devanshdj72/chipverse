@@ -1,7 +1,7 @@
 // src/middleware/admin.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { env } from "../config/env";
+import { config } from "../config/env";
 
 export const requireAdmin = (
   req: Request,
@@ -15,7 +15,7 @@ export const requireAdmin = (
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, env.JWT_SECRET) as {
+    const decoded = jwt.verify(token, config.jwt.accessSecret) as {
       adminId: string;
       email: string;
       role: string;

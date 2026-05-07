@@ -2,8 +2,8 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { prisma } from "../config/db";
-import { env } from "../config/env";
+import prisma from "../config/prisma";
+import { config } from "../config/env";
 
 // POST /api/admin/login
 export const adminLogin = async (req: Request, res: Response) => {
@@ -27,7 +27,7 @@ export const adminLogin = async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { adminId: admin.id, email: admin.email, role: "ADMIN" },
-      env.JWT_SECRET,
+      config.jwt.accessSecret,
       { expiresIn: "8h" }
     );
 
@@ -51,7 +51,7 @@ export const createAdmin = async (req: Request, res: Response) => {
     const { name, email, password, secretKey } = req.body;
 
     // Protect with a secret key so random users can't create admins
-    if (secretKey !== env.ADMIN_SECRET_KEY) {
+    if (secretKey !== config.adminSecretKey) {
       return res.status(403).json({ message: "Forbidden" });
     }
 

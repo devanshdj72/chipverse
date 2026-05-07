@@ -52,4 +52,6 @@ export const config = {
 
   isDev: optional('NODE_ENV', 'development') === 'development',
   isProd: optional('NODE_ENV', 'development') === 'production',
+
+  adminSecretKey: optional('ADMIN_SECRET_KEY', 'chipverse_admin_secret_2024'),
 };
