@@ -387,31 +387,33 @@ function LoginForm({ onSuccess }: { onSuccess: (name: string) => void }) {
   };
   const { login } = useUserContext();
 
-const handleSubmit = async () => {
-  const e = validate();
-  if (Object.keys(e).length) { setErrors(e); return; }
-  setLoading(true);
-  try {
-    const user = await login(form.email, form.password);
-    setToast("Login successful — redirecting…");
-    setTimeout(() => onSuccess(user.name), 900);
-  } catch (err: any) {
-    setToast("");
-    setErrors({ email: err.message || "Invalid email or password" });
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setLoading(true);
+    try {
+      const user = await login(form.email, form.password);
+      setToast("Login successful — redirecting…");
+      setTimeout(() => onSuccess(user.name), 900);
+    } catch (err: any) {
+      setToast("");
+      setErrors({ email: err.message || "Invalid email or password" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSocial = (name: string) => {
-  if (name === "Google") {
-    window.location.href = `http://localhost:5000/api/auth/google`;
-  } else if (name === "LinkedIn") {
-    window.location.href = `http://localhost:5000/api/auth/linkedin`;
-  } else if (name === "OTP") {
-    setToast("OTP login coming soon…");
-    setTimeout(() => setToast(""), 2500);
-  }
-};
+    if (name === "Google") {
+      window.location.href = `http://localhost:5000/api/auth/google`;
+    } else if (name === "LinkedIn") {
+      window.location.href = `http://localhost:5000/api/auth/linkedin`;
+    } else if (name === "OTP") {
+      setToast("OTP login coming soon…");
+      setTimeout(() => setToast(""), 2500);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3" style={{ animation: "fadeIn 0.3s ease-out" }}>
       <Toast msg={toast} />
@@ -490,31 +492,33 @@ function RegisterForm({ onSuccess }: { onSuccess: (name: string) => void }) {
   };
   const { register } = useUserContext();
 
-const handleSubmit = async () => {
-  const e = validate();
-  if (Object.keys(e).length) { setErrors(e); return; }
-  setLoading(true);
-  try {
-    const user = await register(form.name, form.email, form.password, form.mobile);
-    setToast("Account created — welcome to ChipVerse!");
-    setTimeout(() => onSuccess(user.name), 900);
-  } catch (err: any) {
-    setToast("");
-    setErrors({ email: err.message || "Registration failed" });
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setLoading(true);
+    try {
+      const user = await register(form.name, form.email, form.password, form.mobile);
+      setToast("Account created — welcome to ChipVerse!");
+      setTimeout(() => onSuccess(user.name), 900);
+    } catch (err: any) {
+      setToast("");
+      setErrors({ email: err.message || "Registration failed" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSocial = (name: string) => {
-  if (name === "Google") {
-    window.location.href = `http://localhost:5000/api/auth/google`;
-  } else if (name === "LinkedIn") {
-    window.location.href = `http://localhost:5000/api/auth/linkedin`;
-  } else if (name === "OTP") {
-    setToast("OTP login coming soon…");
-    setTimeout(() => setToast(""), 2500);
-  }
-};
+    if (name === "Google") {
+      window.location.href = `http://localhost:5000/api/auth/google`;
+    } else if (name === "LinkedIn") {
+      window.location.href = `http://localhost:5000/api/auth/linkedin`;
+    } else if (name === "OTP") {
+      setToast("OTP login coming soon…");
+      setTimeout(() => setToast(""), 2500);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2.5" style={{ animation: "fadeIn 0.3s ease-out" }}>
       <Toast msg={toast} accent />
@@ -607,24 +611,16 @@ function AuthCard({ onSuccess }: { onSuccess: (name: string) => void }) {
       >
         <div
           style={{
-            position: "absolute",
-            top: "-60px",
-            right: "-60px",
-            width: "140px",
-            height: "140px",
-            borderRadius: "50%",
+            position: "absolute", top: "-60px", right: "-60px",
+            width: "140px", height: "140px", borderRadius: "50%",
             background: "radial-gradient(circle, rgba(0,245,255,0.09) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
         <div
           style={{
-            position: "absolute",
-            bottom: "-60px",
-            left: "-60px",
-            width: "140px",
-            height: "140px",
-            borderRadius: "50%",
+            position: "absolute", bottom: "-60px", left: "-60px",
+            width: "140px", height: "140px", borderRadius: "50%",
             background: "radial-gradient(circle, rgba(168,85,247,0.09) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
@@ -635,11 +631,8 @@ function AuthCard({ onSuccess }: { onSuccess: (name: string) => void }) {
         >
           <div
             style={{
-              position: "absolute",
-              top: "4px",
-              bottom: "4px",
-              width: "calc(50% - 4px)",
-              borderRadius: "9px",
+              position: "absolute", top: "4px", bottom: "4px",
+              width: "calc(50% - 4px)", borderRadius: "9px",
               transition: "left 0.3s ease",
               left: tab === "login" ? "4px" : "calc(50%)",
               background: "linear-gradient(135deg, rgba(0,245,255,0.17), rgba(168,85,247,0.11))",
@@ -654,8 +647,7 @@ function AuthCard({ onSuccess }: { onSuccess: (name: string) => void }) {
               className="flex-1 relative z-10 capitalize bg-transparent border-none cursor-pointer min-h-[40px] select-none"
               style={{
                 fontFamily: "'Orbitron', monospace",
-                fontSize: "11px",
-                letterSpacing: "0.05em",
+                fontSize: "11px", letterSpacing: "0.05em",
                 color: tab === t ? "#00f5ff" : "#555",
                 transition: "color 0.3s",
                 WebkitTapHighlightColor: "transparent",
@@ -745,8 +737,7 @@ export default function Login() {
       <div
         className="absolute inset-0 pointer-events-none z-[2]"
         style={{
-          background:
-            "radial-gradient(ellipse at 30% 50%, rgba(5,5,5,0) 0%, rgba(5,5,5,0.28) 60%, rgba(5,5,5,0.58) 100%)",
+          background: "radial-gradient(ellipse at 30% 50%, rgba(5,5,5,0) 0%, rgba(5,5,5,0.28) 60%, rgba(5,5,5,0.58) 100%)",
         }}
       />
 
@@ -773,11 +764,8 @@ export default function Login() {
                 >
                   <span
                     style={{
-                      width: "6px",
-                      height: "6px",
-                      borderRadius: "50%",
-                      background: "#00f5ff",
-                      flexShrink: 0,
+                      width: "6px", height: "6px", borderRadius: "50%",
+                      background: "#00f5ff", flexShrink: 0,
                       boxShadow: "0 0 8px #00f5ff",
                       animation: "pulseCore 2s ease-in-out infinite",
                     }}
@@ -795,46 +783,18 @@ export default function Login() {
                     animation: "titleGlow 3s ease-in-out infinite",
                   }}
                 >
-                  <span
-                    className="block"
-                    style={{
-                      background: "linear-gradient(135deg, #fff, #ddd)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
+                  <span className="block" style={{ background: "linear-gradient(135deg, #fff, #ddd)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                     Master VLSI.
                   </span>
-                  <span
-                    className="block"
-                    style={{
-                      background: "linear-gradient(135deg, #00f5ff, #0099ff 50%, #a855f7)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
+                  <span className="block" style={{ background: "linear-gradient(135deg, #00f5ff, #0099ff 50%, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                     Build Chips.
                   </span>
-                  <span
-                    className="block"
-                    style={{
-                      background: "linear-gradient(135deg, #fff, #ddd)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
+                  <span className="block" style={{ background: "linear-gradient(135deg, #fff, #ddd)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                     Shape the Future.
                   </span>
                 </h1>
 
-                <p
-                  className="m-0 max-w-md text-gray-400"
-                  style={{
-                    fontSize: "clamp(12.5px, 1.5vw, 14.5px)",
-                    fontFamily: "'DM Mono', monospace",
-                    lineHeight: 1.75,
-                  }}
-                >
+                <p className="m-0 max-w-md text-gray-400" style={{ fontSize: "clamp(12.5px, 1.5vw, 14.5px)", fontFamily: "'DM Mono', monospace", lineHeight: 1.75 }}>
                   Hands-on learning for RTL, Physical Design, Verification, FPGA, Analog IC, and Semiconductor Careers.
                 </p>
 
@@ -869,22 +829,62 @@ export default function Login() {
               >
                 Begin your journey
               </p>
+
               <AuthCard onSuccess={handleSuccess} />
+
               <p
                 className="text-center mt-3.5"
-                style={{
-                  color: "#444",
-                  fontSize: "11px",
-                  fontFamily: "'DM Mono', monospace",
-                  lineHeight: 1.6,
-                }}
+                style={{ color: "#444", fontSize: "11px", fontFamily: "'DM Mono', monospace", lineHeight: 1.6 }}
               >
                 Trusted by engineers at&nbsp;
                 <span className="text-gray-500">Intel · Qualcomm · TSMC · AMD · ARM</span>
               </p>
+
               <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-gray-600">
                 <Check className="w-3 h-3 text-green-400" /> No credit card · Free forever tier
               </div>
+
+              {/* ─── Admin Portal ─── */}
+              <div className="flex items-center justify-center mt-5">
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%" }}>
+                  <div style={{ flex: 1, height: "1px", background: "rgba(245,158,11,0.1)" }} />
+                  <button
+                    onClick={() => setLocation("/admin/login")}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "7px",
+                      padding: "8px 20px",
+                      background: "rgba(245,158,11,0.06)",
+                      border: "1px solid rgba(245,158,11,0.18)",
+                      borderRadius: "10px",
+                      color: "#78350f",
+                      fontSize: "11px",
+                      fontFamily: "'DM Mono', monospace",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      letterSpacing: "0.04em",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.background = "rgba(245,158,11,0.12)";
+                      el.style.color = "#f59e0b";
+                      el.style.borderColor = "rgba(245,158,11,0.35)";
+                      el.style.boxShadow = "0 0 12px rgba(245,158,11,0.1)";
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.background = "rgba(245,158,11,0.06)";
+                      el.style.color = "#78350f";
+                      el.style.borderColor = "rgba(245,158,11,0.18)";
+                      el.style.boxShadow = "none";
+                    }}
+                  >
+                    ⚡ Admin Portal
+                  </button>
+                  <div style={{ flex: 1, height: "1px", background: "rgba(245,158,11,0.1)" }} />
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
