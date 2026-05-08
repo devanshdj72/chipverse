@@ -10,6 +10,7 @@ export type AdminInfo = {
   id: string;
   name: string;
   email: string;
+  role: "ADMIN" | "SUPER_ADMIN";
 };
 
 export function useAdmin() {
@@ -20,9 +21,7 @@ export function useAdmin() {
     try {
       const raw = localStorage.getItem(ADMIN_INFO_KEY);
       return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   });
 
   const login = async (email: string, password: string) => {
@@ -53,11 +52,8 @@ export function useAdmin() {
   });
 
   return {
-    token,
-    admin,
-    login,
-    logout,
-    authHeaders,
+    token, admin, login, logout, authHeaders,
     isLoggedIn: !!token,
+    isSuperAdmin: admin?.role === "SUPER_ADMIN",
   };
 }
