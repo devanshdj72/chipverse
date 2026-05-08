@@ -74,6 +74,7 @@ model User {
   phone           String?   @unique
   name            String
   avatarUrl       String?
+  avatarConfig    Json?                          // ← NEW: stores custom avatar builder config
   role            UserRole  @default(USER)
   isEmailVerified Boolean   @default(false)
   isPhoneVerified Boolean   @default(false)

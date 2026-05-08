@@ -19,6 +19,7 @@ import resourceRoutes from './routes/resource.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
+import avatarRoutes from './routes/avatar.routes';
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/placement', placementRoutes);
 app.use('/api/lab', labRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/resources', resourceRoutes);
+app.use('/api/user/avatar', avatarRoutes);
 
 // ── Error handlers (must be LAST) ─────────────────────────────────────────────
 app.use(notFoundHandler);
