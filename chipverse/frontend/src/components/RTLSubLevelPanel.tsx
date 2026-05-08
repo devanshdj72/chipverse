@@ -7,6 +7,7 @@ import {
 import { DomainTheme } from "@/lib/themes";
 import { RTLSubLevel, RTLSubLevelType, RTLLevelData } from "@/lib/data";
 import LabEditor from "@/components/LabEditor";
+import ResourceSection from "@/components/ResourceSection";
 
 const SUB_TYPE_CONFIG: Record<RTLSubLevelType, { icon: React.ElementType; label: string; color: string }> = {
   concept:     { icon: BookOpen,     label: "Concept",          color: "#60a5fa" },
@@ -14,6 +15,15 @@ const SUB_TYPE_CONFIG: Record<RTLSubLevelType, { icon: React.ElementType; label:
   walkthrough: { icon: Eye,          label: "Walkthrough",       color: "#f59e0b" },
   lab:         { icon: FlaskConical, label: "Lab",               color: "#a78bfa" },
   quiz:        { icon: Brain,        label: "Quiz",              color: "#f472b6" },
+};
+
+// Maps local type to API SubLevelType
+const SUB_TYPE_API: Record<RTLSubLevelType, string> = {
+  concept:     "CONCEPT",
+  syntax:      "SYNTAX",
+  walkthrough: "WALKTHROUGH",
+  lab:         "LAB",
+  quiz:        "QUIZ",
 };
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
@@ -134,10 +144,10 @@ function QuizView({
 
 // ─── Content modal ─────────────────────────────────────────────────────────────
 function SubLevelModal({
-  subLevel, theme, isCompleted, levelId, onClose, onComplete,
+  subLevel, theme, isCompleted, levelId, domain, onClose, onComplete,
 }: {
   subLevel: RTLSubLevel; theme: DomainTheme; isCompleted: boolean;
-  levelId: number; onClose: () => void; onComplete: () => void;
+  levelId: number; domain: string; onClose: () => void; onComplete: () => void;
 }) {
   const config = SUB_TYPE_CONFIG[subLevel.type];
   const Icon = config.icon;
@@ -197,7 +207,7 @@ function SubLevelModal({
 
         {/* Body */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          {/* LAB type — full Monaco editor */}
+          {/* LAB type */}
           {isLab && subLevel.lab && (
             <LabEditor
               labData={subLevel.lab}
@@ -220,6 +230,8 @@ function SubLevelModal({
                   <button onClick={() => setShowQuiz(true)} style={{ padding: "12px 32px", borderRadius: "14px", background: theme.gradient, border: "none", color: "#000", fontFamily: "'Orbitron', monospace", fontSize: "12px", fontWeight: 700, cursor: "pointer", boxShadow: `0 0 20px ${theme.glow}` }}>
                     Start Quiz →
                   </button>
+                  {/* Resources for quiz sub-level */}
+                  <ResourceSection domain={domain} levelId={levelId} subLevelType={SUB_TYPE_API[subLevel.type]} accentColor={theme.primary} />
                 </div>
               ) : isCompleted ? (
                 <div style={{ textAlign: "center", paddingTop: "20px" }}>
@@ -230,9 +242,13 @@ function SubLevelModal({
                     <RefreshCw style={{ width: "12px", height: "12px" }} /> Retake for Practice
                   </button>
                   {showQuiz && <div style={{ marginTop: "20px" }}><QuizView subLevel={subLevel} theme={theme} onComplete={() => {}} /></div>}
+                  <ResourceSection domain={domain} levelId={levelId} subLevelType={SUB_TYPE_API[subLevel.type]} accentColor={theme.primary} />
                 </div>
               ) : (
-                <QuizView subLevel={subLevel} theme={theme} onComplete={onComplete} />
+                <>
+                  <QuizView subLevel={subLevel} theme={theme} onComplete={onComplete} />
+                  <ResourceSection domain={domain} levelId={levelId} subLevelType={SUB_TYPE_API[subLevel.type]} accentColor={theme.primary} />
+                </>
               )}
             </div>
           )}
@@ -288,6 +304,14 @@ function SubLevelModal({
                   )}
                 </div>
               </div>
+
+              {/* ── Faculty Resources ── */}
+              <ResourceSection
+                domain={domain}
+                levelId={levelId}
+                subLevelType={SUB_TYPE_API[subLevel.type]}
+                accentColor={theme.primary}
+              />
             </div>
           )}
         </div>
@@ -377,13 +401,14 @@ interface RTLSubLevelPanelProps {
   levelData: RTLLevelData; levelTitle: string; levelIndex: number;
   theme: DomainTheme; completedSubLevels: string[];
   celebrationClaimed: boolean;
+  domain: string; // e.g. "rtl", "verification", "fpga", etc.
   onSubLevelComplete: (subLevelId: string, xp: number) => void;
   onLevelComplete: () => void; onClose: () => void;
 }
 
 export default function RTLSubLevelPanel({
   levelData, levelTitle, levelIndex, theme,
-  completedSubLevels, celebrationClaimed,
+  completedSubLevels, celebrationClaimed, domain,
   onSubLevelComplete, onLevelComplete, onClose,
 }: RTLSubLevelPanelProps) {
   const side = levelIndex % 2 === 0 ? "right" : "left";
@@ -450,6 +475,7 @@ export default function RTLSubLevelPanel({
             subLevel={openSubLevel} theme={theme}
             isCompleted={completedSubLevels.includes(openSubLevel.id)}
             levelId={levelData.levelId}
+            domain={domain}
             onClose={() => setOpenSubLevel(null)}
             onComplete={() => {
               if (!completedSubLevels.includes(openSubLevel.id)) {
