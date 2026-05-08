@@ -319,12 +319,14 @@ model AdminUser {
 model Resource {
   id              String         @id @default(uuid())
   title           String
-  url             String         @db.Text
+  url             String         @default("") @db.Text
   type            ResourceType
   domain          String
   levelId         Int
   subLevelType    SubLevelType
   description     String?        @db.Text
+  fileName        String?        @db.Text
+  fileData        String?        @db.Text
   tags            String[]       @default([])
   status          ResourceStatus @default(PENDING)
   rejectionReason String?        @db.Text

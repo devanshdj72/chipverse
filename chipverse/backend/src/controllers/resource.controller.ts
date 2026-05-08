@@ -8,7 +8,6 @@ import prisma from "../config/prisma";
 export const getResources = async (req: Request, res: Response) => {
   try {
     const { domain, levelId, subLevelType } = req.query;
-
     const where: any = { isActive: true, status: "APPROVED" };
     if (domain) where.domain = String(domain);
     if (levelId !== undefined) where.levelId = Number(levelId);
@@ -21,6 +20,8 @@ export const getResources = async (req: Request, res: Response) => {
         id: true, title: true, url: true, type: true,
         domain: true, levelId: true, subLevelType: true,
         description: true, tags: true, createdAt: true,
+        fileName: true,
+        // Don't send fileData in list — too large
         uploader: { select: { name: true } },
       },
     });
@@ -32,7 +33,7 @@ export const getResources = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/resources/:id
+// GET /api/resources/:id (includes fileData for download)
 export const getResourceById = async (req: Request, res: Response) => {
   try {
     const resource = await prisma.resource.findUnique({
@@ -46,44 +47,38 @@ export const getResourceById = async (req: Request, res: Response) => {
   }
 };
 
-// ── ADMIN: Submit resource (goes to PENDING) ──────────────────────────────────
+// ── ADMIN: Submit resource ────────────────────────────────────────────────────
 
-// POST /api/admin/resources
 export const createResource = async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).adminId;
-    const { title, url, type, domain, levelId, subLevelType, description, tags } = req.body;
+    const { title, url, type, domain, levelId, subLevelType, description, tags, fileData, fileName } = req.body;
 
-    if (!title || !url || !type || !domain || levelId === undefined || !subLevelType) {
-      return res.status(400).json({
-        message: "title, url, type, domain, levelId, subLevelType are required",
-      });
+    if (!title || !type || !domain || levelId === undefined || !subLevelType) {
+      return res.status(400).json({ message: "title, type, domain, levelId, subLevelType are required" });
     }
 
-    const validDomains = [
-      "rtl", "verification", "physical-design",
-      "analog", "fpga", "embedded", "dft", "research",
-    ];
-    if (!validDomains.includes(domain)) {
-      return res.status(400).json({ message: "Invalid domain" });
+    // Must have either URL or file
+    if (!url && !fileData) {
+      return res.status(400).json({ message: "Either URL or file upload is required" });
     }
 
-    if (levelId < 0 || levelId > 12) {
-      return res.status(400).json({ message: "levelId must be 0-12" });
-    }
+    const validDomains = ["rtl", "verification", "physical-design", "analog", "fpga", "embedded", "dft", "research"];
+    if (!validDomains.includes(domain)) return res.status(400).json({ message: "Invalid domain" });
+    if (levelId < 0 || levelId > 12) return res.status(400).json({ message: "levelId must be 0-12" });
 
     const validSubLevels = ["CONCEPT", "SYNTAX", "WALKTHROUGH", "LAB", "QUIZ"];
-    if (!validSubLevels.includes(subLevelType.toUpperCase())) {
-      return res.status(400).json({ message: "Invalid subLevelType" });
-    }
+    if (!validSubLevels.includes(subLevelType.toUpperCase())) return res.status(400).json({ message: "Invalid subLevelType" });
 
     const resource = await prisma.resource.create({
       data: {
-        title, url, type,
+        title, url: url || "", type,
         domain, levelId: Number(levelId),
         subLevelType: subLevelType.toUpperCase(),
         description: description || null,
         tags: tags || [],
+        fileName: fileName || null,
+        fileData: fileData || null,
         uploadedBy: adminId,
         status: "PENDING",
       },
@@ -97,19 +92,14 @@ export const createResource = async (req: Request, res: Response) => {
   }
 };
 
-// PUT /api/admin/resources/:id
 export const updateResource = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const existing = await prisma.resource.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "Not found" });
+    if (existing.status === "APPROVED") return res.status(400).json({ message: "Cannot edit approved resource" });
 
-    // Only allow editing PENDING or REJECTED resources
-    if (existing.status === "APPROVED") {
-      return res.status(400).json({ message: "Cannot edit an approved resource" });
-    }
-
-    const { title, url, type, domain, levelId, subLevelType, description, tags } = req.body;
+    const { title, url, type, domain, levelId, subLevelType, description, tags, fileData, fileName } = req.body;
 
     const resource = await prisma.resource.update({
       where: { id },
@@ -122,7 +112,8 @@ export const updateResource = async (req: Request, res: Response) => {
         ...(subLevelType !== undefined && { subLevelType: subLevelType.toUpperCase() }),
         ...(description !== undefined && { description }),
         ...(tags !== undefined && { tags }),
-        // Reset to pending on edit
+        ...(fileName !== undefined && { fileName }),
+        ...(fileData !== undefined && fileData !== "" && { fileData }),
         status: "PENDING",
         rejectionReason: null,
         reviewedBy: null,
@@ -137,29 +128,21 @@ export const updateResource = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE /api/admin/resources/:id (soft delete)
 export const deleteResource = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const existing = await prisma.resource.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "Not found" });
-
-    await prisma.resource.update({
-      where: { id },
-      data: { isActive: false },
-    });
-
+    await prisma.resource.update({ where: { id }, data: { isActive: false } });
     return res.status(200).json({ message: "Resource deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// GET /api/admin/resources (all resources for admin)
 export const getAllResourcesAdmin = async (req: Request, res: Response) => {
   try {
     const { domain, levelId, status } = req.query;
-
     const where: any = { isActive: true };
     if (domain) where.domain = String(domain);
     if (levelId !== undefined) where.levelId = Number(levelId);
@@ -174,79 +157,59 @@ export const getAllResourcesAdmin = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(200).json({ resources });
+    // Strip fileData from list response (too large)
+    const stripped = resources.map(({ fileData, ...r }) => r);
+    return res.status(200).json({ resources: stripped });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// ── SUPER ADMIN: Approve / Reject ─────────────────────────────────────────────
-
-// POST /api/admin/resources/:id/approve
 export const approveResource = async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).adminId;
     const { id } = req.params;
-
     const existing = await prisma.resource.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "Not found" });
-    if (existing.status === "APPROVED") {
-      return res.status(400).json({ message: "Already approved" });
-    }
+    if (existing.status === "APPROVED") return res.status(400).json({ message: "Already approved" });
 
     const resource = await prisma.resource.update({
       where: { id },
-      data: {
-        status: "APPROVED",
-        reviewedBy: adminId,
-        reviewedAt: new Date(),
-        rejectionReason: null,
-      },
+      data: { status: "APPROVED", reviewedBy: adminId, reviewedAt: new Date(), rejectionReason: null },
     });
-
     return res.status(200).json({ message: "Resource approved ✅", resource });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// POST /api/admin/resources/:id/reject
 export const rejectResource = async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).adminId;
     const { id } = req.params;
     const { reason } = req.body;
-
     const existing = await prisma.resource.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "Not found" });
 
     const resource = await prisma.resource.update({
       where: { id },
-      data: {
-        status: "REJECTED",
-        reviewedBy: adminId,
-        reviewedAt: new Date(),
-        rejectionReason: reason || "No reason provided",
-      },
+      data: { status: "REJECTED", reviewedBy: adminId, reviewedAt: new Date(), rejectionReason: reason || "No reason provided" },
     });
-
     return res.status(200).json({ message: "Resource rejected ❌", resource });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// GET /api/admin/resources/pending (super admin only)
 export const getPendingResources = async (req: Request, res: Response) => {
   try {
     const resources = await prisma.resource.findMany({
       where: { status: "PENDING", isActive: true },
       orderBy: { createdAt: "asc" },
-      include: {
-        uploader: { select: { name: true, email: true } },
-      },
+      include: { uploader: { select: { name: true, email: true } } },
     });
-    return res.status(200).json({ resources });
+    const stripped = resources.map(({ fileData, ...r }) => r);
+    return res.status(200).json({ resources: stripped });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }
