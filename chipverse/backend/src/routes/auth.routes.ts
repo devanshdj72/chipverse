@@ -12,7 +12,7 @@ import {
   linkedinCallback,
 } from '../controllers/auth.controller';
 import { requireAuth } from '../middleware/auth.middleware';
-import { authLimiter, otpLimiter } from '../middleware/rateLimit.middleware';
+import { authLimiter, otpLimiter, refreshLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ router.post('/otp/send', otpLimiter, otpSend);
 router.post('/otp/verify', authLimiter, otpVerify);
 
 // ─── Token Management ─────────────────────────────────────────────────────────
-router.post('/refresh', refresh);
+router.post('/refresh', refreshLimiter, refresh);
 router.post('/logout', logoutHandler);
 
 // ─── Current User ─────────────────────────────────────────────────────────────

@@ -3,19 +3,28 @@ import rateLimit from 'express-rate-limit';
 /** General API rate limit */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
-/** Strict limit for auth endpoints */
+/** Strict limit for auth endpoints (login / register) */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many auth attempts, please wait 15 minutes.' },
+});
+
+/** Lenient limit for token refresh — called silently on every API interaction */
+export const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many refresh attempts, please try again later.' },
 });
 
 /** Very strict limit for OTP sending */
