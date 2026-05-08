@@ -336,41 +336,40 @@ export default function AdminDashboard() {
 
         {/* Overview tab */}
         {(!isSuperAdmin || activeTab === "overview") && (
-          <>
-            <h2 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff", marginBottom: "16px" }}>
-              Resources by Domain
-            </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
-              {DOMAINS.map((domain, i) => (
-                <motion.div
-                  key={domain.id}
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  whileHover={{ y: -3 }}
-                  onClick={() => navigate(`/admin/resources?domain=${domain.id}`)}
-                  style={{
-                    background: "rgba(255,255,255,0.025)",
-                    border: `1px solid ${domain.color}20`,
-                    borderRadius: "14px", padding: "18px",
-                    cursor: "pointer", transition: "all 0.2s",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff" }}>
-                      {domain.name}
-                    </div>
-                    <div style={{ fontSize: "18px", color: "#555" }}>{domainStats[domain.id] ? "📁" : "➕"}</div>
-                  </div>
-                  <div style={{ fontSize: "22px", fontWeight: 700, color: domain.color, fontFamily: "'DM Mono',monospace" }}>
-                    {domainStats[domain.id] || 0}
-                  </div>
-                  <div style={{ color: "#555", fontSize: "10px" }}>approved resources</div>
-                  <div style={{ marginTop: "10px", height: "3px", borderRadius: "999px", background: "rgba(255,255,255,0.05)" }}>
-                    <div style={{ height: "100%", borderRadius: "999px", background: domain.color, width: `${Math.min(100, (domainStats[domain.id] || 0) * 10)}%`, transition: "width 0.6s" }} />
-                  </div>
-                </motion.div>
-              ))}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              textAlign: "center", padding: "60px 40px",
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "20px",
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>📚</div>
+            <div style={{ color: "#fff", fontFamily: "'Orbitron',sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "10px" }}>
+              {stats.total === 0 ? "No resources yet." : `${stats.approved} resources live on site`}
             </div>
-          </>
+            <p style={{ color: "#555", fontSize: "13px", marginBottom: "28px", maxWidth: "400px", margin: "0 auto 28px", lineHeight: 1.7 }}>
+              {stats.total === 0
+                ? "Submit resources for Super Admin review — they will appear in domain sub-levels once approved."
+                : "Add more resources or manage existing ones from the Resource Manager."}
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/admin/resources")}
+              style={{
+                padding: "13px 32px",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                border: "none", borderRadius: "12px",
+                color: "#000", fontSize: "13px", fontWeight: 700,
+                fontFamily: "'Orbitron',sans-serif", cursor: "pointer",
+                boxShadow: "0 0 24px rgba(245,158,11,0.3)",
+                letterSpacing: "0.5px",
+              }}
+            >
+              + Add Resource
+            </motion.button>
+          </motion.div>
         )}
 
         {/* Pending Review tab (Super Admin only) */}
