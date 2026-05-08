@@ -48,22 +48,13 @@ export default function RTLPath() {
 
   useEffect(() => { saveProgress(progress); }, [progress]);
 
-  const isPrevLevelFullyComplete = (idx: number): boolean => {
-  if (idx === 0) return true;
-  const prevLevel = levels[idx - 1];
-  const prevSubData = RTL_SUB_LEVELS.find((d) => d.levelId === prevLevel.id);
-  if (!prevSubData) return false;
-  return prevSubData.subLevels.every((sl) =>
-    progress.completedSubLevels.includes(sl.id)
-  );
-};
-
-const getStatus = (id: number, idx: number) => {
-  const isComplete = progress.completedLevels.includes(id);
-  if (isComplete) return "completed";
-  if (isPrevLevelFullyComplete(idx)) return "active";
-  return "locked";
-};
+  const getStatus = (id: number, idx: number) => {
+    if (completedIds.includes(id) || progress.completedLevels.includes(id)) return "completed";
+    if (idx === 0) return "active";
+    const prevId = levels[idx - 1]?.id;
+    if (completedIds.includes(prevId) || progress.completedLevels.includes(prevId)) return "active";
+    return "locked";
+  };
 
   const handleSubLevelComplete = (subLevelId: string, xp: number) => {
     setProgress((prev) => {
@@ -279,6 +270,7 @@ const getStatus = (id: number, idx: number) => {
           <RTLSubLevelPanel
             levelData={activeLevelData} levelTitle={activeLevel.title}
             levelIndex={activeLevelIdx} theme={theme}
+            domain={DOMAIN_ID}
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
             onSubLevelComplete={handleSubLevelComplete}

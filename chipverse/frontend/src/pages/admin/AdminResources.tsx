@@ -590,7 +590,14 @@ export default function AdminResources() {
           <div style={{ textAlign: "center", color: "#555", padding: "60px" }}>Loading...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px", color: "#555", fontSize: "14px" }}>
-            No resources yet. Click <strong style={{ color: "#f59e0b" }}>+ Add Resource</strong> to submit one.
+            No resources yet. Click{" "}
+            <strong
+              onClick={() => { setShowForm(true); setStep(1); }}
+              style={{ color: "#f59e0b", cursor: "pointer", textDecoration: "underline" }}
+            >
+              + Add Resource
+            </strong>{" "}
+            to submit one.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

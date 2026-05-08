@@ -325,6 +325,7 @@ export default function FPGAPath() {
             levelTitle={activeLevel.title}
             levelIndex={activeLevelIdx}
             theme={theme}
+            domain="fpga"
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
             onSubLevelComplete={handleSubLevelComplete}

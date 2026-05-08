@@ -347,6 +347,7 @@ export default function VerificationPath() {
             levelTitle={activeLevel.title}
             levelIndex={activeLevelIdx}
             theme={theme}
+            domain="verification"
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
             onSubLevelComplete={handleSubLevelComplete}

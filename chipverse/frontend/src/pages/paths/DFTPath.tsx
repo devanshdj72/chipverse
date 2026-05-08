@@ -322,6 +322,7 @@ export default function DFTPath() {
             levelTitle={activeLevel.title}
             levelIndex={activeLevelIdx}
             theme={theme}
+            domain="dft"
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
             onSubLevelComplete={handleSubLevelComplete}

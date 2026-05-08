@@ -263,6 +263,7 @@ export default function AnalogPath() {
             levelTitle={activeLevel.title}
             levelIndex={activeLevelIdx}
             theme={theme}
+            domain="analog"
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
             onSubLevelComplete={handleSubLevelComplete}

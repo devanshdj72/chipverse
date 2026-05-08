@@ -345,6 +345,7 @@ export default function PhysicalDesignPath() {
             levelTitle={activeLevel.title}
             levelIndex={activeLevelIdx}
             theme={theme}
+            domain="physical-design"
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
             onSubLevelComplete={handleSubLevelComplete}

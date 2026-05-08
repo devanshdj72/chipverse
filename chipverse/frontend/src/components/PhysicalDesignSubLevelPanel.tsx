@@ -4,6 +4,7 @@ import { X, Star, ChevronRight, CheckCircle, Code2, FileText, BookOpen, FlaskCon
 import Editor from "@monaco-editor/react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import ResourceSection from "@/components/ResourceSection";
 
 // ── Sub-level type config ───────────────────────────────────────────────────
 const TYPE_CONFIG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
@@ -16,6 +17,17 @@ const TYPE_CONFIG: Record<string, { label: string; icon: any; color: string; bg:
   quiz:          { label: "Quiz",           icon: HelpCircle,    color: "#facc15", bg: "rgba(250,204,21,0.1)"  },
 };
 
+// Maps sub-level type to API SubLevelType
+const SUB_TYPE_API: Record<string, string> = {
+  concept:        "CONCEPT",
+  tool_commands:  "SYNTAX",
+  report_reading: "WALKTHROUGH",
+  lab_cadence:    "LAB",
+  lab_synopsys:   "LAB",
+  lab_analysis:   "LAB",
+  quiz:           "QUIZ",
+};
+
 interface Props {
   levelData: any;
   levelTitle: string;
@@ -23,6 +35,7 @@ interface Props {
   theme: any;
   completedSubLevels: string[];
   celebrationClaimed: boolean;
+  domain: string;
   onSubLevelComplete: (id: string, xp: number) => void;
   onLevelComplete: () => void;
   onClose: () => void;
@@ -30,7 +43,7 @@ interface Props {
 
 export default function PhysicalDesignSubLevelPanel({
   levelData, levelTitle, levelIndex, theme,
-  completedSubLevels, celebrationClaimed,
+  completedSubLevels, celebrationClaimed, domain,
   onSubLevelComplete, onLevelComplete, onClose,
 }: Props) {
   const subLevels = levelData?.subLevels ?? [];
@@ -57,7 +70,6 @@ export default function PhysicalDesignSubLevelPanel({
   function markComplete(sub: any) {
     if (!isCompleted(sub.id)) {
       onSubLevelComplete(sub.id, sub.xp);
-      // Check if all done after this
       const remaining = subLevels.filter((s: any) => s.id !== sub.id && !isCompleted(s.id));
       if (remaining.length === 0 && !celebrationClaimed) {
         setCelebration(true);
@@ -73,8 +85,7 @@ export default function PhysicalDesignSubLevelPanel({
     setLabLoading(p => ({ ...p, [sub.id]: true }));
     try {
       const res = await api.lab.evaluate({
-        labId: sub.id,
-        code,
+        labId: sub.id, code,
         requiredPatterns: sub.lab?.requiredPatterns || [],
         forbiddenPatterns: sub.lab?.forbiddenPatterns || [],
         xp: sub.xp,
@@ -132,25 +143,8 @@ export default function PhysicalDesignSubLevelPanel({
             const active = i === activeIdx;
             const locked = !canAccess(i);
             return (
-              <button
-                key={sub.id}
-                onClick={() => !locked && setActiveIdx(i)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "5px",
-                  padding: "5px 10px", borderRadius: "8px", flexShrink: 0,
-                  border: `1px solid ${active ? c.color : done ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)"}`,
-                  background: active ? c.bg : done ? "rgba(255,255,255,0.04)" : "transparent",
-                  color: active ? c.color : done ? "#888" : "#444",
-                  fontSize: "10px", fontFamily: "'DM Mono',monospace", fontWeight: 700,
-                  cursor: locked ? "not-allowed" : "pointer",
-                  opacity: locked ? 0.4 : 1,
-                  transition: "all 0.2s",
-                }}
-              >
-                {done
-                  ? <CheckCircle style={{ width: "11px", height: "11px", color: "#22c55e" }} />
-                  : <c.icon style={{ width: "11px", height: "11px" }} />
-                }
+              <button key={sub.id} onClick={() => !locked && setActiveIdx(i)} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "8px", flexShrink: 0, border: `1px solid ${active ? c.color : done ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)"}`, background: active ? c.bg : done ? "rgba(255,255,255,0.04)" : "transparent", color: active ? c.color : done ? "#888" : "#444", fontSize: "10px", fontFamily: "'DM Mono',monospace", fontWeight: 700, cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.4 : 1, transition: "all 0.2s" }}>
+                {done ? <CheckCircle style={{ width: "11px", height: "11px", color: "#22c55e" }} /> : <c.icon style={{ width: "11px", height: "11px" }} />}
                 {sub.title}
               </button>
             );
@@ -174,66 +168,46 @@ export default function PhysicalDesignSubLevelPanel({
               </div>
             </div>
 
-            {/* ── CONCEPT ─────────────────────────────────────── */}
             {activeSub?.type === "concept" && (
-              <ConceptView sub={activeSub} theme={theme} onComplete={() => markComplete(activeSub)} completed={isCompleted(activeSub.id)} />
+              <ConceptView sub={activeSub} theme={theme} onComplete={() => markComplete(activeSub)} completed={isCompleted(activeSub.id)}
+                domain={domain} levelId={levelData.levelId} subLevelTypeApi={SUB_TYPE_API[activeSub.type]} />
             )}
-
-            {/* ── TOOL COMMANDS ────────────────────────────────── */}
             {activeSub?.type === "tool_commands" && (
-              <ToolCommandsView sub={activeSub} theme={theme} toolTab={toolTab} setToolTab={setToolTab} onComplete={() => markComplete(activeSub)} completed={isCompleted(activeSub.id)} />
+              <ToolCommandsView sub={activeSub} theme={theme} toolTab={toolTab} setToolTab={setToolTab} onComplete={() => markComplete(activeSub)} completed={isCompleted(activeSub.id)}
+                domain={domain} levelId={levelData.levelId} subLevelTypeApi={SUB_TYPE_API[activeSub.type]} />
             )}
-
-            {/* ── REPORT READING ───────────────────────────────── */}
             {activeSub?.type === "report_reading" && (
-              <ReportReadingView sub={activeSub} theme={theme} onComplete={() => markComplete(activeSub)} completed={isCompleted(activeSub.id)} />
+              <ReportReadingView sub={activeSub} theme={theme} onComplete={() => markComplete(activeSub)} completed={isCompleted(activeSub.id)}
+                domain={domain} levelId={levelData.levelId} subLevelTypeApi={SUB_TYPE_API[activeSub.type]} />
             )}
-
-            {/* ── LAB CADENCE ──────────────────────────────────── */}
             {activeSub?.type === "lab_cadence" && (
               <LabView sub={activeSub} theme={theme} accent="#818cf8" toolName="Cadence Innovus"
                 code={labCode[activeSub.id] ?? activeSub.lab?.starterCode ?? ""}
                 setCode={(v) => setLabCode(p => ({ ...p, [activeSub.id]: v }))}
-                result={labResult[activeSub.id]}
-                loading={labLoading[activeSub.id]}
-                completed={isCompleted(activeSub.id)}
-                onSubmit={() => submitLab(activeSub)}
-              />
+                result={labResult[activeSub.id]} loading={labLoading[activeSub.id]}
+                completed={isCompleted(activeSub.id)} onSubmit={() => submitLab(activeSub)} />
             )}
-
-            {/* ── LAB SYNOPSYS ─────────────────────────────────── */}
             {activeSub?.type === "lab_synopsys" && (
               <LabView sub={activeSub} theme={theme} accent="#fb923c" toolName="Synopsys Fusion Compiler"
                 code={labCode[activeSub.id] ?? activeSub.lab?.starterCode ?? ""}
                 setCode={(v) => setLabCode(p => ({ ...p, [activeSub.id]: v }))}
-                result={labResult[activeSub.id]}
-                loading={labLoading[activeSub.id]}
-                completed={isCompleted(activeSub.id)}
-                onSubmit={() => submitLab(activeSub)}
-              />
+                result={labResult[activeSub.id]} loading={labLoading[activeSub.id]}
+                completed={isCompleted(activeSub.id)} onSubmit={() => submitLab(activeSub)} />
             )}
-
-            {/* ── LAB ANALYSIS ─────────────────────────────────── */}
             {activeSub?.type === "lab_analysis" && (
               <LabView sub={activeSub} theme={theme} accent="#e879f9" toolName="Analysis Lab"
                 code={labCode[activeSub.id] ?? activeSub.lab?.starterCode ?? ""}
                 setCode={(v) => setLabCode(p => ({ ...p, [activeSub.id]: v }))}
-                result={labResult[activeSub.id]}
-                loading={labLoading[activeSub.id]}
-                completed={isCompleted(activeSub.id)}
-                onSubmit={() => submitLab(activeSub)}
-              />
+                result={labResult[activeSub.id]} loading={labLoading[activeSub.id]}
+                completed={isCompleted(activeSub.id)} onSubmit={() => submitLab(activeSub)} />
             )}
-
-            {/* ── QUIZ ─────────────────────────────────────────── */}
             {activeSub?.type === "quiz" && (
               <QuizView sub={activeSub} theme={theme}
-                answers={quizAnswers}
-                submitted={quizSubmitted[activeSub.id]}
+                answers={quizAnswers} submitted={quizSubmitted[activeSub.id]}
                 completed={isCompleted(activeSub.id)}
                 onAnswer={(qIdx, ans) => setQuizAnswers(p => ({ ...p, [`${activeSub.id}-${qIdx}`]: ans }))}
                 onSubmit={() => submitQuiz(activeSub)}
-              />
+                domain={domain} levelId={levelData.levelId} subLevelTypeApi={SUB_TYPE_API[activeSub.type]} />
             )}
 
           </motion.div>
@@ -253,10 +227,7 @@ export default function PhysicalDesignSubLevelPanel({
               </div>
               <div style={{ color: "#888", fontSize: "11px", marginTop: "2px" }}>+{levelData.bonusXp} Bonus XP</div>
             </div>
-            <button
-              onClick={onLevelComplete}
-              style={{ padding: "8px 18px", borderRadius: "10px", background: theme.gradient, border: "none", color: "#000", fontWeight: 700, fontSize: "12px", fontFamily: "'DM Mono',monospace", cursor: "pointer" }}
-            >
+            <button onClick={onLevelComplete} style={{ padding: "8px 18px", borderRadius: "10px", background: theme.gradient, border: "none", color: "#000", fontWeight: 700, fontSize: "12px", fontFamily: "'DM Mono',monospace", cursor: "pointer" }}>
               Claim & Continue →
             </button>
           </motion.div>
@@ -268,7 +239,7 @@ export default function PhysicalDesignSubLevelPanel({
 
 // ── Sub-views ───────────────────────────────────────────────────────────────
 
-function ConceptView({ sub, theme, onComplete, completed }: any) {
+function ConceptView({ sub, theme, onComplete, completed, domain, levelId, subLevelTypeApi }: any) {
   return (
     <div>
       <h3 style={{ color: "#fff", fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>{sub.title}</h3>
@@ -287,16 +258,15 @@ function ConceptView({ sub, theme, onComplete, completed }: any) {
         </button>
       )}
       {completed && <div style={{ color: "#22c55e", fontSize: "12px", fontFamily: "'DM Mono',monospace" }}>✓ Completed</div>}
+      <ResourceSection domain={domain} levelId={levelId} subLevelType={subLevelTypeApi} accentColor={theme.primary} />
     </div>
   );
 }
 
-function ToolCommandsView({ sub, theme, toolTab, setToolTab, onComplete, completed }: any) {
+function ToolCommandsView({ sub, theme, toolTab, setToolTab, onComplete, completed, domain, levelId, subLevelTypeApi }: any) {
   return (
     <div>
       <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.7, marginBottom: "14px" }}>{sub.summary}</p>
-
-      {/* Key points */}
       <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: "16px" }}>
         {sub.keyPoints?.map((kp: string, i: number) => (
           <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
@@ -305,22 +275,13 @@ function ToolCommandsView({ sub, theme, toolTab, setToolTab, onComplete, complet
           </div>
         ))}
       </div>
-
-      {/* Tool toggle */}
       <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
         {(["cadence", "synopsys"] as const).map(tool => (
-          <button key={tool} onClick={() => setToolTab(tool)} style={{
-            padding: "5px 14px", borderRadius: "8px", fontSize: "11px", fontFamily: "'DM Mono',monospace", fontWeight: 700, cursor: "pointer",
-            border: `1px solid ${toolTab === tool ? (tool === "cadence" ? "#818cf8" : "#fb923c") : "rgba(255,255,255,0.1)"}`,
-            background: toolTab === tool ? (tool === "cadence" ? "rgba(129,140,248,0.15)" : "rgba(251,146,60,0.15)") : "transparent",
-            color: toolTab === tool ? (tool === "cadence" ? "#818cf8" : "#fb923c") : "#666",
-          }}>
+          <button key={tool} onClick={() => setToolTab(tool)} style={{ padding: "5px 14px", borderRadius: "8px", fontSize: "11px", fontFamily: "'DM Mono',monospace", fontWeight: 700, cursor: "pointer", border: `1px solid ${toolTab === tool ? (tool === "cadence" ? "#818cf8" : "#fb923c") : "rgba(255,255,255,0.1)"}`, background: toolTab === tool ? (tool === "cadence" ? "rgba(129,140,248,0.15)" : "rgba(251,146,60,0.15)") : "transparent", color: toolTab === tool ? (tool === "cadence" ? "#818cf8" : "#fb923c") : "#666" }}>
             {tool === "cadence" ? "🔵 Cadence Innovus" : "🟠 Synopsys FC"}
           </button>
         ))}
       </div>
-
-      {/* Code block */}
       <div style={{ borderRadius: "10px", overflow: "hidden", border: `1px solid ${toolTab === "cadence" ? "rgba(129,140,248,0.3)" : "rgba(251,146,60,0.3)"}`, marginBottom: "16px" }}>
         <div style={{ background: toolTab === "cadence" ? "rgba(129,140,248,0.1)" : "rgba(251,146,60,0.1)", padding: "6px 12px", fontSize: "10px", fontFamily: "'DM Mono',monospace", color: toolTab === "cadence" ? "#818cf8" : "#fb923c", fontWeight: 700 }}>
           {toolTab === "cadence" ? "Cadence Innovus — Tcl" : "Synopsys Fusion Compiler — Tcl"}
@@ -329,18 +290,18 @@ function ToolCommandsView({ sub, theme, toolTab, setToolTab, onComplete, complet
           {toolTab === "cadence" ? sub.cadence : sub.synopsys}
         </pre>
       </div>
-
       {!completed && (
         <button onClick={onComplete} style={{ padding: "9px 20px", borderRadius: "10px", background: theme.gradient, border: "none", color: "#000", fontWeight: 700, fontSize: "12px", cursor: "pointer" }}>
           Studied Both Tools ✓
         </button>
       )}
       {completed && <div style={{ color: "#22c55e", fontSize: "12px", fontFamily: "'DM Mono',monospace" }}>✓ Completed</div>}
+      <ResourceSection domain={domain} levelId={levelId} subLevelType={subLevelTypeApi} accentColor={theme.primary} />
     </div>
   );
 }
 
-function ReportReadingView({ sub, theme, onComplete, completed }: any) {
+function ReportReadingView({ sub, theme, onComplete, completed, domain, levelId, subLevelTypeApi }: any) {
   return (
     <div>
       <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.7, marginBottom: "14px" }}>{sub.summary}</p>
@@ -353,9 +314,7 @@ function ReportReadingView({ sub, theme, onComplete, completed }: any) {
         ))}
       </div>
       <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(245,158,11,0.25)", marginBottom: "16px" }}>
-        <div style={{ background: "rgba(245,158,11,0.1)", padding: "6px 12px", fontSize: "10px", fontFamily: "'DM Mono',monospace", color: "#f59e0b", fontWeight: 700 }}>
-          📄 Tool Report Output
-        </div>
+        <div style={{ background: "rgba(245,158,11,0.1)", padding: "6px 12px", fontSize: "10px", fontFamily: "'DM Mono',monospace", color: "#f59e0b", fontWeight: 700 }}>📄 Tool Report Output</div>
         <pre style={{ background: "#0a0a0f", margin: 0, padding: "14px", fontSize: "11px", color: "#e2e8f0", lineHeight: 1.7, overflowX: "auto", fontFamily: "'DM Mono',monospace", whiteSpace: "pre-wrap" }}>
           {sub.reportContent}
         </pre>
@@ -366,6 +325,7 @@ function ReportReadingView({ sub, theme, onComplete, completed }: any) {
         </button>
       )}
       {completed && <div style={{ color: "#22c55e", fontSize: "12px", fontFamily: "'DM Mono',monospace" }}>✓ Completed</div>}
+      <ResourceSection domain={domain} levelId={levelId} subLevelType={subLevelTypeApi} accentColor={theme.primary} />
     </div>
   );
 }
@@ -374,17 +334,10 @@ function LabView({ sub, theme, accent, toolName, code, setCode, result, loading,
   const [showHints, setShowHints] = useState(false);
   return (
     <div>
-      {/* Instructions */}
       <div style={{ borderRadius: "10px", border: `1px solid ${accent}30`, background: `${accent}08`, padding: "12px 14px", marginBottom: "14px" }}>
-        <div style={{ color: accent, fontSize: "10px", fontFamily: "'DM Mono',monospace", fontWeight: 700, marginBottom: "6px" }}>
-          🔧 {toolName}
-        </div>
-        <pre style={{ color: "#ccc", fontSize: "11.5px", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap", fontFamily: "'DM Mono',monospace" }}>
-          {sub.lab?.instructions}
-        </pre>
+        <div style={{ color: accent, fontSize: "10px", fontFamily: "'DM Mono',monospace", fontWeight: 700, marginBottom: "6px" }}>🔧 {toolName}</div>
+        <pre style={{ color: "#ccc", fontSize: "11.5px", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap", fontFamily: "'DM Mono',monospace" }}>{sub.lab?.instructions}</pre>
       </div>
-
-      {/* Result */}
       {result && (
         <div style={{ marginBottom: "12px", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${result.passed ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`, background: result.passed ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)" }}>
           <div style={{ color: result.passed ? "#22c55e" : "#ef4444", fontWeight: 700, fontSize: "12px", marginBottom: "4px" }}>
@@ -393,23 +346,10 @@ function LabView({ sub, theme, accent, toolName, code, setCode, result, loading,
           <div style={{ color: "#999", fontSize: "11px" }}>{result.feedback}</div>
         </div>
       )}
-
-      {/* Monaco Editor */}
       <div style={{ borderRadius: "10px", overflow: "hidden", border: `1px solid ${accent}40`, marginBottom: "12px" }}>
-        <div style={{ background: `${accent}15`, padding: "6px 12px", fontSize: "10px", fontFamily: "'DM Mono',monospace", color: accent, fontWeight: 700 }}>
-          Tcl Editor — Write your commands here
-        </div>
-        <Editor
-          height="240px"
-          defaultLanguage="tcl"
-          theme="vs-dark"
-          value={code}
-          onChange={(v) => setCode(v || "")}
-          options={{ fontSize: 12, minimap: { enabled: false }, scrollBeyondLastLine: false, padding: { top: 10 }, lineNumbers: "on" }}
-        />
+        <div style={{ background: `${accent}15`, padding: "6px 12px", fontSize: "10px", fontFamily: "'DM Mono',monospace", color: accent, fontWeight: 700 }}>Tcl Editor — Write your commands here</div>
+        <Editor height="240px" defaultLanguage="tcl" theme="vs-dark" value={code} onChange={(v) => setCode(v || "")} options={{ fontSize: 12, minimap: { enabled: false }, scrollBeyondLastLine: false, padding: { top: 10 }, lineNumbers: "on" }} />
       </div>
-
-      {/* Hints */}
       <div style={{ marginBottom: "12px" }}>
         <button onClick={() => setShowHints(!showHints)} style={{ color: "#666", fontSize: "11px", fontFamily: "'DM Mono',monospace", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
           {showHints ? "▲ Hide hints" : "▼ Show hints"}
@@ -417,14 +357,11 @@ function LabView({ sub, theme, accent, toolName, code, setCode, result, loading,
         {showHints && (
           <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
             {sub.lab?.hints?.map((h: string, i: number) => (
-              <div key={i} style={{ padding: "5px 10px", borderRadius: "6px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#888", fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>
-                💡 {h}
-              </div>
+              <div key={i} style={{ padding: "5px 10px", borderRadius: "6px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#888", fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>💡 {h}</div>
             ))}
           </div>
         )}
       </div>
-
       {!completed && (
         <button onClick={onSubmit} disabled={loading} style={{ padding: "9px 22px", borderRadius: "10px", background: loading ? "#333" : theme.gradient, border: "none", color: loading ? "#666" : "#000", fontWeight: 700, fontSize: "12px", cursor: loading ? "not-allowed" : "pointer" }}>
           {loading ? "Evaluating..." : "Submit Lab →"}
@@ -435,7 +372,7 @@ function LabView({ sub, theme, accent, toolName, code, setCode, result, loading,
   );
 }
 
-function QuizView({ sub, theme, answers, submitted, completed, onAnswer, onSubmit }: any) {
+function QuizView({ sub, theme, answers, submitted, completed, onAnswer, onSubmit, domain, levelId, subLevelTypeApi }: any) {
   const allAnswered = sub.quiz?.every((_: any, i: number) => answers[`${sub.id}-${i}`] !== undefined);
   return (
     <div>
@@ -446,14 +383,10 @@ function QuizView({ sub, theme, answers, submitted, completed, onAnswer, onSubmi
           const selected = answers[key];
           return (
             <div key={qi}>
-              <div style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>
-                {qi + 1}. {q.q}
-              </div>
+              <div style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>{qi + 1}. {q.q}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {q.options.map((opt: string, oi: number) => {
-                  let bg = "rgba(255,255,255,0.03)";
-                  let border = "rgba(255,255,255,0.08)";
-                  let color = "#aaa";
+                  let bg = "rgba(255,255,255,0.03)"; let border = "rgba(255,255,255,0.08)"; let color = "#aaa";
                   if (selected === oi) { bg = `${theme.primary}15`; border = theme.primary; color = "#fff"; }
                   if (submitted) {
                     if (oi === q.answer) { bg = "rgba(34,197,94,0.1)"; border = "#22c55e"; color = "#22c55e"; }
@@ -480,6 +413,7 @@ function QuizView({ sub, theme, answers, submitted, completed, onAnswer, onSubmi
           {submitted && !completed ? "Some answers wrong — review and try again" : "✓ Quiz Passed"}
         </div>
       )}
+      <ResourceSection domain={domain} levelId={levelId} subLevelType={subLevelTypeApi} accentColor={theme.primary} />
     </div>
   );
 }

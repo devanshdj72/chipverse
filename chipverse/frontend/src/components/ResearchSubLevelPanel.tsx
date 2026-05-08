@@ -6,12 +6,20 @@ import {
 } from "lucide-react";
 import { DomainTheme } from "@/lib/themes";
 import { SubLevel, SubLevelType, ResearchLevelData } from "@/lib/data";
+import ResourceSection from "@/components/ResourceSection";
 
 const SUB_TYPE_CONFIG: Record<SubLevelType, { icon: React.ElementType; label: string; color: string }> = {
   background: { icon: BookOpen, label: "Background",         color: "#60a5fa" },
   techniques:  { icon: Cpu,      label: "Present Techniques", color: "#34d399" },
   angles:      { icon: Target,   label: "Research Angles",    color: "#f59e0b" },
   paper:       { icon: FileText, label: "Research Paper",     color: "#a78bfa" },
+};
+
+const SUB_TYPE_API: Record<SubLevelType, string> = {
+  background:  "CONCEPT",
+  techniques:  "SYNTAX",
+  angles:      "WALKTHROUGH",
+  paper:       "LAB",
 };
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
@@ -142,9 +150,10 @@ function SubLevelQuiz({
 
 // ─── Centered full-page sub-level content modal ────────────────────────────────
 function SubLevelModal({
-  subLevel, theme, isCompleted, onClose, onComplete,
+  subLevel, theme, isCompleted, domain, levelId, onClose, onComplete,
 }: {
   subLevel: SubLevel; theme: DomainTheme; isCompleted: boolean;
+  domain: string; levelId: number;
   onClose: () => void; onComplete: () => void;
 }) {
   const config = SUB_TYPE_CONFIG[subLevel.type];
@@ -181,7 +190,6 @@ function SubLevelModal({
           backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
         }}
       >
-        {/* Top accent bar */}
         <div style={{ height: "3px", background: theme.gradient, flexShrink: 0 }} />
 
         {/* Header */}
@@ -232,71 +240,69 @@ function SubLevelModal({
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "28px", scrollbarWidth: "thin", scrollbarColor: `${theme.primary}44 transparent` }}>
           {!showQuiz ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              {/* LEFT */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                <div style={{ padding: "18px 20px", borderRadius: "16px", background: `${theme.card}`, border: `1px solid ${theme.border}` }}>
-                  <div style={{ color: theme.primary, fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Overview</div>
-                  <p style={{ color: "#e2e2e2", fontSize: "13.5px", fontFamily: "'DM Mono', monospace", lineHeight: 1.75, margin: 0 }}>
-                    {subLevel.summary}
-                  </p>
-                </div>
-                <div style={{ padding: "18px 20px", borderRadius: "16px", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.08)", flex: 1 }}>
-                  <div style={{ color: "#888", fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Deep Dive</div>
-                  <p style={{ color: "#d0d0d0", fontSize: "12.5px", fontFamily: "'DM Mono', monospace", lineHeight: 1.8, margin: 0 }}>
-                    {subLevel.deepDive}
-                  </p>
-                </div>
-              </div>
-
-              {/* RIGHT */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                <div style={{ padding: "18px 20px", borderRadius: "16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ color: "#888", fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>Key Points</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {subLevel.keyPoints.map((pt, i) => (
-                      <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                        <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: config.color, marginTop: "6px", flexShrink: 0, boxShadow: `0 0 6px ${config.color}88` }} />
-                        <span style={{ color: "#e8e8e8", fontSize: "12.5px", lineHeight: 1.65 }}>{pt}</span>
-                      </div>
-                    ))}
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                {/* LEFT */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                  <div style={{ padding: "18px 20px", borderRadius: "16px", background: `${theme.card}`, border: `1px solid ${theme.border}` }}>
+                    <div style={{ color: theme.primary, fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Overview</div>
+                    <p style={{ color: "#e2e2e2", fontSize: "13.5px", fontFamily: "'DM Mono', monospace", lineHeight: 1.75, margin: 0 }}>
+                      {subLevel.summary}
+                    </p>
+                  </div>
+                  <div style={{ padding: "18px 20px", borderRadius: "16px", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.08)", flex: 1 }}>
+                    <div style={{ color: "#888", fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Deep Dive</div>
+                    <p style={{ color: "#d0d0d0", fontSize: "12.5px", fontFamily: "'DM Mono', monospace", lineHeight: 1.8, margin: 0 }}>
+                      {subLevel.deepDive}
+                    </p>
                   </div>
                 </div>
 
-                {isCompleted ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <div style={{ padding: "14px 16px", borderRadius: "14px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.28)", display: "flex", alignItems: "center", gap: "10px" }}>
-                      <CheckCircle2 style={{ width: "16px", height: "16px", color: "#4ade80", flexShrink: 0 }} />
-                      <span style={{ color: "#4ade80", fontSize: "12px", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>
-                        Completed — +{subLevel.xp} XP earned
-                      </span>
+                {/* RIGHT */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                  <div style={{ padding: "18px 20px", borderRadius: "16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ color: "#888", fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>Key Points</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {subLevel.keyPoints.map((pt, i) => (
+                        <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: config.color, marginTop: "6px", flexShrink: 0, boxShadow: `0 0 6px ${config.color}88` }} />
+                          <span style={{ color: "#e8e8e8", fontSize: "12.5px", lineHeight: 1.65 }}>{pt}</span>
+                        </div>
+                      ))}
                     </div>
-                    <button onClick={() => setShowQuiz(true)}
-                      style={{
-                        padding: "12px 20px", borderRadius: "14px",
-                        background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
-                        color: "#bbb", fontFamily: "'DM Mono', monospace", fontSize: "12px", fontWeight: 600,
-                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
-                      }}>
-                      <RefreshCw style={{ width: "13px", height: "13px" }} />
-                      Retake Quiz for Practice
-                    </button>
                   </div>
-                ) : (
-                  <button onClick={() => setShowQuiz(true)}
-                    style={{
-                      padding: "16px 24px", borderRadius: "16px",
-                      background: theme.gradient, border: "none", color: "#000",
-                      fontFamily: "'Orbitron', monospace", fontSize: "12px", fontWeight: 700,
-                      cursor: "pointer", letterSpacing: "0.05em",
-                      boxShadow: `0 0 24px ${theme.glow}`,
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                    }}>
-                    Take Quiz → Earn +{subLevel.xp} XP
-                  </button>
-                )}
+
+                  {isCompleted ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div style={{ padding: "14px 16px", borderRadius: "14px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.28)", display: "flex", alignItems: "center", gap: "10px" }}>
+                        <CheckCircle2 style={{ width: "16px", height: "16px", color: "#4ade80", flexShrink: 0 }} />
+                        <span style={{ color: "#4ade80", fontSize: "12px", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>
+                          Completed — +{subLevel.xp} XP earned
+                        </span>
+                      </div>
+                      <button onClick={() => setShowQuiz(true)}
+                        style={{ padding: "12px 20px", borderRadius: "14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "#bbb", fontFamily: "'DM Mono', monospace", fontSize: "12px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "7px" }}>
+                        <RefreshCw style={{ width: "13px", height: "13px" }} />
+                        Retake Quiz for Practice
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setShowQuiz(true)}
+                      style={{ padding: "16px 24px", borderRadius: "16px", background: theme.gradient, border: "none", color: "#000", fontFamily: "'Orbitron', monospace", fontSize: "12px", fontWeight: 700, cursor: "pointer", letterSpacing: "0.05em", boxShadow: `0 0 24px ${theme.glow}`, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      Take Quiz → Earn +{subLevel.xp} XP
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+
+              {/* ── Faculty Resources ── */}
+              <ResourceSection
+                domain={domain}
+                levelId={levelId}
+                subLevelType={SUB_TYPE_API[subLevel.type]}
+                accentColor={theme.primary}
+              />
+            </>
           ) : (
             <div style={{ maxWidth: "580px", margin: "0 auto" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
@@ -357,17 +363,10 @@ function SubLevelCard({
       onClick={() => !isLocked && onClick()}
     >
       <div style={{
-        background: isCompleted
-          ? `linear-gradient(135deg, ${theme.card}, rgba(8,8,20,0.97))`
-          : hovered ? "rgba(20,20,35,0.98)" : "rgba(10,10,20,0.95)",
-        border: `1px solid ${isCompleted
-          ? hovered ? theme.primary : theme.border
-          : hovered ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.10)"}`,
-        borderRadius: "14px", overflow: "hidden",
-        transition: "all 0.25s ease",
-        boxShadow: isCompleted
-          ? hovered ? `0 0 22px ${theme.glow}` : `0 0 12px ${theme.glow}`
-          : hovered ? `0 6px 28px rgba(0,0,0,0.6), 0 0 14px ${config.color}22` : "0 2px 12px rgba(0,0,0,0.35)",
+        background: isCompleted ? `linear-gradient(135deg, ${theme.card}, rgba(8,8,20,0.97))` : hovered ? "rgba(20,20,35,0.98)" : "rgba(10,10,20,0.95)",
+        border: `1px solid ${isCompleted ? hovered ? theme.primary : theme.border : hovered ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.10)"}`,
+        borderRadius: "14px", overflow: "hidden", transition: "all 0.25s ease",
+        boxShadow: isCompleted ? hovered ? `0 0 22px ${theme.glow}` : `0 0 12px ${theme.glow}` : hovered ? `0 6px 28px rgba(0,0,0,0.6), 0 0 14px ${config.color}22` : "0 2px 12px rgba(0,0,0,0.35)",
         opacity: isLocked ? 0.38 : 1,
         cursor: isLocked ? "not-allowed" : "pointer",
         transform: hovered && !isLocked ? "translateY(-2px) scale(1.01)" : "none",
@@ -376,41 +375,19 @@ function SubLevelCard({
           <div style={{ height: "2px", background: isCompleted ? theme.gradient : `linear-gradient(90deg, ${config.color}88, transparent)` }} />
         )}
         <div style={{ padding: "13px 15px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "36px", height: "36px", borderRadius: "10px", flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: isCompleted ? theme.gradient : hovered ? `${config.color}28` : `${config.color}14`,
-            border: `1px solid ${isCompleted ? "transparent" : `${config.color}${hovered ? "55" : "28"}`}`,
-            boxShadow: isCompleted ? `0 0 12px ${theme.glow}` : hovered ? `0 0 10px ${config.color}44` : "none",
-            transition: "all 0.25s",
-          }}>
-            {isCompleted
-              ? <CheckCircle2 style={{ width: "16px", height: "16px", color: "#000" }} />
-              : isLocked
-              ? <Lock style={{ width: "13px", height: "13px", color: "#444" }} />
-              : <Icon style={{ width: "16px", height: "16px", color: config.color }} />
-            }
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: isCompleted ? theme.gradient : hovered ? `${config.color}28` : `${config.color}14`, border: `1px solid ${isCompleted ? "transparent" : `${config.color}${hovered ? "55" : "28"}`}`, boxShadow: isCompleted ? `0 0 12px ${theme.glow}` : hovered ? `0 0 10px ${config.color}44` : "none", transition: "all 0.25s" }}>
+            {isCompleted ? <CheckCircle2 style={{ width: "16px", height: "16px", color: "#000" }} />
+              : isLocked ? <Lock style={{ width: "13px", height: "13px", color: "#444" }} />
+              : <Icon style={{ width: "16px", height: "16px", color: config.color }} />}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "9px", fontFamily: "'DM Mono', monospace", color: isCompleted ? theme.primary : config.color, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "2px" }}>
-              {config.label}
-            </div>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: isCompleted ? "#fff" : isLocked ? "#444" : hovered ? "#fff" : "#eee", transition: "color 0.2s" }}>
-              {subLevel.title}
-            </div>
+            <div style={{ fontSize: "9px", fontFamily: "'DM Mono', monospace", color: isCompleted ? theme.primary : config.color, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "2px" }}>{config.label}</div>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: isCompleted ? "#fff" : isLocked ? "#444" : hovered ? "#fff" : "#eee", transition: "color 0.2s" }}>{subLevel.title}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-            <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", fontWeight: 700, color: isCompleted ? theme.primary : "#555" }}>
-              +{subLevel.xp} XP
-            </span>
-            {isCompleted && (
-              <div style={{ width: "18px", height: "18px", borderRadius: "5px", background: `${theme.primary}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ChevronRight style={{ width: "11px", height: "11px", color: theme.primary }} />
-              </div>
-            )}
-            {!isLocked && !isCompleted && (
-              <ChevronRight style={{ width: "14px", height: "14px", color: hovered ? "#bbb" : "#444" }} />
-            )}
+            <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", fontWeight: 700, color: isCompleted ? theme.primary : "#555" }}>+{subLevel.xp} XP</span>
+            {isCompleted && <div style={{ width: "18px", height: "18px", borderRadius: "5px", background: `${theme.primary}20`, display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight style={{ width: "11px", height: "11px", color: theme.primary }} /></div>}
+            {!isLocked && !isCompleted && <ChevronRight style={{ width: "14px", height: "14px", color: hovered ? "#bbb" : "#444" }} />}
           </div>
         </div>
       </div>
@@ -423,39 +400,20 @@ function LevelCompleteCelebration({ levelData, theme, onClaim }: {
   levelData: ResearchLevelData; theme: DomainTheme; onClaim: () => void;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(16px, 3vw, 48px)" }}
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(16px, 3vw, 48px)" }}>
       <motion.div
-        initial={{ scale: 0.88, opacity: 0, y: 24 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.92, opacity: 0, y: 16 }}
-        transition={{ type: "spring", stiffness: 300, damping: 24 }}
-        style={{
-          background: "rgba(8,8,20,0.99)", border: `1px solid ${theme.border}`,
-          borderRadius: "24px", padding: "44px", textAlign: "center", maxWidth: "480px", width: "100%",
-          boxShadow: `0 0 60px ${theme.glow}, 0 24px 70px rgba(0,0,0,0.9)`,
-        }}
-      >
+        initial={{ scale: 0.88, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 16 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}
+        style={{ background: "rgba(8,8,20,0.99)", border: `1px solid ${theme.border}`, borderRadius: "24px", padding: "44px", textAlign: "center", maxWidth: "480px", width: "100%", boxShadow: `0 0 60px ${theme.glow}, 0 24px 70px rgba(0,0,0,0.9)` }}>
         <div style={{ fontSize: "64px", marginBottom: "16px" }}>🏆</div>
         <h3 style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: "22px", color: "#fff", margin: "0 0 8px" }}>Level Complete!</h3>
         <p style={{ color: theme.primary, fontSize: "14px", fontFamily: "'DM Mono', monospace", fontWeight: 700, marginBottom: "20px" }}>All 4 sub-levels completed</p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "24px", flexWrap: "wrap" }}>
-          <span style={{ background: theme.card, border: `1px solid ${theme.border}`, color: theme.primary, borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
-            +{levelData.bonusXp} Bonus XP
-          </span>
-          <span style={{ background: "rgba(234,179,8,0.12)", border: "1px solid rgba(234,179,8,0.3)", color: "#eab308", borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
-            🏅 {levelData.badge}
-          </span>
+          <span style={{ background: theme.card, border: `1px solid ${theme.border}`, color: theme.primary, borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>+{levelData.bonusXp} Bonus XP</span>
+          <span style={{ background: "rgba(234,179,8,0.12)", border: "1px solid rgba(234,179,8,0.3)", color: "#eab308", borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>🏅 {levelData.badge}</span>
         </div>
-        <button onClick={onClaim}
-          style={{
-            background: theme.gradient, border: "none", borderRadius: "14px",
-            color: "#000", fontFamily: "'Orbitron', monospace", fontSize: "13px",
-            fontWeight: 700, letterSpacing: "0.05em", padding: "14px 40px",
-            cursor: "pointer", boxShadow: `0 0 26px ${theme.glow}`,
-          }}>
+        <button onClick={onClaim} style={{ background: theme.gradient, border: "none", borderRadius: "14px", color: "#000", fontFamily: "'Orbitron', monospace", fontSize: "13px", fontWeight: 700, letterSpacing: "0.05em", padding: "14px 40px", cursor: "pointer", boxShadow: `0 0 26px ${theme.glow}` }}>
           Claim Badge + XP 🏆
         </button>
       </motion.div>
@@ -470,7 +428,8 @@ interface ResearchSubLevelPanelProps {
   levelIndex: number;
   theme: DomainTheme;
   completedSubLevels: string[];
-  celebrationClaimed: boolean;          // ← comes from localStorage via ResearchPath
+  celebrationClaimed: boolean;
+  domain: string;
   onSubLevelComplete: (subLevelId: string, xp: number) => void;
   onLevelComplete: () => void;
   onClose: () => void;
@@ -478,25 +437,20 @@ interface ResearchSubLevelPanelProps {
 
 export default function ResearchSubLevelPanel({
   levelData, levelTitle, levelIndex, theme,
-  completedSubLevels, celebrationClaimed,
+  completedSubLevels, celebrationClaimed, domain,
   onSubLevelComplete, onLevelComplete, onClose,
 }: ResearchSubLevelPanelProps) {
   const side = levelIndex % 2 === 0 ? "right" : "left";
   const allDone = levelData.subLevels.every((sl) => completedSubLevels.includes(sl.id));
-
-  // Only show celebration if allDone AND not yet claimed (persisted in parent)
   const [showCelebration, setShowCelebration] = useState(false);
   const [openSubLevel, setOpenSubLevel] = useState<SubLevel | null>(null);
-
   const completedCount = levelData.subLevels.filter((sl) => completedSubLevels.includes(sl.id)).length;
 
   useEffect(() => {
-    // Show celebration only when all done AND parent says it hasn't been claimed yet
     if (allDone && !celebrationClaimed) {
       const t = setTimeout(() => setShowCelebration(true), 500);
       return () => clearTimeout(t);
     } else {
-      // If already claimed, never show it
       setShowCelebration(false);
     }
   }, [allDone, celebrationClaimed]);
@@ -508,75 +462,48 @@ export default function ResearchSubLevelPanel({
 
   return (
     <>
-      {/* Side panel */}
       <motion.div
         initial={{ opacity: 0, x: side === "right" ? 70 : -70, scale: 0.94 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: side === "right" ? 50 : -50, scale: 0.96 }}
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
-        style={{
-          position: "fixed", top: "80px",
-          [side]: "24px",
-          width: "clamp(280px, 30vw, 380px)",
-          maxHeight: "calc(100vh - 110px)",
-          overflowY: "auto", zIndex: 30,
-          scrollbarWidth: "thin",
-          scrollbarColor: `${theme.primary}44 transparent`,
-        }}
+        style={{ position: "fixed", top: "80px", [side]: "24px", width: "clamp(280px, 30vw, 380px)", maxHeight: "calc(100vh - 110px)", overflowY: "auto", zIndex: 30, scrollbarWidth: "thin", scrollbarColor: `${theme.primary}44 transparent` }}
       >
-        {/* Header */}
-        <div style={{
-          background: "rgba(8,8,20,0.98)", border: `1px solid ${theme.border}`,
-          borderRadius: "18px", padding: "15px 17px", marginBottom: "8px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          boxShadow: `0 0 32px ${theme.glow}, 0 8px 36px rgba(0,0,0,0.8)`,
-          backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-          position: "sticky", top: 0, zIndex: 2,
-        }}>
+        <div style={{ background: "rgba(8,8,20,0.98)", border: `1px solid ${theme.border}`, borderRadius: "18px", padding: "15px 17px", marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: `0 0 32px ${theme.glow}, 0 8px 36px rgba(0,0,0,0.8)`, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", position: "sticky", top: 0, zIndex: 2 }}>
           <div>
-            <div style={{ color: theme.primary, fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3px" }}>
-              Level {levelIndex} Sub-levels
-            </div>
-            <div style={{ color: "#fff", fontFamily: "'Orbitron', monospace", fontWeight: 800, fontSize: "13px" }}>
-              {levelTitle}
-            </div>
+            <div style={{ color: theme.primary, fontSize: "9.5px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3px" }}>Level {levelIndex} Sub-levels</div>
+            <div style={{ color: "#fff", fontFamily: "'Orbitron', monospace", fontWeight: 800, fontSize: "13px" }}>{levelTitle}</div>
             <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
               {levelData.subLevels.map((sl, i) => (
                 <div key={i} style={{ width: "28px", height: "4px", borderRadius: "999px", background: completedSubLevels.includes(sl.id) ? theme.gradient : "rgba(255,255,255,0.10)", transition: "all 0.4s", boxShadow: completedSubLevels.includes(sl.id) ? `0 0 6px ${theme.glow}` : "none" }} />
               ))}
             </div>
-            <div style={{ color: "#777", fontSize: "9.5px", fontFamily: "'DM Mono', monospace", marginTop: "5px" }}>
-              {completedCount}/{levelData.subLevels.length} complete · +{levelData.bonusXp} bonus XP
-            </div>
+            <div style={{ color: "#777", fontSize: "9.5px", fontFamily: "'DM Mono', monospace", marginTop: "5px" }}>{completedCount}/{levelData.subLevels.length} complete · +{levelData.bonusXp} bonus XP</div>
           </div>
-          <button onClick={onClose}
-            style={{ width: "32px", height: "32px", borderRadius: "9px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#bbb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: "12px" }}>
+          <button onClick={onClose} style={{ width: "32px", height: "32px", borderRadius: "9px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#bbb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: "12px" }}>
             <X style={{ width: "13px", height: "13px" }} />
           </button>
         </div>
 
-        {/* Sub-level cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
           <AnimatePresence>
             {levelData.subLevels.map((sl, i) => (
-              <SubLevelCard
-                key={sl.id} subLevel={sl} theme={theme}
+              <SubLevelCard key={sl.id} subLevel={sl} theme={theme}
                 isCompleted={completedSubLevels.includes(sl.id)}
-                isLocked={getIsLocked(i)}
-                index={i} side={side}
-                onClick={() => setOpenSubLevel(sl)}
-              />
+                isLocked={getIsLocked(i)} index={i} side={side}
+                onClick={() => setOpenSubLevel(sl)} />
             ))}
           </AnimatePresence>
         </div>
       </motion.div>
 
-      {/* Centered content modal */}
       <AnimatePresence>
         {openSubLevel && (
           <SubLevelModal
             subLevel={openSubLevel} theme={theme}
             isCompleted={completedSubLevels.includes(openSubLevel.id)}
+            domain={domain}
+            levelId={levelData.levelId}
             onClose={() => setOpenSubLevel(null)}
             onComplete={() => {
               onSubLevelComplete(openSubLevel.id, openSubLevel.xp);
@@ -586,14 +513,10 @@ export default function ResearchSubLevelPanel({
         )}
       </AnimatePresence>
 
-      {/* Celebration — shown only once, controlled by parent localStorage */}
       <AnimatePresence>
         {showCelebration && (
           <LevelCompleteCelebration levelData={levelData} theme={theme}
-            onClaim={() => {
-              setShowCelebration(false);
-              onLevelComplete(); // parent saves claimedLevels to localStorage
-            }} />
+            onClaim={() => { setShowCelebration(false); onLevelComplete(); }} />
         )}
       </AnimatePresence>
     </>
