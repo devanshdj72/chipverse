@@ -9,13 +9,11 @@ import { config } from "../config/env";
 export const adminLogin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password required" });
     }
 
     const admin = await prisma.adminUser.findUnique({ where: { email } });
-
     if (!admin || !admin.isActive) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -26,7 +24,12 @@ export const adminLogin = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { adminId: admin.id, email: admin.email, role: "ADMIN" },
+      {
+        adminId: admin.id,
+        email: admin.email,
+        role: "ADMIN",
+        adminRole: admin.role, // "ADMIN" or "SUPER_ADMIN"
+      },
       config.jwt.accessSecret,
       { expiresIn: "8h" }
     );
@@ -37,6 +40,7 @@ export const adminLogin = async (req: Request, res: Response) => {
         id: admin.id,
         name: admin.name,
         email: admin.email,
+        role: admin.role,
       },
     });
   } catch (err) {
@@ -45,12 +49,11 @@ export const adminLogin = async (req: Request, res: Response) => {
   }
 };
 
-// POST /api/admin/create  (only call this once to seed first admin)
+// POST /api/admin/create
 export const createAdmin = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, secretKey } = req.body;
+    const { name, email, password, secretKey, role } = req.body;
 
-    // Protect with a secret key so random users can't create admins
     if (secretKey !== config.adminSecretKey) {
       return res.status(403).json({ message: "Forbidden" });
     }
@@ -61,14 +64,15 @@ export const createAdmin = async (req: Request, res: Response) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const adminRole = role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
 
     const admin = await prisma.adminUser.create({
-      data: { name, email, passwordHash },
+      data: { name, email, passwordHash, role: adminRole },
     });
 
     return res.status(201).json({
       message: "Admin created",
-      admin: { id: admin.id, name: admin.name, email: admin.email },
+      admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
     });
   } catch (err) {
     console.error("Create admin error:", err);
@@ -81,7 +85,7 @@ export const getAdminMe = async (req: Request, res: Response) => {
   try {
     const admin = await prisma.adminUser.findUnique({
       where: { id: (req as any).adminId },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
     });
     if (!admin) return res.status(404).json({ message: "Admin not found" });
     return res.status(200).json({ admin });

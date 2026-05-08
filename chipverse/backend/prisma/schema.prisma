@@ -39,6 +39,35 @@ enum BattleMode {
   OFFLINE
 }
 
+enum ResourceType {
+  PAPER
+  VIDEO
+  TOOL
+  ARTICLE
+  NOTES
+  BOOK
+  PLAYLIST
+}
+
+enum ResourceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubLevelType {
+  CONCEPT
+  SYNTAX
+  WALKTHROUGH
+  LAB
+  QUIZ
+}
+
 model User {
   id              String    @id @default(uuid())
   email           String?   @unique
@@ -268,50 +297,50 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
-// ─── ADD THESE TO THE BOTTOM OF YOUR schema.prisma ──────────────────────────
 
-enum ResourceType {
-  PAPER
-  VIDEO
-  TOOL
-  ARTICLE
-  NOTES
-  BOOK
-  PLAYLIST
-}
+// ─── Admin System ─────────────────────────────────────────────────────────────
 
 model AdminUser {
-  id           String     @id @default(uuid())
+  id           String    @id @default(uuid())
   name         String
-  email        String     @unique
-  passwordHash String     @db.Text
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  email        String    @unique
+  passwordHash String    @db.Text
+  role         AdminRole @default(ADMIN)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  resources    Resource[]
+  uploadedResources Resource[] @relation("UploadedBy")
+  reviewedResources Resource[] @relation("ReviewedBy")
 
   @@index([email])
 }
 
 model Resource {
-  id          String       @id @default(uuid())
-  title       String
-  url         String       @db.Text
-  type        ResourceType
-  domain      String       // rtl, verification, fpga, embedded, analog, dft, research, physical-design
-  levelId     Int          // 0-12 (matches roadmap level id)
-  description String?      @db.Text
-  tags        String[]     @default([])
-  isActive    Boolean      @default(true)
-  uploadedBy  String       // AdminUser id
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id              String         @id @default(uuid())
+  title           String
+  url             String         @db.Text
+  type            ResourceType
+  domain          String
+  levelId         Int
+  subLevelType    SubLevelType
+  description     String?        @db.Text
+  tags            String[]       @default([])
+  status          ResourceStatus @default(PENDING)
+  rejectionReason String?        @db.Text
+  uploadedBy      String
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  admin       AdminUser    @relation(fields: [uploadedBy], references: [id])
+  uploader AdminUser  @relation("UploadedBy", fields: [uploadedBy], references: [id])
+  reviewer AdminUser? @relation("ReviewedBy", fields: [reviewedBy], references: [id])
 
   @@index([domain])
   @@index([domain, levelId])
+  @@index([domain, levelId, subLevelType])
+  @@index([status])
   @@index([uploadedBy])
-  @@index([isActive])
 }
