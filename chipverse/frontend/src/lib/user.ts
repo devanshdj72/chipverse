@@ -150,7 +150,7 @@ function useUserInternal() {
       const res = await api.user.addXp(xp);
       setState((s) => ({
         ...s,
-        profile: { ...s.profile, xp: res.data.xp ?? s.profile.xp + xp },
+        profile: { ...s.profile, xp: res.data?.xp ?? s.profile.xp + xp },
       }));
     } catch {
       // Silently fail — XP will sync on next profile load
