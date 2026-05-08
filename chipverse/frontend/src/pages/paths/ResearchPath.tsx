@@ -38,7 +38,7 @@ function saveProgress(p: SubLevelProgress) {
 }
 
 export default function ResearchPath() {
-  const { profile, completeLevel } = useUserContext();
+  const { profile, completeLevel, addXp } = useUserContext();
   const theme = DOMAIN_THEMES[DOMAIN_ID];
   const levels = ROADMAPS[DOMAIN_ID] || [];
   const completedIds = profile.completedLevels[DOMAIN_ID] || [];
@@ -61,6 +61,7 @@ export default function ResearchPath() {
       if (prev.completedSubLevels.includes(subLevelId)) return prev;
       return { ...prev, completedSubLevels: [...prev.completedSubLevels, subLevelId], totalXp: prev.totalXp + xp };
     });
+    addXp(xp);
   };
 
   const handleLevelComplete = (levelId: number, bonusXp: number) => {

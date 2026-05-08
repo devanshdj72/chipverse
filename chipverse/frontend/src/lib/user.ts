@@ -81,27 +81,11 @@ function useUserInternal() {
       try {
         const storedRefreshToken = loadRefreshToken();
         const refreshRes = await api.auth.refreshToken(storedRefreshToken ?? undefined);
-
-        if (refreshRes.data.refreshToken) {
-          saveRefreshToken(refreshRes.data.refreshToken);
-        }
-
+        if (refreshRes.data.refreshToken) saveRefreshToken(refreshRes.data.refreshToken);
         setAccessToken(refreshRes.data.accessToken);
-
-        // Connect socket after restoring session
         connectSocket(refreshRes.data.accessToken);
-
-        const [meRes, profile] = await Promise.all([
-          api.auth.me(),
-          loadProfile(),
-        ]);
-
-        setState({
-          user: meRes.data,
-          profile,
-          isLoading: false,
-          isAuthenticated: true,
-        });
+        const [meRes, profile] = await Promise.all([api.auth.me(), loadProfile()]);
+        setState({ user: meRes.data, profile, isLoading: false, isAuthenticated: true });
       } catch {
         clearRefreshToken();
         setState((s) => ({ ...s, isLoading: false }));
@@ -114,17 +98,9 @@ function useUserInternal() {
     const res = await api.auth.login({ email, password });
     setAccessToken(res.data.accessToken);
     if (res.data.refreshToken) saveRefreshToken(res.data.refreshToken);
-
-    // Connect socket on login
     connectSocket(res.data.accessToken);
-
     const profile = await loadProfile();
-    setState({
-      user: res.data.user,
-      profile,
-      isLoading: false,
-      isAuthenticated: true,
-    });
+    setState({ user: res.data.user, profile, isLoading: false, isAuthenticated: true });
     return res.data.user;
   }, []);
 
@@ -153,7 +129,7 @@ function useUserInternal() {
     } finally {
       setAccessToken("");
       clearRefreshToken();
-      disconnectSocket(); // Disconnect socket on logout
+      disconnectSocket();
       setState({ user: null, profile: DEFAULT_PROFILE, isLoading: false, isAuthenticated: false });
     }
   }, []);
@@ -166,6 +142,19 @@ function useUserInternal() {
       ...s,
       profile: { ...s.profile, xp: res.data.profile?.xp ?? s.profile.xp, completedLevels },
     }));
+  }, []);
+
+  // ── NEW: sync sub-level XP to backend ─────────────────────────────────────
+  const addXp = useCallback(async (xp: number) => {
+    try {
+      const res = await api.user.addXp(xp);
+      setState((s) => ({
+        ...s,
+        profile: { ...s.profile, xp: res.data.xp ?? s.profile.xp + xp },
+      }));
+    } catch {
+      // Silently fail — XP will sync on next profile load
+    }
   }, []);
 
   const setCurrentDomain = useCallback(async (domainId: string) => {
@@ -182,7 +171,7 @@ function useUserInternal() {
     profile: state.profile,
     isLoading: state.isLoading,
     isAuthenticated: state.isAuthenticated,
-    login, register, verifyOtp, logout, completeLevel, setCurrentDomain, setName,
+    login, register, verifyOtp, logout, completeLevel, addXp, setCurrentDomain, setName,
     mounted: !state.isLoading,
   };
 }

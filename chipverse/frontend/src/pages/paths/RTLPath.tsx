@@ -38,7 +38,7 @@ function saveProgress(p: SubLevelProgress) {
 }
 
 export default function RTLPath() {
-  const { profile, completeLevel } = useUserContext();
+  const { profile, completeLevel, addXp } = useUserContext();
   const theme = DOMAIN_THEMES[DOMAIN_ID];
   const levels = ROADMAPS[DOMAIN_ID] || [];
   const completedIds = profile.completedLevels[DOMAIN_ID] || [];
@@ -61,6 +61,7 @@ export default function RTLPath() {
       if (prev.completedSubLevels.includes(subLevelId)) return prev;
       return { ...prev, completedSubLevels: [...prev.completedSubLevels, subLevelId], totalXp: prev.totalXp + xp };
     });
+    addXp(xp);
   };
 
   const handleLevelComplete = (levelId: number, bonusXp: number) => {
@@ -168,7 +169,6 @@ export default function RTLPath() {
                     className={cn("relative flex items-center w-full my-10", isLeft ? "justify-start md:justify-end md:pr-16" : "justify-start md:pl-16")}
                     style={{ zIndex: isActive ? 25 : 1, position: "relative" }}
                   >
-                    {/* Node */}
                     <div
                       onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
                       className="absolute left-6 md:left-1/2 transform -translate-x-1/2 transition-all duration-300 hover:scale-110"
@@ -180,7 +180,6 @@ export default function RTLPath() {
                       {status === "active" && isActive && <ChevronRight style={{ width: "19px", height: "19px", color: "#000" }} />}
                     </div>
 
-                    {/* Level card */}
                     <motion.div
                       whileHover={status !== "locked" ? { y: -3 } : {}}
                       onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}

@@ -45,8 +45,9 @@ export const api = {
     googleLoginUrl: () => `${API_BASE}/auth/google`,
     linkedinLoginUrl: () => `${API_BASE}/auth/linkedin`,
   },
+
   lab: {
-  evaluate: (data: any) => request<any>('POST', '/lab/evaluate', data),
+    evaluate: (data: any) => request<any>('POST', '/lab/evaluate', data),
   },
 
   user: {
@@ -56,6 +57,7 @@ export const api = {
     setDomain: (domainId: string) => request<any>('PATCH', '/user/domain', { domainId }),
     getLeaderboard: () => request<any[]>('GET', '/user/leaderboard'),
     getSiteStats: () => request<any>('GET', '/user/stats'),
+    addXp: (xp: number) => request<any>('POST', '/user/xp', { xp }),  // ← NEW
   },
 
   friends: {
@@ -98,7 +100,6 @@ export const api = {
     addMember: (conversationId: string, newUserId: string) =>
       request<any>('POST', `/chat/conversations/${conversationId}/members`, { newUserId }),
   },
-  
 };
 
 export default api;

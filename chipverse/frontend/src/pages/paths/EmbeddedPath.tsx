@@ -38,7 +38,7 @@ function saveProgress(p: EmbProgress) {
 }
 
 export default function EmbeddedPath() {
-  const { profile, completeLevel } = useUserContext();
+  const { profile, completeLevel, addXp } = useUserContext();
   const theme = DOMAIN_THEMES[DOMAIN_ID];
   const levels = ROADMAPS[DOMAIN_ID] || [];
   const completedIds = profile.completedLevels[DOMAIN_ID] || [];

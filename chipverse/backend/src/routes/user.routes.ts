@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getProfile, completeLevel, changeDomain, updateProfile, leaderboard, siteStats } from '../controllers/user.controller';
 import { requireAuth } from '../middleware/auth.middleware';
+import { addXp } from "../controllers/xp.controller";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.get('/profile', getProfile);
 router.post('/progress', completeLevel);
 router.patch('/domain', changeDomain);
 router.patch('/profile', updateProfile);
+router.post("/xp", requireAuth, addXp);
 
 export default router;

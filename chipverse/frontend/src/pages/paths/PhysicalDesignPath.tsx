@@ -49,7 +49,7 @@ const SUB_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function PhysicalDesignPath() {
-  const { profile, completeLevel } = useUserContext();
+  const { profile, completeLevel, addXp } = useUserContext();
   const theme = DOMAIN_THEMES[DOMAIN_ID];
   const levels = ROADMAPS[DOMAIN_ID] || [];
   const completedIds = profile.completedLevels[DOMAIN_ID] || [];
@@ -86,6 +86,7 @@ export default function PhysicalDesignPath() {
       if (prev.completedSubLevels.includes(subLevelId)) return prev;
       return { ...prev, completedSubLevels: [...prev.completedSubLevels, subLevelId], totalXp: prev.totalXp + xp };
     });
+    addXp(xp);
   };
 
   const handleLevelComplete = (levelId: number, bonusXp: number) => {

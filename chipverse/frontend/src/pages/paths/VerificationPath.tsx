@@ -39,7 +39,7 @@ function saveProgress(p: SubLevelProgress) {
 }
 
 export default function VerificationPath() {
-  const { profile, completeLevel } = useUserContext();
+  const { profile, completeLevel, addXp } = useUserContext();
   const theme = DOMAIN_THEMES[DOMAIN_ID];
   const levels = ROADMAPS[DOMAIN_ID] || [];
   const completedIds = profile.completedLevels[DOMAIN_ID] || [];
@@ -83,6 +83,7 @@ export default function VerificationPath() {
         totalXp: prev.totalXp + xp,
       };
     });
+    addXp(xp);
   };
 
   const handleLevelComplete = (levelId: number, bonusXp: number) => {
