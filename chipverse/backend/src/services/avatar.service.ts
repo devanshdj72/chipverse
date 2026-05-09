@@ -1,4 +1,5 @@
-import prisma, { Prisma } from '../config/prisma';
+import prisma from '../config/prisma';
+import { Prisma } from '@prisma/client';
 import { PRESET_AVATARS, CustomAvatarConfig, CUSTOM_AVATAR_OPTIONS } from '../data/avatars.data';
 
 // ── GET ALL PRESET AVATARS ────────────────────────────────────────────────────
