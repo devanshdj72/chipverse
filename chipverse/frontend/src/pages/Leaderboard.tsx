@@ -11,6 +11,103 @@ type Leader = {
   totalLevelsCompleted: number; battlesWon?: number; isMe?: boolean;
 };
 
+// ── NEW: Avatar display with image support ────────────────────────────────────
+function LeaderAvatar({
+  name, avatarUrl, size = "md", borderColor, glowColor, isMe,
+}: {
+  name: string; avatarUrl?: string;
+  size?: "sm" | "md" | "lg";
+  borderColor?: string; glowColor?: string; isMe?: boolean;
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const glow   = isMe ? "#a855f7" : (glowColor ?? borderColor ?? "#4169e1");
+  const showImg = avatarUrl && !imgFailed;
+
+  // ── LARGE: Frameless floating character for podium ──────────────────────────
+  if (size === "lg") {
+    return (
+      <div style={{
+        position: "relative", width: 130, height: 200, flexShrink: 0,
+        // Dark gradient bg — screen blend mode needs near-black background
+        background: `radial-gradient(ellipse at 50% 80%, ${glow}22 0%, #05050f 70%)`,
+        borderRadius: 16,
+        overflow: "hidden",
+      }}>
+        {/* Ground glow */}
+        <div style={{
+          position: "absolute", bottom: 8, left: "50%",
+          transform: "translateX(-50%)",
+          width: 90, height: 18,
+          background: `radial-gradient(ellipse, ${glow}99, transparent 70%)`,
+          filter: "blur(8px)",
+        }}/>
+
+        {showImg ? (
+          <img
+            src={avatarUrl}
+            alt={name}
+            style={{
+              position: "absolute", inset: 0,
+              width: "100%", height: "100%",
+              objectFit: "contain",
+              objectPosition: "center bottom",
+              // KEY: removes black PNG background just like in avatar picker
+              mixBlendMode: "screen",
+              filter: `drop-shadow(0 0 12px ${glow}) drop-shadow(0 0 24px ${glow}88)`,
+              animation: "char3D 5s ease-in-out infinite",
+            }}
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <div style={{
+            width: "100%", height: "100%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 40, fontWeight: 800, color: "#fff",
+            filter: `drop-shadow(0 0 20px ${glow})`,
+            animation: "char3D 5s ease-in-out infinite",
+          }}>
+            {name.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── SMALL/MED: List rows ────────────────────────────────────────────────────
+  const dim = size === "sm" ? 34 : 44;
+  return (
+    <div style={{
+      width: dim, height: dim * 1.4, flexShrink: 0, position: "relative",
+      background: `radial-gradient(ellipse at 50% 80%, ${glow}22, #05050f)`,
+      borderRadius: 8, overflow: "hidden",
+    }}>
+      {showImg ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          style={{
+            width: "100%", height: "100%",
+            objectFit: "contain",
+            objectPosition: "center bottom",
+            mixBlendMode: "screen",
+            filter: `drop-shadow(0 0 6px ${glow}88)`,
+            animation: "leaderFloat 3.5s ease-in-out infinite",
+          }}
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <div style={{
+          width: "100%", height: "100%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 15, fontWeight: 700, color: "#fff",
+        }}>
+          {name.charAt(0).toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const { user, isAuthenticated } = useUser();
   const [tab, setTab] = useState<"global" | "friends">("global");
@@ -19,12 +116,10 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalUsers: 0, totalLevelsCompleted: 0, totalXp: 0 });
 
-  useEffect(() => {
-    loadGlobal();
-  }, []);
+  useEffect(() => { loadGlobal(); }, []);
 
   useEffect(() => {
-    if (tab === 'friends' && isAuthenticated) loadFriends();
+    if (tab === "friends" && isAuthenticated) loadFriends();
   }, [tab, isAuthenticated]);
 
   const loadGlobal = async () => {
@@ -57,10 +152,23 @@ export default function Leaderboard() {
   };
 
   const getTheme = (domain: string) => DOMAIN_THEMES[domain] ?? DOMAIN_THEMES["rtl"];
-  const displayList = tab === 'global' ? leaders : friendsLb;
+  const displayList = tab === "global" ? leaders : friendsLb;
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 relative bg-black">
+      <style>{`
+        @keyframes leaderFloat {
+          0%,100% { transform: translateY(0px); }
+          50%      { transform: translateY(-6px); }
+        }
+        @keyframes char3D {
+          0%   { transform: perspective(400px) rotateY(0deg)   translateY(0px);  }
+          25%  { transform: perspective(400px) rotateY(-12deg) translateY(-10px); }
+          50%  { transform: perspective(400px) rotateY(0deg)   translateY(-14px); }
+          75%  { transform: perspective(400px) rotateY(12deg)  translateY(-10px); }
+          100% { transform: perspective(400px) rotateY(0deg)   translateY(0px);  }
+        }
+      `}</style>
       <CircuitBackground />
       <div className="max-w-4xl mx-auto relative z-10 pt-8">
 
@@ -75,25 +183,25 @@ export default function Leaderboard() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 bg-white/5 p-1 rounded-xl border border-white/10">
-          <button onClick={() => setTab('global')}
-            className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${tab === 'global' ? 'bg-yellow-500 text-black' : 'text-gray-400 hover:text-white'}`}>
+          <button onClick={() => setTab("global")}
+            className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${tab === "global" ? "bg-yellow-500 text-black" : "text-gray-400 hover:text-white"}`}>
             <Trophy className="w-4 h-4" /> Global
           </button>
           {isAuthenticated && (
-            <button onClick={() => setTab('friends')}
-              className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${tab === 'friends' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <button onClick={() => setTab("friends")}
+              className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${tab === "friends" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"}`}>
               <Users className="w-4 h-4" /> Friends
             </button>
           )}
         </div>
 
-        {/* Site Stats (global only) */}
-        {tab === 'global' && (
+        {/* Site Stats */}
+        {tab === "global" && (
           <div className="grid grid-cols-3 gap-4 mb-10">
             {[
-              { label: "Total Engineers", value: stats.totalUsers.toLocaleString() },
-              { label: "Levels Completed", value: stats.totalLevelsCompleted.toLocaleString() },
-              { label: "Total XP Earned", value: stats.totalXp.toLocaleString() },
+              { label: "Total Engineers",    value: stats.totalUsers.toLocaleString()          },
+              { label: "Levels Completed",   value: stats.totalLevelsCompleted.toLocaleString() },
+              { label: "Total XP Earned",    value: stats.totalXp.toLocaleString()             },
             ].map((s, i) => (
               <div key={i} className="bg-black/40 border border-white/10 rounded-2xl p-4 text-center backdrop-blur-md">
                 <div className="text-2xl font-bold text-white font-mono">{s.value}</div>
@@ -118,12 +226,21 @@ export default function Leaderboard() {
                   const theme = getTheme(leader.topDomain);
                   return (
                     <div key={leader.userId} className="flex flex-col items-center">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-white mb-2 border-2"
-                        style={{ background: theme.card, borderColor: leader.isMe ? '#a855f7' : theme.primary, boxShadow: `0 0 20px ${leader.isMe ? '#a855f740' : theme.glow}` }}>
-                        {leader.name.charAt(0)}
+
+                      {/* ── UPDATED: uses LeaderAvatar ── */}
+                      <div className="mb-2">
+                        <LeaderAvatar
+                          name={leader.name}
+                          avatarUrl={leader.avatarUrl}
+                          size="lg"
+                          borderColor={theme.primary}
+                          glowColor={leader.isMe ? "#a855f740" : theme.glow}
+                          isMe={leader.isMe}
+                        />
                       </div>
+
                       <div className="text-white font-bold text-sm text-center mb-1">
-                        {leader.name} {leader.isMe && '(You)'}
+                        {leader.name} {leader.isMe && "(You)"}
                       </div>
                       <div className="text-xs font-mono mb-2" style={{ color: theme.primary }}>
                         {leader.xp.toLocaleString()} XP
@@ -142,7 +259,7 @@ export default function Leaderboard() {
             {displayList.length === 0 && (
               <div className="text-center py-20 text-gray-500">
                 <Trophy className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                <p className="text-lg">{tab === 'friends' ? 'Add friends to see them here!' : 'No engineers yet.'}</p>
+                <p className="text-lg">{tab === "friends" ? "Add friends to see them here!" : "No engineers yet."}</p>
               </div>
             )}
 
@@ -152,12 +269,19 @@ export default function Leaderboard() {
                 const theme = getTheme(leader.topDomain);
                 return (
                   <div key={leader.userId}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-md transition-all ${leader.isMe ? 'border-purple-500/50 bg-purple-500/5' : 'border-white/10 bg-black/40 hover:border-white/20'}`}>
+                    className={`flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-md transition-all ${leader.isMe ? "border-purple-500/50 bg-purple-500/5" : "border-white/10 bg-black/40 hover:border-white/20"}`}>
+
                     <div className="w-8 flex justify-center shrink-0">{getRankIcon(leader.rank)}</div>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white border shrink-0"
-                      style={{ background: theme.card, borderColor: leader.isMe ? '#a855f7' : theme.primary }}>
-                      {leader.name.charAt(0)}
-                    </div>
+
+                    {/* ── UPDATED: uses LeaderAvatar ── */}
+                    <LeaderAvatar
+                      name={leader.name}
+                      avatarUrl={leader.avatarUrl}
+                      size="md"
+                      borderColor={theme.primary}
+                      isMe={leader.isMe}
+                    />
+
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-bold truncate">
                         {leader.name} {leader.isMe && <span className="text-purple-400 text-xs">(You)</span>}
@@ -167,6 +291,7 @@ export default function Leaderboard() {
                         {leader.battlesWon !== undefined && ` · ⚔️ ${leader.battlesWon} wins`}
                       </div>
                     </div>
+
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="flex items-center gap-1 text-orange-400">
                         <Flame className="w-4 h-4" />

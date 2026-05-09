@@ -5,47 +5,97 @@ import { DOMAIN_THEMES } from "@/lib/themes";
 import { RANKS } from "@/lib/ranks";
 import CircuitBackground from "@/components/CircuitBackground";
 import ProgressBar from "@/components/ProgressBar";
+import AvatarPicker from "@/components/AvatarPicker";
 import api from "@/lib/api";
 import {
   User, Mail, Phone, Edit3, Save, X,
   Trophy, Flame, Target, Award, CheckCircle2,
-  Users, UserPlus, Search, Check, UserX, Clock,
+  Users, UserPlus, Search, Check, UserX, Clock, Sparkles,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface Friend {
-  id: string;
-  name: string;
-  avatarUrl?: string;
-  xp: number;
-  streak: number;
-  rank: string;
-  currentDomain: string;
-  friendshipId: string;
+  id: string; name: string; avatarUrl?: string;
+  xp: number; streak: number; rank: string;
+  currentDomain: string; friendshipId: string;
 }
-
 interface FriendRequest {
   id: string;
   sender: { id: string; name: string; avatarUrl?: string };
   createdAt: string;
 }
-
 interface SearchUser {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-  isFriend: boolean;
-  requestPending: boolean;
+  id: string; name: string; email: string;
+  avatarUrl?: string; isFriend: boolean; requestPending: boolean;
 }
 
-// ─── Avatar helper ────────────────────────────────────────────────────────────
+// ─── Small Avatar helper (friends list) ──────────────────────────────────────
 function Avatar({ name, avatarUrl, size = "md" }: { name: string; avatarUrl?: string; size?: "sm" | "md" | "lg" }) {
   const sz = size === "sm" ? "w-8 h-8 text-sm" : size === "lg" ? "w-16 h-16 text-2xl" : "w-10 h-10 text-base";
   if (avatarUrl) return <img src={avatarUrl} alt={name} className={`${sz} rounded-full object-cover border border-white/10`} />;
   return (
     <div className={`${sz} rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-bold text-white flex-shrink-0`}>
       {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+// ─── Profile Avatar — frameless floating 3D character ────────────────────────
+function ProfileAvatar({ avatarUrl, name }: { avatarUrl?: string; name: string }) {
+  return (
+    <div style={{ position: "relative", width: 160, height: 200, margin: "0 auto 16px" }}>
+      <style>{`
+        @keyframes profileFloat3D {
+          0%,100% { transform: perspective(400px) rotateY(0deg)   translateY(0px);   }
+          25%     { transform: perspective(400px) rotateY(-10deg)  translateY(-8px);  }
+          50%     { transform: perspective(400px) rotateY(0deg)    translateY(-12px); }
+          75%     { transform: perspective(400px) rotateY(10deg)   translateY(-8px);  }
+        }
+      `}</style>
+
+      {/* Ground glow */}
+      <div style={{
+        position: "absolute", bottom: 0, left: "50%",
+        transform: "translateX(-50%)",
+        width: 100, height: 18,
+        background: "radial-gradient(ellipse, #4169e1aa, transparent 70%)",
+        filter: "blur(10px)",
+        zIndex: 0,
+      }} />
+
+      {/* Dark bg for mix-blend-mode screen */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "radial-gradient(ellipse at 50% 70%, #0d1a3a55, transparent 70%)",
+        borderRadius: 16,
+        zIndex: 0,
+      }} />
+
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          style={{
+            position: "relative", zIndex: 1,
+            width: "100%", height: "100%",
+            objectFit: "contain",
+            objectPosition: "center bottom",
+            mixBlendMode: "screen",
+            filter: "drop-shadow(0 0 16px #4169e1) drop-shadow(0 0 32px #4169e166)",
+            animation: "profileFloat3D 5s ease-in-out infinite",
+          }}
+        />
+      ) : (
+        <div style={{
+          position: "relative", zIndex: 1,
+          width: "100%", height: "100%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 56, fontWeight: 800, color: "#fff",
+          filter: "drop-shadow(0 0 24px #4169e1)",
+          animation: "profileFloat3D 5s ease-in-out infinite",
+        }}>
+          {name.charAt(0).toUpperCase()}
+        </div>
+      )}
     </div>
   );
 }
@@ -64,44 +114,27 @@ function FriendsTab() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // Load friends + pending requests on mount
-  useEffect(() => {
-    loadFriends();
-    loadRequests();
-  }, []);
+  useEffect(() => { loadFriends(); loadRequests(); }, []);
 
   const loadFriends = async () => {
     setLoading(true);
-    try {
-      const res = await api.friends.getAll();
-      setFriends(res.data ?? []);
-    } catch (e: any) {
-      showToast(e.message || "Failed to load friends");
-    } finally {
-      setLoading(false);
-    }
+    try { const res = await api.friends.getAll(); setFriends(res.data ?? []); }
+    catch (e: any) { showToast(e.message || "Failed to load friends"); }
+    finally { setLoading(false); }
   };
 
   const loadRequests = async () => {
-    try {
-      const res = await api.friends.getRequests();
-      setRequests(res.data ?? []);
-    } catch {}
+    try { const res = await api.friends.getRequests(); setRequests(res.data ?? []); }
+    catch {}
   };
 
-  // Debounced search
   useEffect(() => {
     if (searchQuery.length < 2) { setSearchResults([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      try {
-        const res = await api.friends.search(searchQuery);
-        setSearchResults(res.data ?? []);
-      } catch (e: any) {
-        showToast(e.message || "Search failed");
-      } finally {
-        setSearching(false);
-      }
+      try { const res = await api.friends.search(searchQuery); setSearchResults(res.data ?? []); }
+      catch (e: any) { showToast(e.message || "Search failed"); }
+      finally { setSearching(false); }
     }, 400);
     return () => clearTimeout(t);
   }, [searchQuery]);
@@ -111,15 +144,9 @@ function FriendsTab() {
     try {
       await api.friends.sendRequest(receiverId);
       showToast("Friend request sent! ✓");
-      // Mark as pending in UI immediately
-      setSearchResults(prev =>
-        prev.map(u => u.id === receiverId ? { ...u, requestPending: true } : u)
-      );
-    } catch (e: any) {
-      showToast(e.message || "Failed to send request");
-    } finally {
-      setActionLoading(null);
-    }
+      setSearchResults(prev => prev.map(u => u.id === receiverId ? { ...u, requestPending: true } : u));
+    } catch (e: any) { showToast(e.message || "Failed"); }
+    finally { setActionLoading(null); }
   };
 
   const handleRespond = async (requestId: string, action: "accept" | "reject") => {
@@ -127,15 +154,10 @@ function FriendsTab() {
     try {
       await api.friends.respondRequest(requestId, action);
       showToast(action === "accept" ? "Friend added! ✓" : "Request declined");
-      // Remove from pending list
       setRequests(prev => prev.filter(r => r.id !== requestId));
-      // Reload friends if accepted
       if (action === "accept") loadFriends();
-    } catch (e: any) {
-      showToast(e.message || "Failed");
-    } finally {
-      setActionLoading(null);
-    }
+    } catch (e: any) { showToast(e.message || "Failed"); }
+    finally { setActionLoading(null); }
   };
 
   const handleUnfriend = async (friendId: string) => {
@@ -144,142 +166,87 @@ function FriendsTab() {
       await api.friends.unfriend(friendId);
       showToast("Unfriended");
       setFriends(prev => prev.filter(f => f.id !== friendId));
-    } catch (e: any) {
-      showToast(e.message || "Failed");
-    } finally {
-      setActionLoading(null);
-    }
+    } catch (e: any) { showToast(e.message || "Failed"); }
+    finally { setActionLoading(null); }
   };
 
   return (
     <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
-      {/* Toast */}
-      {toast && (
-        <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-sm font-medium">
-          {toast}
-        </div>
-      )}
-
-      {/* Sub-tabs */}
+      {toast && <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-sm font-medium">{toast}</div>}
       <div className="flex gap-2 mb-6 flex-wrap">
         {([
           { key: "friends", label: "My Friends", icon: Users, count: friends.length },
           { key: "requests", label: "Requests", icon: Clock, count: requests.length },
           { key: "search", label: "Find People", icon: Search },
         ] as const).map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
-              tab === t.key
-                ? "bg-blue-600/20 border-blue-500/50 text-blue-300"
-                : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
-            }`}
-          >
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${tab === t.key ? "bg-blue-600/20 border-blue-500/50 text-blue-300" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"}`}>
             <t.icon className="w-4 h-4" />
             {t.label}
             {t.count !== undefined && t.count > 0 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                t.key === "requests" ? "bg-orange-500 text-white" : "bg-white/10 text-gray-300"
-              }`}>
-                {t.count}
-              </span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${t.key === "requests" ? "bg-orange-500 text-white" : "bg-white/10 text-gray-300"}`}>{t.count}</span>
             )}
           </button>
         ))}
       </div>
 
-      {/* ── FRIENDS LIST ── */}
       {tab === "friends" && (
         <div>
-          <h3 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">
-            Friends ({friends.length})
-          </h3>
-          {loading ? (
-            <div className="text-center py-10 text-gray-500 text-sm">Loading...</div>
-          ) : friends.length === 0 ? (
-            <div className="text-center py-10">
-              <Users className="w-10 h-10 mx-auto mb-3 text-gray-700" />
-              <p className="text-gray-500 text-sm">No friends yet.</p>
-              <button
-                onClick={() => setTab("search")}
-                className="mt-3 text-blue-400 text-sm hover:underline"
-              >
-                Find people to add →
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {friends.map(friend => (
-                <div
-                  key={friend.id}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 transition-colors"
-                >
-                  <Avatar name={friend.name} avatarUrl={friend.avatarUrl} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white font-semibold text-sm truncate">{friend.name}</div>
-                    <div className="text-xs text-gray-500">{friend.rank}</div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-yellow-400 font-mono">{friend.xp} XP</span>
-                      <span className="text-xs text-orange-400 flex items-center gap-1">
-                        <Flame className="w-3 h-3" />{friend.streak}
-                      </span>
+          <h3 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">Friends ({friends.length})</h3>
+          {loading ? <div className="text-center py-10 text-gray-500 text-sm">Loading...</div>
+            : friends.length === 0 ? (
+              <div className="text-center py-10">
+                <Users className="w-10 h-10 mx-auto mb-3 text-gray-700" />
+                <p className="text-gray-500 text-sm">No friends yet.</p>
+                <button onClick={() => setTab("search")} className="mt-3 text-blue-400 text-sm hover:underline">Find people to add →</button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {friends.map(friend => (
+                  <div key={friend.id} className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 transition-colors">
+                    <Avatar name={friend.name} avatarUrl={friend.avatarUrl} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-semibold text-sm truncate">{friend.name}</div>
+                      <div className="text-xs text-gray-500">{friend.rank}</div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs text-yellow-400 font-mono">{friend.xp} XP</span>
+                        <span className="text-xs text-orange-400 flex items-center gap-1"><Flame className="w-3 h-3" />{friend.streak}</span>
+                      </div>
                     </div>
+                    <button onClick={() => handleUnfriend(friend.id)} disabled={actionLoading === friend.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50">
+                      <UserX className="w-3.5 h-3.5" />
+                      {actionLoading === friend.id ? "..." : "Unfriend"}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleUnfriend(friend.id)}
-                    disabled={actionLoading === friend.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50"
-                  >
-                    <UserX className="w-3.5 h-3.5" />
-                    {actionLoading === friend.id ? "..." : "Unfriend"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
         </div>
       )}
 
-      {/* ── PENDING REQUESTS ── */}
       {tab === "requests" && (
         <div>
-          <h3 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">
-            Pending Requests ({requests.length})
-          </h3>
+          <h3 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">Pending Requests ({requests.length})</h3>
           {requests.length === 0 ? (
-            <div className="text-center py-10">
-              <Clock className="w-10 h-10 mx-auto mb-3 text-gray-700" />
-              <p className="text-gray-500 text-sm">No pending friend requests.</p>
-            </div>
+            <div className="text-center py-10"><Clock className="w-10 h-10 mx-auto mb-3 text-gray-700" /><p className="text-gray-500 text-sm">No pending friend requests.</p></div>
           ) : (
             <div className="space-y-3">
               {requests.map(req => (
-                <div
-                  key={req.id}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20"
-                >
+                <div key={req.id} className="flex items-center gap-3 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
                   <Avatar name={req.sender.name} avatarUrl={req.sender.avatarUrl} />
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-semibold text-sm truncate">{req.sender.name}</div>
                     <div className="text-xs text-gray-500 mt-0.5">Wants to be your friend</div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleRespond(req.id, "accept")}
-                      disabled={actionLoading === req.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600/20 border border-green-500/40 text-green-400 hover:bg-green-600/30 transition-all disabled:opacity-50"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      {actionLoading === req.id ? "..." : "Accept"}
+                    <button onClick={() => handleRespond(req.id, "accept")} disabled={actionLoading === req.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600/20 border border-green-500/40 text-green-400 hover:bg-green-600/30 transition-all disabled:opacity-50">
+                      <Check className="w-3.5 h-3.5" />{actionLoading === req.id ? "..." : "Accept"}
                     </button>
-                    <button
-                      onClick={() => handleRespond(req.id, "reject")}
-                      disabled={actionLoading === req.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-600/20 transition-all disabled:opacity-50"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      Decline
+                    <button onClick={() => handleRespond(req.id, "reject")} disabled={actionLoading === req.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-600/20 transition-all disabled:opacity-50">
+                      <X className="w-3.5 h-3.5" />Decline
                     </button>
                   </div>
                 </div>
@@ -289,70 +256,44 @@ function FriendsTab() {
         </div>
       )}
 
-      {/* ── SEARCH USERS ── */}
       {tab === "search" && (
         <div>
-          <h3 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">
-            Find People
-          </h3>
-
-          {/* Search input */}
+          <h3 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">Find People</h3>
           <div className="relative mb-5">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full bg-white/5 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder-gray-600 outline-none focus:border-blue-500/60 focus:bg-white/8 transition-all"
-              style={{ fontSize: "16px" /* Prevents iOS zoom */ }}
-            />
-            {searching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            )}
+              className="w-full bg-white/5 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder-gray-600 outline-none focus:border-blue-500/60 transition-all"
+              style={{ fontSize: "16px" }} />
+            {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
           </div>
-
-          {/* Results */}
-          {searchQuery.length < 2 ? (
-            <p className="text-center text-gray-600 text-sm py-6">Type at least 2 characters to search</p>
-          ) : searchResults.length === 0 && !searching ? (
-            <p className="text-center text-gray-600 text-sm py-6">No users found for "{searchQuery}"</p>
-          ) : (
-            <div className="space-y-3">
-              {searchResults.map(u => (
-                <div
-                  key={u.id}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10"
-                >
-                  <Avatar name={u.name} avatarUrl={u.avatarUrl} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white font-semibold text-sm truncate">{u.name}</div>
-                    <div className="text-xs text-gray-500 truncate">{u.email}</div>
+          {searchQuery.length < 2 ? <p className="text-center text-gray-600 text-sm py-6">Type at least 2 characters to search</p>
+            : searchResults.length === 0 && !searching ? <p className="text-center text-gray-600 text-sm py-6">No users found for "{searchQuery}"</p>
+            : (
+              <div className="space-y-3">
+                {searchResults.map(u => (
+                  <div key={u.id} className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                    <Avatar name={u.name} avatarUrl={u.avatarUrl} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-semibold text-sm truncate">{u.name}</div>
+                      <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {u.isFriend ? (
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500/10 border border-green-500/20 text-green-400"><Check className="w-3.5 h-3.5" /> Friends</span>
+                      ) : u.requestPending ? (
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"><Clock className="w-3.5 h-3.5" /> Pending</span>
+                      ) : (
+                        <button onClick={() => handleSendRequest(u.id)} disabled={actionLoading === u.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/30 transition-all disabled:opacity-50">
+                          <UserPlus className="w-3.5 h-3.5" />{actionLoading === u.id ? "Sending..." : "Add Friend"}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-shrink-0">
-                    {u.isFriend ? (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500/10 border border-green-500/20 text-green-400">
-                        <Check className="w-3.5 h-3.5" /> Friends
-                      </span>
-                    ) : u.requestPending ? (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
-                        <Clock className="w-3.5 h-3.5" /> Pending
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleSendRequest(u.id)}
-                        disabled={actionLoading === u.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/30 transition-all disabled:opacity-50"
-                      >
-                        <UserPlus className="w-3.5 h-3.5" />
-                        {actionLoading === u.id ? "Sending..." : "Add Friend"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
         </div>
       )}
     </div>
@@ -362,7 +303,7 @@ function FriendsTab() {
 // ─── Main Profile Page ────────────────────────────────────────────────────────
 export default function Profile() {
   const { user, profile, setName } = useUserContext();
-  const [activeTab, setActiveTab] = useState<"overview" | "friends">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "friends" | "avatar">("overview");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: user.name, avatarUrl: user.avatarUrl ?? "" });
   const [loading, setLoading] = useState(false);
@@ -405,30 +346,26 @@ export default function Profile() {
       <CircuitBackground />
       <div className="max-w-5xl mx-auto relative z-10 pt-8">
 
-        {/* Toast */}
         {toast && (
-          <div className="fixed top-20 right-4 z-50 px-4 py-3 rounded-xl bg-green-500/20 border border-green-500/40 text-green-400 text-sm font-medium">
-            {toast}
-          </div>
+          <div className="fixed top-20 right-4 z-50 px-4 py-3 rounded-xl bg-green-500/20 border border-green-500/40 text-green-400 text-sm font-medium">{toast}</div>
         )}
 
-        {/* ── Page Tabs ── */}
-        <div className="flex gap-3 mb-8">
+        {/* Tabs */}
+        <div className="flex gap-3 mb-8 flex-wrap">
           {([
-            { key: "overview", label: "Overview", icon: User },
-            { key: "friends", label: "Friends", icon: Users },
+            { key: "overview", label: "Overview",      icon: User     },
+            { key: "friends",  label: "Friends",       icon: Users    },
+            { key: "avatar",   label: "Choose Avatar", icon: Sparkles },
           ] as const).map(t => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
+            <button key={t.key} onClick={() => setActiveTab(t.key)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all border ${
                 activeTab === t.key
-                  ? "bg-blue-600/20 border-blue-500/50 text-blue-300"
+                  ? t.key === "avatar"
+                    ? "bg-purple-600/20 border-purple-500/50 text-purple-300"
+                    : "bg-blue-600/20 border-blue-500/50 text-blue-300"
                   : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <t.icon className="w-4 h-4" />
-              {t.label}
+              }`}>
+              <t.icon className="w-4 h-4" />{t.label}
             </button>
           ))}
         </div>
@@ -436,61 +373,35 @@ export default function Profile() {
         {/* ── OVERVIEW TAB ── */}
         {activeTab === "overview" && (
           <div className="grid lg:grid-cols-3 gap-8">
-
-            {/* Left — Profile Card */}
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
 
-                {/* Avatar */}
-                <div className="flex flex-col items-center mb-6">
-                  <div className="relative mb-4">
-                    {form.avatarUrl ? (
-                      <img
-                        src={form.avatarUrl}
-                        alt={user.name}
-                        className="w-24 h-24 rounded-full object-cover border-2 border-blue-500"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-3xl font-bold text-white border-2 border-blue-500">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+                {/* ── Frameless 3D floating avatar ── */}
+                <ProfileAvatar avatarUrl={form.avatarUrl || undefined} name={user.name} />
 
+                <div className="flex flex-col items-center">
                   {editing ? (
                     <div className="w-full space-y-3">
                       <div>
                         <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Name</label>
-                        <input
-                          value={form.name}
-                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                           className="w-full bg-white/5 border border-white/20 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500"
-                          style={{ fontSize: "16px" }}
-                        />
+                          style={{ fontSize: "16px" }} />
                       </div>
                       <div>
                         <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Avatar URL</label>
-                        <input
-                          value={form.avatarUrl}
-                          onChange={e => setForm(f => ({ ...f, avatarUrl: e.target.value }))}
+                        <input value={form.avatarUrl} onChange={e => setForm(f => ({ ...f, avatarUrl: e.target.value }))}
                           placeholder="https://..."
                           className="w-full bg-white/5 border border-white/20 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500"
-                          style={{ fontSize: "16px" }}
-                        />
+                          style={{ fontSize: "16px" }} />
                       </div>
                       <div className="flex gap-2">
-                        <button
-                          onClick={handleSave}
-                          disabled={loading}
-                          className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-1"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                          {loading ? "Saving..." : "Save"}
+                        <button onClick={handleSave} disabled={loading}
+                          className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
+                          <Save className="w-3.5 h-3.5" />{loading ? "Saving..." : "Save"}
                         </button>
-                        <button
-                          onClick={() => { setEditing(false); setForm({ name: user.name, avatarUrl: user.avatarUrl ?? "" }); }}
-                          className="px-3 py-2 rounded-xl border border-white/10 text-gray-400 hover:bg-white/5 transition-all"
-                        >
+                        <button onClick={() => { setEditing(false); setForm({ name: user.name, avatarUrl: user.avatarUrl ?? "" }); }}
+                          className="px-3 py-2 rounded-xl border border-white/10 text-gray-400 hover:bg-white/5 transition-all">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -499,34 +410,24 @@ export default function Profile() {
                     <>
                       <h2 className="text-xl font-bold text-white mb-1">{user.name}</h2>
                       <p className="text-sm text-gray-500 mb-3">{profile.rank}</p>
-                      <button
-                        onClick={() => setEditing(true)}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 transition-all"
-                      >
-                        <Edit3 className="w-3 h-3" /> Edit Profile
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditing(true)}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 transition-all">
+                          <Edit3 className="w-3 h-3" /> Edit Profile
+                        </button>
+                        <button onClick={() => setActiveTab("avatar")}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all">
+                          <Sparkles className="w-3 h-3" /> Avatar
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>
 
-                {/* Info */}
-                <div className="space-y-3 border-t border-white/10 pt-4">
-                  {user.email && (
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Mail className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
-                  )}
-                  {user.phone && (
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Phone className="w-4 h-4 shrink-0" />
-                      <span>{user.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <User className="w-4 h-4 shrink-0" />
-                    <span className="capitalize">{user.role.toLowerCase()}</span>
-                  </div>
+                <div className="space-y-3 border-t border-white/10 pt-4 mt-4">
+                  {user.email && <div className="flex items-center gap-2 text-sm text-gray-400"><Mail className="w-4 h-4 shrink-0" /><span className="truncate">{user.email}</span></div>}
+                  {user.phone && <div className="flex items-center gap-2 text-sm text-gray-400"><Phone className="w-4 h-4 shrink-0" /><span>{user.phone}</span></div>}
+                  <div className="flex items-center gap-2 text-sm text-gray-400"><User className="w-4 h-4 shrink-0" /><span className="capitalize">{user.role.toLowerCase()}</span></div>
                 </div>
               </div>
 
@@ -535,10 +436,10 @@ export default function Profile() {
                 <h3 className="text-white font-bold text-sm font-['Orbitron'] uppercase tracking-wider mb-4">Stats</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { icon: <Trophy className="w-5 h-5 text-yellow-400" />, value: profile.xp, label: "Total XP" },
-                    { icon: <Flame className="w-5 h-5 text-orange-400" />, value: profile.streak, label: "Streak" },
-                    { icon: <Target className="w-5 h-5 text-blue-400" />, value: totalCompleted, label: "Levels" },
-                    { icon: <Award className="w-5 h-5 text-purple-400" />, value: completedDomains.length, label: "Domains" },
+                    { icon: <Trophy className="w-5 h-5 text-yellow-400" />, value: profile.xp,            label: "Total XP"  },
+                    { icon: <Flame  className="w-5 h-5 text-orange-400" />, value: profile.streak,        label: "Streak"    },
+                    { icon: <Target className="w-5 h-5 text-blue-400"   />, value: totalCompleted,        label: "Levels"    },
+                    { icon: <Award  className="w-5 h-5 text-purple-400" />, value: completedDomains.length, label: "Domains" },
                   ].map((s, i) => (
                     <div key={i} className="bg-white/5 rounded-xl p-3 flex flex-col items-center text-center border border-white/5">
                       {s.icon}
@@ -552,8 +453,6 @@ export default function Profile() {
 
             {/* Right — Progress + Badges */}
             <div className="lg:col-span-2 space-y-6">
-
-              {/* Rank Progress */}
               <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-white font-bold font-['Orbitron'] uppercase tracking-wider text-sm mb-5">Rank Progress</h3>
                 <div className="flex items-center gap-4 mb-4">
@@ -576,7 +475,6 @@ export default function Profile() {
                 )}
               </div>
 
-              {/* Domain Progress */}
               {domainStats.length > 0 && (
                 <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                   <h3 className="text-white font-bold font-['Orbitron'] uppercase tracking-wider text-sm mb-5">Domain Progress</h3>
@@ -601,7 +499,6 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Badges */}
               <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-white font-bold font-['Orbitron'] uppercase tracking-wider text-sm mb-5">Badges Earned</h3>
                 {completedDomains.length === 0 ? (
@@ -618,8 +515,7 @@ export default function Profile() {
                       return (
                         <div key={domain.id} className="flex flex-col items-center p-4 rounded-xl border text-center"
                           style={{ background: theme.card, borderColor: theme.border }}>
-                          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
-                            style={{ background: theme.gradient }}>
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2" style={{ background: theme.gradient }}>
                             <CheckCircle2 className="w-6 h-6 text-white" />
                           </div>
                           <div className="text-xs font-bold text-white">{badge}</div>
@@ -636,6 +532,13 @@ export default function Profile() {
 
         {/* ── FRIENDS TAB ── */}
         {activeTab === "friends" && <FriendsTab />}
+
+        {/* ── AVATAR TAB ── */}
+        {activeTab === "avatar" && (
+          <div className="animate-fadeIn">
+            <AvatarPicker />
+          </div>
+        )}
 
       </div>
     </div>
