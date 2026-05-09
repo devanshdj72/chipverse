@@ -1,4 +1,4 @@
-import prisma from '../config/prisma';
+import prisma, { Prisma } from '../config/prisma';
 import { PRESET_AVATARS, CustomAvatarConfig, CUSTOM_AVATAR_OPTIONS } from '../data/avatars.data';
 
 // ── GET ALL PRESET AVATARS ────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ export const savePresetAvatar = async (userId: string, avatarId: string) => {
     where: { id: userId },
     data: {
       avatarUrl:    avatar.imagePath,
-      avatarConfig: null, // clear custom config when preset is chosen
+      avatarConfig: Prisma.DbNull, // clear custom config when preset is chosen
     },
     select: { id: true, name: true, avatarUrl: true },
   });
