@@ -57,7 +57,15 @@ export const api = {
     setDomain: (domainId: string) => request<any>('PATCH', '/user/domain', { domainId }),
     getLeaderboard: () => request<any[]>('GET', '/user/leaderboard'),
     getSiteStats: () => request<any>('GET', '/user/stats'),
-    addXp: (xp: number) => request<any>('POST', '/user/xp', { xp }),  // ← NEW
+    addXp: (xp: number) => request<any>('POST', '/user/xp', { xp }),
+    updateProfile: (data: { name?: string; avatarUrl?: string }) =>
+      request<any>('PATCH', '/user/profile', data),                         // ← NEW
+    savePresetAvatar: (avatarId: string) =>
+      request<any>('PATCH', '/user/avatar/preset', { avatarId }),           // ← NEW
+    saveCustomAvatar: (config: any) =>
+      request<any>('PATCH', '/user/avatar/custom', config),                 // ← NEW
+    getAvatars: () =>
+      request<any>('GET', '/user/avatar'),                                  // ← NEW
   },
 
   friends: {
