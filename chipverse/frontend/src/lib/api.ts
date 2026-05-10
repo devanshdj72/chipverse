@@ -59,13 +59,13 @@ export const api = {
     getSiteStats: () => request<any>('GET', '/user/stats'),
     addXp: (xp: number) => request<any>('POST', '/user/xp', { xp }),
     updateProfile: (data: { name?: string; avatarUrl?: string }) =>
-      request<any>('PATCH', '/user/profile', data),                         // ← NEW
+      request<any>('PATCH', '/user/profile', data),
     savePresetAvatar: (avatarId: string) =>
-      request<any>('PATCH', '/user/avatar/preset', { avatarId }),           // ← NEW
+      request<any>('PATCH', '/user/avatar/preset', { avatarId }),
     saveCustomAvatar: (config: any) =>
-      request<any>('PATCH', '/user/avatar/custom', config),                 // ← NEW
+      request<any>('PATCH', '/user/avatar/custom', config),
     getAvatars: () =>
-      request<any>('GET', '/user/avatar'),                                  // ← NEW
+      request<any>('GET', '/user/avatar'),
   },
 
   friends: {
@@ -107,6 +107,16 @@ export const api = {
       request<any[]>('GET', `/chat/conversations/${conversationId}/messages`),
     addMember: (conversationId: string, newUserId: string) =>
       request<any>('POST', `/chat/conversations/${conversationId}/members`, { newUserId }),
+  },
+
+  // ── NEW: Domain Skill Reports ───────────────────────────────────────────────
+  report: {
+    generate: (data: any) =>
+      request<any>('POST', '/report/generate', data),
+    get: (domainId: string) =>
+      request<any>('GET', `/report/${domainId}`),
+    getShared: (shareToken: string) =>
+      request<any>('GET', `/report/share/${shareToken}`),
   },
 };
 
