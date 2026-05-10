@@ -22,6 +22,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
 import avatarRoutes from './routes/avatar.routes';
+import progressRoutes from './routes/progress.routes';
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.get('/health', (_req, res) => {
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/progress', progressRoutes);
 app.use('/api/chipbot', chipbotRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/report', reportRoutes);
