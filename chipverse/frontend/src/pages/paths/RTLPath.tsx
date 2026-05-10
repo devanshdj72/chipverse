@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Check, Play, ChevronRight, Star } from "lucide-react";
+import { Lock, Check, Play, ChevronRight, Star, FileText } from "lucide-react";
 import { useUserContext } from "@/lib/user";
 import { DOMAIN_THEMES } from "@/lib/themes";
 import { ROADMAPS, RTL_SUB_LEVELS } from "@/lib/data";
@@ -39,11 +39,11 @@ function saveProgress(p: SubLevelProgress) {
 
 export default function RTLPath() {
   const { profile, completeLevel, addXp } = useUserContext();
-  const theme = DOMAIN_THEMES[DOMAIN_ID];
-  const levels = ROADMAPS[DOMAIN_ID] || [];
+  const theme        = DOMAIN_THEMES[DOMAIN_ID];
+  const levels       = ROADMAPS[DOMAIN_ID] || [];
   const completedIds = profile.completedLevels[DOMAIN_ID] || [];
 
-  const [progress, setProgress] = useState<SubLevelProgress>(loadProgress);
+  const [progress, setProgress]         = useState<SubLevelProgress>(loadProgress);
   const [activeLevelIdx, setActiveLevelIdx] = useState<number | null>(null);
 
   useEffect(() => { saveProgress(progress); }, [progress]);
@@ -69,8 +69,8 @@ export default function RTLPath() {
     setProgress((prev) => ({
       ...prev,
       completedLevels: prev.completedLevels.includes(levelId) ? prev.completedLevels : [...prev.completedLevels, levelId],
-      claimedLevels: prev.claimedLevels.includes(levelId) ? prev.claimedLevels : [...prev.claimedLevels, levelId],
-      totalXp: prev.totalXp + bonusXp,
+      claimedLevels:   prev.claimedLevels.includes(levelId)   ? prev.claimedLevels   : [...prev.claimedLevels, levelId],
+      totalXp:         prev.totalXp + bonusXp,
     }));
     setActiveLevelIdx(null);
   };
@@ -79,7 +79,7 @@ export default function RTLPath() {
     ((completedIds.length + progress.completedLevels.length) / levels.length) * 100
   );
 
-  const activeLevel = activeLevelIdx !== null ? levels[activeLevelIdx] : null;
+  const activeLevel     = activeLevelIdx !== null ? levels[activeLevelIdx] : null;
   const activeLevelData = activeLevelIdx !== null
     ? RTL_SUB_LEVELS.find((d) => d.levelId === levels[activeLevelIdx].id)
     : null;
@@ -124,7 +124,8 @@ export default function RTLPath() {
               </div>
             </div>
           </div>
-          <div className="flex gap-4 flex-wrap">
+
+          <div className="flex gap-4 flex-wrap items-start">
             <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-5 min-w-[150px]">
               <div className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Progress</div>
               <div className="text-3xl font-bold text-white mb-3 font-mono">{overallProgress}%</div>
@@ -136,6 +137,16 @@ export default function RTLPath() {
                 {RANKS[Math.min(Math.floor(completedIds.length / 2), RANKS.length - 1)]}
               </div>
             </div>
+
+            {/* ── View Skill Report button — uses <a> to avoid Router context issue ── */}
+            <a
+              href="/report/rtl"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
+              style={{ background: theme.gradient, color: '#000', textDecoration: 'none', boxShadow: `0 0 20px ${theme.glow}55` }}
+            >
+              <FileText style={{ width: "16px", height: "16px" }} />
+              View Skill Report
+            </a>
           </div>
         </div>
       </div>
@@ -153,10 +164,10 @@ export default function RTLPath() {
           <div className="absolute left-12 md:left-1/2 top-0 bottom-0 w-px bg-white/10 transform -translate-x-px" />
           <div className="relative">
             {levels.map((level, idx) => {
-              const status = getStatus(level.id, idx);
-              const isLeft = idx % 2 === 0;
-              const isActive = activeLevelIdx === idx;
-              const levelSubData = RTL_SUB_LEVELS.find((d) => d.levelId === level.id);
+              const status            = getStatus(level.id, idx);
+              const isLeft            = idx % 2 === 0;
+              const isActive          = activeLevelIdx === idx;
+              const levelSubData      = RTL_SUB_LEVELS.find((d) => d.levelId === level.id);
               const completedSubCount = levelSubData
                 ? levelSubData.subLevels.filter((sl) => progress.completedSubLevels.includes(sl.id)).length
                 : 0;
@@ -174,10 +185,10 @@ export default function RTLPath() {
                       className="absolute left-6 md:left-1/2 transform -translate-x-1/2 transition-all duration-300 hover:scale-110"
                       style={{ zIndex: isActive ? 26 : 10, width: "50px", height: "50px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? theme.gradient : status === "completed" ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.6)", border: `3px solid ${status === "locked" ? "rgba(255,255,255,0.1)" : isActive ? theme.primary : theme.border}`, boxShadow: isActive ? `0 0 28px ${theme.glow}, 0 0 60px ${theme.glow}` : status === "active" ? `0 0 14px ${theme.glow}` : "none", cursor: status === "locked" ? "not-allowed" : "pointer" }}
                     >
-                      {status === "locked" && <Lock style={{ width: "17px", height: "17px", color: "#555" }} />}
-                      {status === "completed" && <Check style={{ width: "19px", height: "19px", color: theme.primary }} />}
-                      {status === "active" && !isActive && <Play style={{ width: "17px", height: "17px", marginLeft: "2px", color: theme.primary }} />}
-                      {status === "active" && isActive && <ChevronRight style={{ width: "19px", height: "19px", color: "#000" }} />}
+                      {status === "locked"              && <Lock         style={{ width: "17px", height: "17px", color: "#555" }} />}
+                      {status === "completed"           && <Check        style={{ width: "19px", height: "19px", color: theme.primary }} />}
+                      {status === "active" && !isActive && <Play         style={{ width: "17px", height: "17px", marginLeft: "2px", color: theme.primary }} />}
+                      {status === "active" && isActive  && <ChevronRight style={{ width: "19px", height: "19px", color: "#000" }} />}
                     </div>
 
                     <motion.div
@@ -196,7 +207,9 @@ export default function RTLPath() {
                         {level.topics.slice(0, 3).map((topic, i) => (
                           <span key={i} className="text-xs px-2 py-1 rounded bg-white/5 border border-white/8 text-gray-400">{topic}</span>
                         ))}
-                        {level.topics.length > 3 && <span className="text-xs px-2 py-1 rounded bg-white/5 border border-white/8 text-gray-500">+{level.topics.length - 3}</span>}
+                        {level.topics.length > 3 && (
+                          <span className="text-xs px-2 py-1 rounded bg-white/5 border border-white/8 text-gray-500">+{level.topics.length - 3}</span>
+                        )}
                       </div>
                       {status !== "locked" && levelSubData && (
                         <div style={{ marginTop: "8px" }}>
@@ -207,7 +220,9 @@ export default function RTLPath() {
                           <div style={{ display: "flex", gap: "2px" }}>
                             {levelSubData.subLevels.map((sl, i) => {
                               const done = progress.completedSubLevels.includes(sl.id);
-                              return <div key={i} style={{ flex: 1, height: "3.5px", borderRadius: "999px", background: done ? theme.gradient : "rgba(255,255,255,0.08)", transition: "all 0.4s", boxShadow: done ? `0 0 3px ${theme.glow}` : "none" }} />;
+                              return (
+                                <div key={i} style={{ flex: 1, height: "3.5px", borderRadius: "999px", background: done ? theme.gradient : "rgba(255,255,255,0.08)", transition: "all 0.4s", boxShadow: done ? `0 0 3px ${theme.glow}` : "none" }} />
+                              );
                             })}
                           </div>
                         </div>
@@ -230,18 +245,22 @@ export default function RTLPath() {
           <SidebarWidget title="Rank Ladder">
             <div className="space-y-4">
               {RANKS.map((rank, i) => {
-                const reqLevels = i * 2;
+                const reqLevels      = i * 2;
                 const totalCompleted = completedIds.length + progress.completedLevels.length;
-                const isUnlocked = totalCompleted >= reqLevels;
-                const isNext = totalCompleted >= reqLevels - 2 && !isUnlocked;
+                const isUnlocked     = totalCompleted >= reqLevels;
+                const isNext         = totalCompleted >= reqLevels - 2 && !isUnlocked;
                 return (
                   <div key={rank} className="flex items-center gap-4">
                     <div className="w-6 flex justify-center">
-                      {isUnlocked ? <Check className="w-5 h-5 text-green-500" />
-                        : isNext ? <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primary, boxShadow: `0 0 10px ${theme.glow}` }} />
+                      {isUnlocked
+                        ? <Check className="w-5 h-5 text-green-500" />
+                        : isNext
+                        ? <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primary, boxShadow: `0 0 10px ${theme.glow}` }} />
                         : <div className="w-2 h-2 rounded-full bg-white/20" />}
                     </div>
-                    <div className={cn("text-sm font-medium", isUnlocked ? "text-white" : isNext ? "text-gray-300" : "text-gray-600")}>{rank}</div>
+                    <div className={cn("text-sm font-medium", isUnlocked ? "text-white" : isNext ? "text-gray-300" : "text-gray-600")}>
+                      {rank}
+                    </div>
                   </div>
                 );
               })}
@@ -260,6 +279,23 @@ export default function RTLPath() {
               </div>
             </SidebarWidget>
           )}
+
+          {/* ── Skill Report sidebar card ── */}
+          <SidebarWidget title="Skill Report">
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <p style={{ color: "#888", fontSize: "11px", fontFamily: "'DM Mono', monospace", lineHeight: 1.6 }}>
+                View your full skill breakdown, radar chart, and badges — shareable + downloadable as PDF.
+              </p>
+              {/* Uses <a> tag to avoid Router context issues */}
+              <a
+                href="/report/rtl"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 16px", borderRadius: "10px", background: theme.gradient, color: "#000", fontFamily: "'DM Mono', monospace", fontSize: "11px", fontWeight: 700, textDecoration: "none", boxShadow: `0 0 14px ${theme.glow}55` }}
+              >
+                <FileText style={{ width: "13px", height: "13px" }} />
+                View My Report →
+              </a>
+            </div>
+          </SidebarWidget>
         </div>
       </div>
 
@@ -267,8 +303,10 @@ export default function RTLPath() {
       <AnimatePresence>
         {activeLevelIdx !== null && activeLevelData && activeLevel && (
           <RTLSubLevelPanel
-            levelData={activeLevelData} levelTitle={activeLevel.title}
-            levelIndex={activeLevelIdx} theme={theme}
+            levelData={activeLevelData}
+            levelTitle={activeLevel.title}
+            levelIndex={activeLevelIdx}
+            theme={theme}
             domain={DOMAIN_ID}
             completedSubLevels={progress.completedSubLevels}
             celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
