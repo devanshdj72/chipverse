@@ -6,6 +6,7 @@ import reportRoutes from './routes/report.routes';
 
 import { config } from './config/env';
 import './config/passport';
+import chipbotRoutes from './routes/chipbot';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -58,6 +59,7 @@ app.get('/health', (_req, res) => {
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/chipbot', chipbotRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/report', reportRoutes);
 app.use('/api/battles', battleRoutes);
