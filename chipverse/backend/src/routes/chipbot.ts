@@ -127,7 +127,7 @@ router.post('/chat', async (req: Request, res: Response) => {
     }
 
     const data  = await groqRes.json();
-    const reply = data.choices?.[0]?.message?.content ?? '';
+    const reply = (data as any).choices?.[0]?.message?.content ?? '';
 
     return res.json({ reply, credits: getCredits(userId) });
 
