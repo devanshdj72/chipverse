@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useUserContext } from "@/lib/user";
 import { getTodaysMissions } from "@/lib/missions";
 import { useGamification } from "@/lib/useGamification";
@@ -8,21 +9,34 @@ import { Zap } from "lucide-react";
 export default function DailyMissions() {
   const { profile } = useUserContext();
 
-  const totalCompleted = Object.values(profile.completedLevels).reduce((s, a) => s + a.length, 0);
-  const domainsStarted = Object.keys(profile.completedLevels).filter(d => (profile.completedLevels[d]?.length ?? 0) > 0).length;
+  const totalCompleted  = Object.values(profile.completedLevels).reduce((s, a) => s + a.length, 0);
+  const domainsStarted  = Object.keys(profile.completedLevels).filter(d => (profile.completedLevels[d]?.length ?? 0) > 0).length;
   const domainsCompleted = DOMAIN_LIST.filter(d => {
-    const levels = ROADMAPS[d.id as keyof typeof ROADMAPS] || [];
+    const levels    = ROADMAPS[d.id as keyof typeof ROADMAPS] || [];
     const completed = profile.completedLevels[d.id] || [];
     return completed.length === levels.length && levels.length > 0;
   }).length;
 
-  const { todaysMissions, getMissionProgress, streakMultiplier } = useGamification({
+  const { todaysMissions, getMissionProgress, updateMissionProgress, streakMultiplier } = useGamification({
     totalCompleted,
     totalXp: profile.xp,
-    streak: profile.streak,
+    streak:  profile.streak,
     domainsStarted,
     domainsCompleted,
   });
+
+  // ── Auto-complete streak mission when user has an active streak ───────────
+  useEffect(() => {
+    if (profile.streak > 0) {
+      const streakMission = todaysMissions.find(m => m.type === "streak");
+      if (streakMission) {
+        const current = getMissionProgress(streakMission);
+        if (current < streakMission.target) {
+          updateMissionProgress("streak", streakMission.target);
+        }
+      }
+    }
+  }, [profile.streak, todaysMissions]);
 
   return (
     <div className="bg-black/40 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
@@ -41,24 +55,19 @@ export default function DailyMissions() {
       <div className="space-y-3">
         {todaysMissions.map(mission => {
           const progress = getMissionProgress(mission);
-          const percent = Math.min((progress / mission.target) * 100, 100);
-          const done = progress >= mission.target;
+          const percent  = Math.min((progress / mission.target) * 100, 100);
+          const done     = progress >= mission.target;
 
           return (
-            <div
-              key={mission.id}
-              className={`p-3 rounded-xl border transition-all ${
-                done
-                  ? "bg-green-500/10 border-green-500/30"
-                  : "bg-white/5 border-white/10"
-              }`}
+            <div key={mission.id}
+              className={`p-3 rounded-xl border transition-all ${done ? "bg-green-500/10 border-green-500/30" : "bg-white/5 border-white/10"}`}
             >
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-2xl">{mission.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center">
                     <span className={`text-sm font-bold ${done ? "text-green-400" : "text-white"}`}>
-                      {mission.title}
+                      {mission.title} {done && "✓"}
                     </span>
                     <span className="text-xs font-mono text-yellow-400">+{mission.xpReward} XP</span>
                   </div>

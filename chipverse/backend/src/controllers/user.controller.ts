@@ -8,6 +8,7 @@ import {
   updateUserProfile,
   getLeaderboard,
   getSiteStats,
+  updateStreakSafe,
 } from '../services/user.service';
 import { sendSuccess, sendError } from '../utils/response';
 
@@ -69,5 +70,13 @@ export const siteStats = async (req: Request, res: Response, next: NextFunction)
   try {
     const data = await getSiteStats();
     return sendSuccess(res, data, 'Stats fetched');
+  } catch (err) { return next(err); }
+};
+
+export const refreshStreak = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await updateStreakSafe(req.user!.userId);
+    const data = await getUserProfile(req.user!.userId);
+    return sendSuccess(res, data, 'Streak refreshed');
   } catch (err) { return next(err); }
 };

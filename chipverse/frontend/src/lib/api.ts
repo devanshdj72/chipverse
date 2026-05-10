@@ -51,6 +51,7 @@ export const api = {
   },
 
   user: {
+    updateStreak: () => request<any>('POST', '/user/streak'),
     getProfile: () => request<any>('GET', '/user/profile'),
     completeLevel: (domainId: string, levelId: number, xpGained: number) =>
       request<any>('POST', '/user/progress', { domainId, levelId, xpGained }),

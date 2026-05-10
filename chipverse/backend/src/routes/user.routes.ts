@@ -2,12 +2,15 @@ import { Router } from 'express';
 import { getProfile, completeLevel, changeDomain, updateProfile, leaderboard, siteStats } from '../controllers/user.controller';
 import { requireAuth } from '../middleware/auth.middleware';
 import { addXp } from "../controllers/xp.controller";
+import { refreshStreak } from '../controllers/user.controller';
 
 const router = Router();
 
 // Public
 router.get('/leaderboard', leaderboard);
 router.get('/stats', siteStats);
+
+router.post('/streak', requireAuth, refreshStreak);
 
 // Protected
 router.use(requireAuth);

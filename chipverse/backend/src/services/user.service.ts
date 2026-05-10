@@ -141,3 +141,26 @@ export const getSiteStats = async () => {
     totalXp: totalXp._sum.xp ?? 0,
   };
 };
+
+
+export const updateStreakSafe = async (userId: string) => {
+  const profile = await prisma.userProfile.findUnique({ where: { userId } });
+  if (!profile) return;
+
+  const last = profile.lastActiveAt;
+  const now  = new Date();
+
+  // Compare calendar dates only (ignore time)
+  const lastDay = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime();
+  const today   = new Date(now.getFullYear(),  now.getMonth(),  now.getDate()).getTime();
+  const diffDays = Math.round((today - lastDay) / 86400000);
+
+  if (diffDays === 0) return; // already active today — no change needed
+
+  const newStreak = diffDays === 1 ? profile.streak + 1 : 1; // +1 if consecutive, reset if gap
+
+  return prisma.userProfile.update({
+    where: { userId },
+    data: { streak: newStreak, lastActiveAt: now },
+  });
+};

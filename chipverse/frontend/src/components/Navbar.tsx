@@ -8,7 +8,6 @@ import { useNotifications } from "@/lib/useNotifications";
 import { getSocket } from "@/lib/socket";
 import XPStreakWidget from "@/components/XPStreakWidget";
 
-// ── Message Toast ─────────────────────────────────────────────────────────────
 interface ToastMsg {
   id: string;
   senderName: string;
@@ -17,21 +16,13 @@ interface ToastMsg {
 }
 
 function MessageToast({ toast, onClose, onClick }: {
-  toast: ToastMsg;
-  onClose: () => void;
-  onClick: () => void;
+  toast: ToastMsg; onClose: () => void; onClick: () => void;
 }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    return () => clearTimeout(t);
-  }, []);
-
+  useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t); }, []);
   return (
-    <div
-      onClick={onClick}
+    <div onClick={onClick}
       className="flex items-center gap-3 bg-[#0d0d1a] border border-white/15 rounded-2xl px-4 py-3 shadow-2xl cursor-pointer hover:bg-white/5 transition-all"
-      style={{ animation: "slideInToast 0.3s ease-out", minWidth: "260px", maxWidth: "320px" }}
-    >
+      style={{ animation: "slideInToast 0.3s ease-out", minWidth: "260px", maxWidth: "320px" }}>
       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
         {toast.senderName.charAt(0).toUpperCase()}
       </div>
@@ -101,13 +92,13 @@ export default function Navbar() {
 
   const removeToast = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
 
+  // ── Achievements removed from navbar ──────────────────────────────────────
   const links = isAuthenticated ? [
-    { href: "/domains",      label: "Domains" },
-    { href: "/dashboard",    label: "Dashboard" },
-    { href: "/leaderboard",  label: "Leaderboard" },
-    { href: "/battlefield",  label: "⚔️ Battle" },
-    { href: "/achievements", label: "Achievements" },
-    { href: "/placement",    label: "Placement" },
+    { href: "/domains",     label: "Domains" },
+    { href: "/dashboard",   label: "Dashboard" },
+    { href: "/leaderboard", label: "Leaderboard" },
+    { href: "/battlefield", label: "⚔️ Battle" },
+    { href: "/placement",   label: "Placement" },
   ] : [];
 
   const handleLogout = async () => { await logout(); setIsOpen(false); setLocation("/login"); };
@@ -131,7 +122,6 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Toast container */}
       <div style={{ position: "fixed", bottom: "24px", right: "20px", zIndex: 9999, display: "flex", flexDirection: "column", gap: "10px", alignItems: "flex-end", pointerEvents: toasts.length === 0 ? "none" : "auto" }}>
         <style>{`@keyframes slideInToast { from { opacity:0; transform:translateX(60px) scale(0.95); } to { opacity:1; transform:translateX(0) scale(1); } }`}</style>
         {toasts.map((toast) => (
@@ -142,14 +132,11 @@ export default function Navbar() {
 
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors">
             <Microchip className="w-6 h-6 text-blue-500" />
             <span className="font-bold text-xl tracking-wider font-['Orbitron']">ChipVerse</span>
           </Link>
 
-          {/* Desktop */}
           <div className="hidden md:flex items-center gap-6">
             {links.map((link) => (
               <Link key={link.href} href={link.href}
@@ -159,13 +146,10 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {/* ── XP + Streak Widget ── */}
             {isAuthenticated && <XPStreakWidget xp={profile.xp} streak={profile.streak} />}
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-
-                {/* Messages */}
                 <Link href="/messages" className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all">
                   <MessageSquare className="w-5 h-5" />
                   {unreadMessages > 0 && (
@@ -175,7 +159,6 @@ export default function Navbar() {
                   )}
                 </Link>
 
-                {/* Notification Bell */}
                 <div className="relative" ref={notifRef}>
                   <button onClick={() => { setNotifOpen((v) => !v); if (!notifOpen && unreadCount > 0) markAllRead(); }}
                     className="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all">
@@ -186,7 +169,6 @@ export default function Navbar() {
                       </span>
                     )}
                   </button>
-
                   {notifOpen && (
                     <div className="absolute right-0 top-[calc(100%+10px)] w-80 bg-[#0a0a12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
@@ -227,7 +209,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Profile */}
                 <Link href="/profile" className="relative flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
                     {user.name.charAt(0).toUpperCase()}
@@ -253,13 +234,11 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Toggle */}
           <button className="md:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden bg-black/95 border-b border-white/10 px-4 py-4 space-y-4">
             {links.map((link) => (
@@ -269,7 +248,6 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-
             {isAuthenticated && (
               <Link href="/messages" onClick={() => setIsOpen(false)} className="flex items-center gap-2 text-lg font-medium text-gray-400 hover:text-white">
                 <MessageSquare className="w-5 h-5" /> Messages
@@ -280,25 +258,18 @@ export default function Navbar() {
                 )}
               </Link>
             )}
-
-            {/* ── XP + Streak Widget mobile ── */}
             {isAuthenticated && (
-              <div className="py-1">
-                <XPStreakWidget xp={profile.xp} streak={profile.streak} />
-              </div>
+              <div className="py-1"><XPStreakWidget xp={profile.xp} streak={profile.streak} /></div>
             )}
-
             {isAuthenticated && unreadCount > 0 && (
               <button onClick={() => { markAllRead(); setIsOpen(false); setLocation("/battlefield"); }}
                 className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 w-fit">
                 <Bell className="w-4 h-4" /> {unreadCount} new notification{unreadCount !== 1 ? "s" : ""}
               </button>
             )}
-
             {isAuthenticated ? (
               <div className="flex flex-col gap-2">
-                <Link href="/profile" onClick={() => setIsOpen(false)}
-                  className="relative flex items-center gap-2 text-sm text-gray-300 font-medium w-fit">
+                <Link href="/profile" onClick={() => setIsOpen(false)} className="relative flex items-center gap-2 text-sm text-gray-300 font-medium w-fit">
                   👤 {user.name}
                   {pendingCount > 0 && (
                     <span className="w-5 h-5 bg-orange-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
@@ -307,14 +278,12 @@ export default function Navbar() {
                   )}
                   {pendingCount > 0 && <span className="text-xs text-orange-400">({pendingCount} friend request{pendingCount > 1 ? "s" : ""})</span>}
                 </Link>
-                <button onClick={handleLogout}
-                  className="flex items-center gap-2 text-base font-semibold rounded-lg px-3 py-2 bg-red-500/10 border border-red-500/30 text-red-400 w-fit">
+                <button onClick={handleLogout} className="flex items-center gap-2 text-base font-semibold rounded-lg px-3 py-2 bg-red-500/10 border border-red-500/30 text-red-400 w-fit">
                   <LogOut className="w-4 h-4" /> Logout
                 </button>
               </div>
             ) : (
-              <Link href="/login" onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 text-base font-semibold rounded-lg px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 w-fit">
+              <Link href="/login" onClick={() => setIsOpen(false)} className="flex items-center gap-2 text-base font-semibold rounded-lg px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 w-fit">
                 <LogIn className="w-4 h-4" /> Login / Register
               </Link>
             )}
