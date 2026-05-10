@@ -17,7 +17,6 @@ const SUB_TYPE_CONFIG: Record<RTLSubLevelType, { icon: React.ElementType; label:
   quiz:        { icon: Brain,        label: "Quiz",              color: "#f472b6" },
 };
 
-// Maps local type to API SubLevelType
 const SUB_TYPE_API: Record<RTLSubLevelType, string> = {
   concept:     "CONCEPT",
   syntax:      "SYNTAX",
@@ -25,6 +24,24 @@ const SUB_TYPE_API: Record<RTLSubLevelType, string> = {
   lab:         "LAB",
   quiz:        "QUIZ",
 };
+
+// ── API base (same pattern as AIAssistant) ────────────────────────────────────
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
+
+// ── Save a completed sub-level to the backend ─────────────────────────────────
+async function saveProgressToBackend(domainId: string, subLevelId: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/progress/complete`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // sends auth cookie
+      body: JSON.stringify({ domainId, subLevelId }),
+    });
+  } catch (err) {
+    // Silent fail — localStorage still tracks it as fallback
+    console.warn('[SubLevel] Failed to save progress to backend:', err);
+  }
+}
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
 function QuizView({
@@ -230,7 +247,6 @@ function SubLevelModal({
                   <button onClick={() => setShowQuiz(true)} style={{ padding: "12px 32px", borderRadius: "14px", background: theme.gradient, border: "none", color: "#000", fontFamily: "'Orbitron', monospace", fontSize: "12px", fontWeight: 700, cursor: "pointer", boxShadow: `0 0 20px ${theme.glow}` }}>
                     Start Quiz →
                   </button>
-                  {/* Resources for quiz sub-level */}
                   <ResourceSection domain={domain} levelId={levelId} subLevelType={SUB_TYPE_API[subLevel.type]} accentColor={theme.primary} />
                 </div>
               ) : isCompleted ? (
@@ -257,7 +273,6 @@ function SubLevelModal({
           {!isLab && !isQuiz && (
             <div style={{ padding: "24px", overflowY: "auto", flex: 1, scrollbarWidth: "thin", scrollbarColor: `${theme.primary}44 transparent` }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
-                {/* Left: summary + content */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   <div style={{ padding: "16px 18px", borderRadius: "14px", background: theme.card, border: `1px solid ${theme.border}` }}>
                     <div style={{ color: theme.primary, fontSize: "9px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Overview</div>
@@ -275,7 +290,6 @@ function SubLevelModal({
                   )}
                 </div>
 
-                {/* Right: key points + CTA */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   {subLevel.keyPoints && (
                     <div style={{ padding: "16px 18px", borderRadius: "14px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -305,7 +319,6 @@ function SubLevelModal({
                 </div>
               </div>
 
-              {/* ── Faculty Resources ── */}
               <ResourceSection
                 domain={domain}
                 levelId={levelId}
@@ -401,7 +414,7 @@ interface RTLSubLevelPanelProps {
   levelData: RTLLevelData; levelTitle: string; levelIndex: number;
   theme: DomainTheme; completedSubLevels: string[];
   celebrationClaimed: boolean;
-  domain: string; // e.g. "rtl", "verification", "fpga", etc.
+  domain: string;
   onSubLevelComplete: (subLevelId: string, xp: number) => void;
   onLevelComplete: () => void; onClose: () => void;
 }
@@ -427,6 +440,14 @@ export default function RTLSubLevelPanel({
   const getIsLocked = (idx: number) => {
     if (idx === 0) return false;
     return !completedSubLevels.includes(levelData.subLevels[idx - 1].id);
+  };
+
+  // ── Handle sub-level completion: save to backend + notify parent ────────────
+  const handleSubLevelComplete = async (subLevelId: string, xp: number) => {
+    // 1. Save to backend (non-blocking — localStorage is still the fallback)
+    await saveProgressToBackend(domain, subLevelId);
+    // 2. Notify parent to update localStorage + UI state
+    onSubLevelComplete(subLevelId, xp);
   };
 
   return (
@@ -479,7 +500,8 @@ export default function RTLSubLevelPanel({
             onClose={() => setOpenSubLevel(null)}
             onComplete={() => {
               if (!completedSubLevels.includes(openSubLevel.id)) {
-                onSubLevelComplete(openSubLevel.id, openSubLevel.xp);
+                // ── KEY CHANGE: use handleSubLevelComplete which saves to backend ──
+                handleSubLevelComplete(openSubLevel.id, openSubLevel.xp);
               }
               setOpenSubLevel(null);
             }}
