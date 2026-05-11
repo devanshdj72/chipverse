@@ -91,8 +91,10 @@ export default function FPGAPath() {
     setActiveLevelIdx(null);
   };
 
-  const overallProgress = Math.round(((completedIds.length + progress.completedLevels.length) / levels.length) * 100);
-  const activeLevel = activeLevelIdx !== null ? levels[activeLevelIdx] : null;
+  const totalSubLevels = levels.length * 5;
+  const overallProgress = totalSubLevels > 0
+  ? Math.round((progress.completedSubLevels.length / totalSubLevels) * 100)
+  : 0;  const activeLevel = activeLevelIdx !== null ? levels[activeLevelIdx] : null;
   const activeLevelData = activeLevelIdx !== null
     ? fpgaSubLevels.find(d => d.levelId === levels[activeLevelIdx].id)
     : null;

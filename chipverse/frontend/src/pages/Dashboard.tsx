@@ -57,14 +57,30 @@ export default function Dashboard() {
   const [showStreakCal, setShowStreakCal]   = useState(false);
   const [showLevels,    setShowLevels]     = useState(false);
 
-  // ── Skills derived from completed levels ───────────────────────────────────
-  const rtlDone   = (profile.completedLevels["rtl"]          || []).length;
-  const veriDone  = (profile.completedLevels["verification"] || []).length;
-  const fpgaDone  = (profile.completedLevels["fpga"]         || []).length;
-  const pdDone    = (profile.completedLevels["physical"]     || []).length;
-  const totalLevelsPerDomain = 10; // adjust if different
+  // ── Read sublevel progress from localStorage per domain ──────────────────
+  const getSubLevelProgress = (domainId: string, storageKey?: string) => {
+    try {
+      const key = storageKey || `${domainId}_sublevel_progress`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return { completedSubLevels: [] as string[], completedLevels: [] as number[] };
+      return JSON.parse(raw);
+    } catch {
+      return { completedSubLevels: [] as string[], completedLevels: [] as number[] };
+    }
+  };
 
-  const skillVal = (done: number) => Math.min(100, Math.round((done / totalLevelsPerDomain) * 100));
+  const currentSubProgress  = getSubLevelProgress(currentDomainInfo.id);
+  const subLevelsDone       = currentSubProgress.completedSubLevels?.length || 0;
+  const totalSubLevels      = levels.length * 5;
+  const subLevelPct         = totalSubLevels > 0 ? Math.round((subLevelsDone / totalSubLevels) * 100) : 0;
+
+  // ── Dynamic skill values from sublevel localStorage ───────────────────────
+  const domainSkillVal = (domainId: string, storageKey?: string) => {
+    const domainLevels = ROADMAPS[domainId as keyof typeof ROADMAPS] || [];
+    const total = domainLevels.length * 5;
+    const done  = getSubLevelProgress(domainId, storageKey).completedSubLevels?.length || 0;
+    return total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 relative bg-black">
@@ -159,11 +175,9 @@ export default function Dashboard() {
               <div className="mb-8 relative z-10">
                 <div className="flex justify-between text-base mb-3">
                   <span className="text-white font-bold">{currentDomainInfo.name} Path</span>
-                  <span className="text-gray-400 font-mono">
-                    {levels.length > 0 ? Math.round((completed.length / levels.length) * 100) : 0}%
-                  </span>
+                  <span className="text-gray-400 font-mono">{subLevelPct}%</span>
                 </div>
-                <ProgressBar value={completed.length} max={levels.length || 1} color={theme.primary} className="h-3" />
+                <ProgressBar value={subLevelsDone} max={totalSubLevels || 1} color={theme.primary} className="h-3" />
               </div>
 
               {nextLevel && (
@@ -224,10 +238,10 @@ export default function Dashboard() {
               <h2 className="text-lg font-bold text-white mb-6 font-['Orbitron']">Skills Graph</h2>
               <div className="space-y-5">
                 {[
-                  { name: "RTL Design",        val: skillVal(rtlDone),  color: "#38bdf8" },
-                  { name: "Verification",      val: skillVal(veriDone), color: "#a855f7" },
-                  { name: "FPGA",              val: skillVal(fpgaDone), color: "#facc15" },
-                  { name: "Physical Design",   val: skillVal(pdDone),   color: "#fb923c" },
+                  { name: "RTL Design",      val: domainSkillVal("rtl"),          color: "#38bdf8" },
+                  { name: "Verification",    val: domainSkillVal("verification"),  color: "#a855f7" },
+                  { name: "FPGA",            val: domainSkillVal("fpga"),          color: "#facc15" },
+                  { name: "Physical Design", val: domainSkillVal("physical-design", "pd_sublevel_progress"),  color: "#fb923c" },
                 ].map((s, i) => (
                   <div key={i}>
                     <div className="flex justify-between text-sm text-gray-300 mb-2 font-medium">
