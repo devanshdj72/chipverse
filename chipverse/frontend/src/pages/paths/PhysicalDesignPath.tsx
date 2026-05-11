@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Check, Play, ChevronRight, Star } from "lucide-react";
+import { Lock, Check, Play, ChevronRight, Star, FileText } from "lucide-react";
 import { useUserContext } from "@/lib/user";
 import { DOMAIN_THEMES } from "@/lib/themes";
 import { ROADMAPS } from "@/lib/data";
@@ -37,7 +37,6 @@ function saveProgress(p: PDProgress) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
 }
 
-// Sub-level type labels for the progress bar
 const SUB_TYPE_COLORS: Record<string, string> = {
   concept:        "#60a5fa",
   tool_commands:  "#34d399",
@@ -59,10 +58,7 @@ export default function PhysicalDesignPath() {
   const [activeLevelIdx, setActiveLevelIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/data/physical-design-sublevels.json")
-      .then(r => r.json())
-      .then(setPdSubLevels)
-      .catch(console.error);
+    fetch("/data/physical-design-sublevels.json").then(r => r.json()).then(setPdSubLevels).catch(console.error);
   }, []);
 
   useEffect(() => { saveProgress(progress); }, [progress]);
@@ -109,14 +105,11 @@ export default function PhysicalDesignPath() {
       <CircuitBackground />
       <ParticleCanvas color={theme.primary} density={35} />
 
-      {/* Blur overlay when panel open */}
       <AnimatePresence>
         {activeLevelIdx !== null && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}
             onClick={() => setActiveLevelIdx(null)}
-            style={{ position: "fixed", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.62)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", cursor: "pointer" }}
-          />
+            style={{ position: "fixed", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.62)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", cursor: "pointer" }} />
         )}
       </AnimatePresence>
 
@@ -132,21 +125,13 @@ export default function PhysicalDesignPath() {
               Master chip physical design — floorplan, power, placement, CTS, routing, and signoff using Cadence Innovus and Synopsys Fusion Compiler.
             </p>
             <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
-              <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: theme.primary, fontWeight: 700 }}>
-                {levels.length} Levels × 7 Sub-levels
-              </div>
-              <div style={{ background: "rgba(129,140,248,0.1)", border: "1px solid rgba(129,140,248,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: "#818cf8", fontWeight: 700 }}>
-                🔵 Cadence Innovus
-              </div>
-              <div style={{ background: "rgba(251,146,60,0.1)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: "#fb923c", fontWeight: 700 }}>
-                🟠 Synopsys FC
-              </div>
-              <div style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: "#a855f7", fontWeight: 700 }}>
-                +{progress.totalXp} XP
-              </div>
+              <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: theme.primary, fontWeight: 700 }}>{levels.length} Levels × 7 Sub-levels</div>
+              <div style={{ background: "rgba(129,140,248,0.1)", border: "1px solid rgba(129,140,248,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: "#818cf8", fontWeight: 700 }}>🔵 Cadence Innovus</div>
+              <div style={{ background: "rgba(251,146,60,0.1)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: "#fb923c", fontWeight: 700 }}>🟠 Synopsys FC</div>
+              <div style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono', monospace", color: "#a855f7", fontWeight: 700 }}>+{progress.totalXp} XP</div>
             </div>
           </div>
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-4 flex-wrap items-start">
             <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-5 min-w-[150px]">
               <div className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Progress</div>
               <div className="text-3xl font-bold text-white mb-3 font-mono">{overallProgress}%</div>
@@ -154,10 +139,13 @@ export default function PhysicalDesignPath() {
             </div>
             <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-5 min-w-[150px]">
               <div className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Sub-levels</div>
-              <div className="text-xl font-bold mt-2" style={{ color: theme.primary }}>
-                {progress.completedSubLevels.length}/{levels.length * 7}
-              </div>
+              <div className="text-xl font-bold mt-2" style={{ color: theme.primary }}>{progress.completedSubLevels.length}/{levels.length * 7}</div>
             </div>
+            <a href="/report/physical-design" className="flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
+              style={{ background: theme.gradient, color: '#000', textDecoration: 'none', boxShadow: `0 0 20px ${theme.glow}55` }}>
+              <FileText style={{ width: "16px", height: "16px" }} />
+              View Skill Report
+            </a>
           </div>
         </div>
       </div>
@@ -187,55 +175,26 @@ export default function PhysicalDesignPath() {
               const isLeft = idx % 2 === 0;
               const isActive = activeLevelIdx === idx;
               const levelSubData = pdSubLevels.find(d => d.levelId === level.id);
-              const completedSubCount = levelSubData
-                ? levelSubData.subLevels.filter((sl: any) => progress.completedSubLevels.includes(sl.id)).length
-                : 0;
+              const completedSubCount = levelSubData ? levelSubData.subLevels.filter((sl: any) => progress.completedSubLevels.includes(sl.id)).length : 0;
 
               return (
                 <div key={level.id} className="relative">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                    transition={{ delay: idx * 0.04 }}
+                  <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.04 }}
                     className={cn("relative flex items-center w-full my-10", isLeft ? "justify-start md:justify-end md:pr-16" : "justify-start md:pl-16")}
-                    style={{ zIndex: isActive ? 25 : 1 }}
-                  >
-                    {/* Node */}
-                    <div
-                      onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
+                    style={{ zIndex: isActive ? 25 : 1 }}>
+                    <div onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
                       className="absolute left-6 md:left-1/2 transform -translate-x-1/2 transition-all duration-300 hover:scale-110"
-                      style={{
-                        zIndex: isActive ? 26 : 10, width: "50px", height: "50px", borderRadius: "50%",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        background: isActive ? theme.gradient : "rgba(0,0,0,0.8)",
-                        border: `3px solid ${status === "locked" ? "rgba(255,255,255,0.1)" : isActive ? theme.primary : theme.border}`,
-                        boxShadow: isActive ? `0 0 28px ${theme.glow}, 0 0 60px ${theme.glow}` : status === "active" ? `0 0 14px ${theme.glow}` : "none",
-                        cursor: status === "locked" ? "not-allowed" : "pointer",
-                      }}
-                    >
+                      style={{ zIndex: isActive ? 26 : 10, width: "50px", height: "50px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? theme.gradient : "rgba(0,0,0,0.8)", border: `3px solid ${status === "locked" ? "rgba(255,255,255,0.1)" : isActive ? theme.primary : theme.border}`, boxShadow: isActive ? `0 0 28px ${theme.glow}, 0 0 60px ${theme.glow}` : status === "active" ? `0 0 14px ${theme.glow}` : "none", cursor: status === "locked" ? "not-allowed" : "pointer" }}>
                       {status === "locked" && <Lock style={{ width: "17px", height: "17px", color: "#555" }} />}
                       {status === "completed" && <Check style={{ width: "19px", height: "19px", color: theme.primary }} />}
                       {status === "active" && !isActive && <Play style={{ width: "17px", height: "17px", marginLeft: "2px", color: theme.primary }} />}
                       {status === "active" && isActive && <ChevronRight style={{ width: "19px", height: "19px", color: "#000" }} />}
                     </div>
-
-                    {/* Level card */}
-                    <motion.div
-                      whileHover={status !== "locked" ? { y: -3 } : {}}
+                    <motion.div whileHover={status !== "locked" ? { y: -3 } : {}}
                       onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
-                      style={{
-                        marginLeft: "5rem", width: "calc(100% - 5rem)",
-                        padding: "15px 17px", borderRadius: "17px",
-                        background: isActive ? `linear-gradient(135deg, ${theme.card}, rgba(0,0,0,0.5))` : status === "completed" ? theme.card : "rgba(255,255,255,0.025)",
-                        border: `1px solid ${isActive ? theme.primary : status === "locked" ? "rgba(255,255,255,0.05)" : theme.border}`,
-                        boxShadow: isActive ? `0 0 30px ${theme.glow}` : "none",
-                        cursor: status === "locked" ? "not-allowed" : "pointer",
-                        opacity: status === "locked" ? 0.6 : 1, transition: "all 0.3s ease",
-                        position: "relative", overflow: "hidden", zIndex: isActive ? 26 : 1,
-                      }}
-                      className="md:ml-0 md:w-[calc(50%-4rem)]"
-                    >
+                      style={{ marginLeft: "5rem", width: "calc(100% - 5rem)", padding: "15px 17px", borderRadius: "17px", background: isActive ? `linear-gradient(135deg, ${theme.card}, rgba(0,0,0,0.5))` : status === "completed" ? theme.card : "rgba(255,255,255,0.025)", border: `1px solid ${isActive ? theme.primary : status === "locked" ? "rgba(255,255,255,0.05)" : theme.border}`, boxShadow: isActive ? `0 0 30px ${theme.glow}` : "none", cursor: status === "locked" ? "not-allowed" : "pointer", opacity: status === "locked" ? 0.6 : 1, transition: "all 0.3s ease", position: "relative", overflow: "hidden", zIndex: isActive ? 26 : 1 }}
+                      className="md:ml-0 md:w-[calc(50%-4rem)]">
                       {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: theme.gradient }} />}
-
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-base text-white font-['Orbitron']">{level.title}</h4>
                         <span className="text-xs font-mono px-2 py-1 rounded bg-white/10 text-gray-300 border border-white/10 shrink-0 ml-2">{level.xp} XP</span>
@@ -246,8 +205,6 @@ export default function PhysicalDesignPath() {
                           <span key={i} className="text-xs px-2 py-1 rounded bg-white/5 border border-white/8 text-gray-400">{topic}</span>
                         ))}
                       </div>
-
-                      {/* 7-segment sub-level progress bar */}
                       {status !== "locked" && levelSubData && (
                         <div style={{ marginTop: "8px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
@@ -258,24 +215,16 @@ export default function PhysicalDesignPath() {
                             {levelSubData.subLevels.map((sl: any, i: number) => {
                               const done = progress.completedSubLevels.includes(sl.id);
                               const segColor = SUB_TYPE_COLORS[sl.type] || theme.primary;
-                              return (
-                                <div key={i} style={{ flex: 1, height: "3.5px", borderRadius: "999px", background: done ? segColor : "rgba(255,255,255,0.08)", transition: "all 0.4s", boxShadow: done ? `0 0 4px ${segColor}` : "none" }} />
-                              );
+                              return <div key={i} style={{ flex: 1, height: "3.5px", borderRadius: "999px", background: done ? segColor : "rgba(255,255,255,0.08)", transition: "all 0.4s", boxShadow: done ? `0 0 4px ${segColor}` : "none" }} />;
                             })}
                           </div>
-                          {/* Tool badges */}
                           <div style={{ display: "flex", gap: "4px", marginTop: "6px" }}>
                             <div style={{ fontSize: "9px", padding: "1px 6px", borderRadius: "4px", background: "rgba(129,140,248,0.1)", color: "#818cf8", fontFamily: "'DM Mono',monospace" }}>🔵 Innovus</div>
                             <div style={{ fontSize: "9px", padding: "1px 6px", borderRadius: "4px", background: "rgba(251,146,60,0.1)", color: "#fb923c", fontFamily: "'DM Mono',monospace" }}>🟠 FC</div>
                           </div>
                         </div>
                       )}
-
-                      {isActive && (
-                        <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "5px", color: theme.primary, fontSize: "9.5px", fontFamily: "'DM Mono',monospace", fontWeight: 700 }}>
-                          <Star style={{ width: "9px", height: "9px" }} /> 7 Sub-levels expanded →
-                        </div>
-                      )}
+                      {isActive && <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "5px", color: theme.primary, fontSize: "9.5px", fontFamily: "'DM Mono',monospace", fontWeight: 700 }}><Star style={{ width: "9px", height: "9px" }} /> 7 Sub-levels expanded →</div>}
                     </motion.div>
                   </motion.div>
                 </div>
@@ -310,9 +259,7 @@ export default function PhysicalDesignPath() {
                 return (
                   <div key={rank} className="flex items-center gap-4">
                     <div className="w-6 flex justify-center">
-                      {isUnlocked ? <Check className="w-5 h-5 text-green-500" />
-                        : isNext ? <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primary }} />
-                        : <div className="w-2 h-2 rounded-full bg-white/20" />}
+                      {isUnlocked ? <Check className="w-5 h-5 text-green-500" /> : isNext ? <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primary }} /> : <div className="w-2 h-2 rounded-full bg-white/20" />}
                     </div>
                     <div className={cn("text-sm font-medium", isUnlocked ? "text-white" : isNext ? "text-gray-300" : "text-gray-600")}>{rank}</div>
                   </div>
@@ -324,35 +271,35 @@ export default function PhysicalDesignPath() {
           {progress.completedLevels.length > 0 && (
             <SidebarWidget title="Badges Earned">
               <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
-                {pdSubLevels
-                  .filter(d => progress.completedLevels.includes(d.levelId))
-                  .map(d => (
-                    <div key={d.levelId} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "7px 10px", borderRadius: "9px", background: theme.card, border: `1px solid ${theme.border}` }}>
-                      <span style={{ fontSize: "14px" }}>🏅</span>
-                      <span style={{ color: theme.primary, fontSize: "11px", fontFamily: "'DM Mono',monospace", fontWeight: 700 }}>{d.badge}</span>
-                    </div>
-                  ))}
+                {pdSubLevels.filter(d => progress.completedLevels.includes(d.levelId)).map(d => (
+                  <div key={d.levelId} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "7px 10px", borderRadius: "9px", background: theme.card, border: `1px solid ${theme.border}` }}>
+                    <span style={{ fontSize: "14px" }}>🏅</span>
+                    <span style={{ color: theme.primary, fontSize: "11px", fontFamily: "'DM Mono',monospace", fontWeight: 700 }}>{d.badge}</span>
+                  </div>
+                ))}
               </div>
             </SidebarWidget>
           )}
+
+          <SidebarWidget title="Skill Report">
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <p style={{ color: "#888", fontSize: "11px", fontFamily: "'DM Mono', monospace", lineHeight: 1.6 }}>
+                View your full skill breakdown, radar chart, and badges — shareable + downloadable as PDF.
+              </p>
+              <a href="/report/physical-design" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 16px", borderRadius: "10px", background: theme.gradient, color: "#000", fontFamily: "'DM Mono', monospace", fontSize: "11px", fontWeight: 700, textDecoration: "none", boxShadow: `0 0 14px ${theme.glow}55` }}>
+                <FileText style={{ width: "13px", height: "13px" }} />
+                View My Report →
+              </a>
+            </div>
+          </SidebarWidget>
         </div>
       </div>
 
-      {/* PD Sub-level Panel */}
       <AnimatePresence>
         {activeLevelIdx !== null && activeLevelData && activeLevel && (
-          <PhysicalDesignSubLevelPanel
-            levelData={activeLevelData}
-            levelTitle={activeLevel.title}
-            levelIndex={activeLevelIdx}
-            theme={theme}
-            domain="physical-design"
-            completedSubLevels={progress.completedSubLevels}
-            celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
-            onSubLevelComplete={handleSubLevelComplete}
-            onLevelComplete={() => handleLevelComplete(activeLevel.id, activeLevelData.bonusXp)}
-            onClose={() => setActiveLevelIdx(null)}
-          />
+          <PhysicalDesignSubLevelPanel levelData={activeLevelData} levelTitle={activeLevel.title} levelIndex={activeLevelIdx} theme={theme} domain="physical-design"
+            completedSubLevels={progress.completedSubLevels} celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
+            onSubLevelComplete={handleSubLevelComplete} onLevelComplete={() => handleLevelComplete(activeLevel.id, activeLevelData.bonusXp)} onClose={() => setActiveLevelIdx(null)} />
         )}
       </AnimatePresence>
     </div>

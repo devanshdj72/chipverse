@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Check, Play, ChevronRight, Star } from "lucide-react";
+import { Lock, Check, Play, ChevronRight, Star, FileText } from "lucide-react";
 import { useUserContext } from "@/lib/user";
 import { DOMAIN_THEMES } from "@/lib/themes";
 import { ROADMAPS } from "@/lib/data";
@@ -48,10 +48,7 @@ export default function EmbeddedPath() {
   const [activeLevelIdx, setActiveLevelIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/data/embedded-sublevels.json")
-      .then(r => r.json())
-      .then(setEmbSubLevels)
-      .catch(console.error);
+    fetch("/data/embedded-sublevels.json").then(r => r.json()).then(setEmbSubLevels).catch(console.error);
   }, []);
 
   useEffect(() => { saveProgress(progress); }, [progress]);
@@ -75,6 +72,7 @@ export default function EmbeddedPath() {
       if (prev.completedSubLevels.includes(subLevelId)) return prev;
       return { ...prev, completedSubLevels: [...prev.completedSubLevels, subLevelId], totalXp: prev.totalXp + xp };
     });
+    addXp(xp);
   };
 
   const handleLevelComplete = (levelId: number, bonusXp: number) => {
@@ -99,12 +97,9 @@ export default function EmbeddedPath() {
 
       <AnimatePresence>
         {activeLevelIdx !== null && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.22 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}
             onClick={() => setActiveLevelIdx(null)}
-            style={{ position: "fixed", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.62)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", cursor: "pointer" }}
-          />
+            style={{ position: "fixed", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.62)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", cursor: "pointer" }} />
         )}
       </AnimatePresence>
 
@@ -120,18 +115,12 @@ export default function EmbeddedPath() {
               Master embedded systems — bare-metal C, RTOS, peripherals, Linux BSP, IoT, and production firmware design.
             </p>
             <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
-              <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono',monospace", color: theme.primary, fontWeight: 700 }}>
-                {levels.length} Levels × 5 Sub-levels
-              </div>
-              <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono',monospace", color: "#22c55e", fontWeight: 700 }}>
-                C / FreeRTOS / Linux
-              </div>
-              <div style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono',monospace", color: "#a855f7", fontWeight: 700 }}>
-                +{progress.totalXp} XP
-              </div>
+              <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono',monospace", color: theme.primary, fontWeight: 700 }}>{levels.length} Levels × 5 Sub-levels</div>
+              <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono',monospace", color: "#22c55e", fontWeight: 700 }}>C / FreeRTOS / Linux</div>
+              <div style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "999px", padding: "3px 12px", fontSize: "10.5px", fontFamily: "'DM Mono',monospace", color: "#a855f7", fontWeight: 700 }}>+{progress.totalXp} XP</div>
             </div>
           </div>
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-4 flex-wrap items-start">
             <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-5 min-w-[150px]">
               <div className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Progress</div>
               <div className="text-3xl font-bold text-white mb-3 font-mono">{overallProgress}%</div>
@@ -141,6 +130,11 @@ export default function EmbeddedPath() {
               <div className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Sub-levels</div>
               <div className="text-xl font-bold mt-2" style={{ color: theme.primary }}>{progress.completedSubLevels.length}/{levels.length * 5}</div>
             </div>
+            <a href="/report/embedded" className="flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
+              style={{ background: theme.gradient, color: '#000', textDecoration: 'none', boxShadow: `0 0 20px ${theme.glow}55` }}>
+              <FileText style={{ width: "16px", height: "16px" }} />
+              View Skill Report
+            </a>
           </div>
         </div>
       </div>
@@ -164,29 +158,21 @@ export default function EmbeddedPath() {
 
               return (
                 <div key={level.id} className="relative">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                    transition={{ delay: idx * 0.04 }}
+                  <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.04 }}
                     className={cn("relative flex items-center w-full my-10", isLeft ? "justify-start md:justify-end md:pr-16" : "justify-start md:pl-16")}
-                    style={{ zIndex: isActive ? 25 : 1 }}
-                  >
-                    <div
-                      onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
+                    style={{ zIndex: isActive ? 25 : 1 }}>
+                    <div onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
                       className="absolute left-6 md:left-1/2 transform -translate-x-1/2 transition-all duration-300 hover:scale-110"
-                      style={{ zIndex: isActive ? 26 : 10, width: "50px", height: "50px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? theme.gradient : "rgba(0,0,0,0.8)", border: `3px solid ${status === "locked" ? "rgba(255,255,255,0.1)" : isActive ? theme.primary : theme.border}`, boxShadow: isActive ? `0 0 28px ${theme.glow}, 0 0 60px ${theme.glow}` : status === "active" ? `0 0 14px ${theme.glow}` : "none", cursor: status === "locked" ? "not-allowed" : "pointer" }}
-                    >
+                      style={{ zIndex: isActive ? 26 : 10, width: "50px", height: "50px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? theme.gradient : "rgba(0,0,0,0.8)", border: `3px solid ${status === "locked" ? "rgba(255,255,255,0.1)" : isActive ? theme.primary : theme.border}`, boxShadow: isActive ? `0 0 28px ${theme.glow}, 0 0 60px ${theme.glow}` : status === "active" ? `0 0 14px ${theme.glow}` : "none", cursor: status === "locked" ? "not-allowed" : "pointer" }}>
                       {status === "locked" && <Lock style={{ width: "17px", height: "17px", color: "#555" }} />}
                       {status === "completed" && <Check style={{ width: "19px", height: "19px", color: theme.primary }} />}
                       {status === "active" && !isActive && <Play style={{ width: "17px", height: "17px", marginLeft: "2px", color: theme.primary }} />}
                       {status === "active" && isActive && <ChevronRight style={{ width: "19px", height: "19px", color: "#000" }} />}
                     </div>
-
-                    <motion.div
-                      whileHover={status !== "locked" ? { y: -3 } : {}}
+                    <motion.div whileHover={status !== "locked" ? { y: -3 } : {}}
                       onClick={() => { if (status === "locked") return; setActiveLevelIdx(activeLevelIdx === idx ? null : idx); }}
                       style={{ marginLeft: "5rem", width: "calc(100% - 5rem)", padding: "15px 17px", borderRadius: "17px", background: isActive ? `linear-gradient(135deg, ${theme.card}, rgba(0,0,0,0.5))` : status === "completed" ? theme.card : "rgba(255,255,255,0.025)", border: `1px solid ${isActive ? theme.primary : status === "locked" ? "rgba(255,255,255,0.05)" : theme.border}`, boxShadow: isActive ? `0 0 30px ${theme.glow}` : "none", cursor: status === "locked" ? "not-allowed" : "pointer", opacity: status === "locked" ? 0.6 : 1, transition: "all 0.3s ease", position: "relative", overflow: "hidden", zIndex: isActive ? 26 : 1 }}
-                      className="md:ml-0 md:w-[calc(50%-4rem)]"
-                    >
+                      className="md:ml-0 md:w-[calc(50%-4rem)]">
                       {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: theme.gradient }} />}
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-base text-white font-['Orbitron']">{level.title}</h4>
@@ -241,6 +227,7 @@ export default function EmbeddedPath() {
               })}
             </div>
           </SidebarWidget>
+
           {progress.completedLevels.length > 0 && (
             <SidebarWidget title="Badges Earned">
               <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
@@ -253,23 +240,26 @@ export default function EmbeddedPath() {
               </div>
             </SidebarWidget>
           )}
+
+          <SidebarWidget title="Skill Report">
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <p style={{ color: "#888", fontSize: "11px", fontFamily: "'DM Mono', monospace", lineHeight: 1.6 }}>
+                View your full skill breakdown, radar chart, and badges — shareable + downloadable as PDF.
+              </p>
+              <a href="/report/embedded" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 16px", borderRadius: "10px", background: theme.gradient, color: "#000", fontFamily: "'DM Mono', monospace", fontSize: "11px", fontWeight: 700, textDecoration: "none", boxShadow: `0 0 14px ${theme.glow}55` }}>
+                <FileText style={{ width: "13px", height: "13px" }} />
+                View My Report →
+              </a>
+            </div>
+          </SidebarWidget>
         </div>
       </div>
 
       <AnimatePresence>
         {activeLevelIdx !== null && activeLevelData && activeLevel && (
-          <RTLSubLevelPanel
-            levelData={activeLevelData}
-            levelTitle={activeLevel.title}
-            levelIndex={activeLevelIdx}
-            theme={theme}
-            domain="embedded"
-            completedSubLevels={progress.completedSubLevels}
-            celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
-            onSubLevelComplete={handleSubLevelComplete}
-            onLevelComplete={() => handleLevelComplete(activeLevel.id, activeLevelData.bonusXp)}
-            onClose={() => setActiveLevelIdx(null)}
-          />
+          <RTLSubLevelPanel levelData={activeLevelData} levelTitle={activeLevel.title} levelIndex={activeLevelIdx} theme={theme} domain="embedded"
+            completedSubLevels={progress.completedSubLevels} celebrationClaimed={progress.claimedLevels.includes(activeLevel.id)}
+            onSubLevelComplete={handleSubLevelComplete} onLevelComplete={() => handleLevelComplete(activeLevel.id, activeLevelData.bonusXp)} onClose={() => setActiveLevelIdx(null)} />
         )}
       </AnimatePresence>
     </div>
