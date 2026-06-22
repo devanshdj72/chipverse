@@ -31,11 +31,21 @@ app.use((req, res, next) => {
   const isAllowed =
     !origin ||
     origin === 'https://chipverse-q341.vercel.app' ||
+    origin === 'https://chipverse-frontend.onrender.com' || // ◄── ADD THIS EXACT LINE
+    /^https:\/\/chipverse-q341-.*\.vercel\.app$/.test(origin) ||
+    /^https:\/\/chipverse-q341-.*-devanshdj72s-projects\.vercel\.app$/.test(origin) ||
+    origin === 'http://localhost:5173' ||
+    origin === 'http://localhost:4173';
+  if (isAllowed) res.setHeader('Access-Control-Allow-Origin', origin || '*'); 
+  /* const isAllowed =
+    !origin ||
+    origin === 'https://chipverse-q341.vercel.app' ||
     /^https:\/\/chipverse-q341-.*\.vercel\.app$/.test(origin) ||
     /^https:\/\/chipverse-q341-.*-devanshdj72s-projects\.vercel\.app$/.test(origin) ||
     origin === 'http://localhost:5173' ||
     origin === 'http://localhost:4173';
   if (isAllowed) res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  */
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
