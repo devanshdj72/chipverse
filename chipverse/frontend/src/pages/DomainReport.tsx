@@ -11,9 +11,12 @@ import {
 } from 'lucide-react';
 import { useUserContext } from '@/lib/user';
 import { DOMAIN_THEMES } from '@/lib/themes';
-import { ROADMAPS, RTL_SUB_LEVELS, DOMAIN_LIST } from '@/lib/data';
+import { ROADMAPS, RTL_SUB_LEVELS, RESEARCH_SUB_LEVELS, DOMAIN_LIST } from '@/lib/data';
 import CircuitBackground from '@/components/CircuitBackground';
 import api from '@/lib/api';
+
+// ── API base ──────────────────────────────────────────────────────────────────
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const STORAGE_KEYS: Record<string, string> = {
@@ -27,6 +30,32 @@ const STORAGE_KEYS: Record<string, string> = {
   research:          'research_sublevel_progress',
 };
 
+// ── JSON data files for domains that load sub-levels dynamically ──────────────
+const DOMAIN_JSON_FILES: Record<string, string> = {
+  verification:      '/data/verification-sublevels.json',
+  'physical-design': '/data/physical-design-sublevels.json',
+  analog:            '/data/analog-sublevels.json',
+  fpga:              '/data/fpga-sublevels.json',
+  embedded:          '/data/embedded-sublevels.json',
+  dft:               '/data/dft-sublevels.json',
+};
+
+// ── Load the correct sub-level data for a domain ──────────────────────────────
+// RTL and Research are imported directly; all others come from JSON files.
+async function loadDomainSubLevels(domainId: string): Promise<any[]> {
+  if (domainId === 'rtl')      return RTL_SUB_LEVELS as any[];
+  if (domainId === 'research') return RESEARCH_SUB_LEVELS as any[];
+  const url = DOMAIN_JSON_FILES[domainId];
+  if (!url) return [];
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 // ── Load localStorage progress ────────────────────────────────────────────────
 function loadLocalProgress(domainId: string) {
   try {
@@ -37,13 +66,39 @@ function loadLocalProgress(domainId: string) {
   return { completedSubLevels: [], completedLevels: [], claimedLevels: [], totalXp: 0 };
 }
 
-// ── Compute report from local + DB data ───────────────────────────────────────
-function computeReport(domainId: string, dbCompletedLevels: number[]) {
+// ── Fetch sub-level progress from backend ─────────────────────────────────────
+async function fetchBackendSubLevels(domainId: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/progress/${domainId}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.completedSubLevels) ? data.completedSubLevels : [];
+  } catch {
+    return [];
+  }
+}
+
+// ── Compute report ────────────────────────────────────────────────────────────
+// subData: the domain's own sub-level list (NOT hardcoded RTL)
+// backendSubLevels: IDs from the backend DB
+function computeReport(
+  domainId: string,
+  dbCompletedLevels: number[],
+  subData: any[],
+  backendSubLevels: string[] = [],
+) {
   const levels     = ROADMAPS[domainId as keyof typeof ROADMAPS] || [];
-  const subData    = RTL_SUB_LEVELS;
   const local      = loadLocalProgress(domainId);
   const domainInfo = DOMAIN_LIST.find(d => d.id === domainId);
   const allCompleted = new Set([...dbCompletedLevels, ...local.completedLevels]);
+
+  // Merge localStorage + backend sub-levels
+  const allCompletedSubLevels = new Set([
+    ...local.completedSubLevels,
+    ...backendSubLevels,
+  ]);
 
   const breakdown = {
     concept:     { completed: 0, total: 0 },
@@ -54,17 +109,25 @@ function computeReport(domainId: string, dbCompletedLevels: number[]) {
   };
 
   const levelDetails = levels.map(level => {
-    const subLevel   = subData.find(s => s.levelId === level.id);
+    const subLevel   = subData.find((s: any) => s.levelId === level.id);
     const completed  = allCompleted.has(level.id);
     let subCompleted = 0;
 
     if (subLevel) {
-      subLevel.subLevels.forEach(sl => {
+      subLevel.subLevels.forEach((sl: any) => {
         const type = sl.type as keyof typeof breakdown;
-        if (breakdown[type]) breakdown[type].total++;
-        if (local.completedSubLevels.includes(sl.id)) {
+        // Normalise type: physical-design uses types like lab_cadence → map to lab
+        const normType: keyof typeof breakdown =
+          type === 'syntax'      ? 'syntax'      :
+          type === 'walkthrough' ? 'walkthrough' :
+          type === 'quiz'        ? 'quiz'        :
+          type === 'concept'     ? 'concept'     :
+          'lab'; // lab_cadence, lab_synopsys, lab_analysis, tool_commands, report_reading → lab
+
+        if (breakdown[normType]) breakdown[normType].total++;
+        if (allCompletedSubLevels.has(sl.id)) {
           subCompleted++;
-          if (breakdown[type]) breakdown[type].completed++;
+          if (breakdown[normType]) breakdown[normType].completed++;
         }
       });
     }
@@ -168,22 +231,22 @@ export default function DomainReport() {
       return;
     }
     if (!domainId) return;
-    api.report.get(domainId)
-      .then(r => {
-        setReport(r.data);
-        setShareUrl(`${window.location.origin}/report/share/${r.data.shareToken}`);
-        setLoading(false);
-      })
-      .catch(() => generateAndSave());
+    // Always regenerate fresh — never use stale cached report
+    generateAndSave();
   }, [domainId, shareToken]);
 
   const generateAndSave = async () => {
     if (!domainId) return;
     setSaving(true);
     try {
-      const dbCompleted = profile.completedLevels[domainId] || [];
-      const payload     = computeReport(domainId, dbCompleted);
-      const r           = await api.report.generate(payload);
+      const dbCompleted      = profile.completedLevels[domainId] || [];
+      // Fetch domain-specific sub-level data AND backend progress in parallel
+      const [subData, backendSubLevels] = await Promise.all([
+        loadDomainSubLevels(domainId),
+        fetchBackendSubLevels(domainId),
+      ]);
+      const payload = computeReport(domainId, dbCompleted, subData, backendSubLevels);
+      const r       = await api.report.generate(payload);
       setReport(r.data);
       setShareUrl(`${window.location.origin}/report/share/${r.data.shareToken}`);
     } catch {
@@ -202,7 +265,6 @@ export default function DomainReport() {
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading || saving) return (
-    // fixed overlay so main nav is completely hidden during load too
     <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
       <div className="text-center">
         <div className="w-12 h-12 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4"
@@ -219,9 +281,7 @@ export default function DomainReport() {
     <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
       <div className="text-center">
         <p className="text-red-400 mb-4">{error}</p>
-        <button
-          onClick={() => window.history.back()}
-          className="text-blue-400 hover:underline text-sm">
+        <button onClick={() => window.history.back()} className="text-blue-400 hover:underline text-sm">
           ← Go back
         </button>
       </div>
@@ -246,27 +306,16 @@ export default function DomainReport() {
         }
       `}</style>
 
-      {/*
-        ── KEY CHANGE: fixed inset-0 z-[200] overflow-y-auto
-           This makes the report a true full-screen overlay that sits
-           ABOVE the main ChipVerse navbar (which is typically z-50).
-           The user sees ONLY the report — no main nav bleeding through.
-      */}
-      <div
-        className="fixed inset-0 z-[200] overflow-y-auto bg-black relative"
-        ref={reportRef}
-      >
+      <div className="fixed inset-0 z-[200] overflow-y-auto bg-black relative" ref={reportRef}>
         <CircuitBackground />
 
-        {/* ── Top bar — Back button only (Share/Download moved to bottom) ── */}
+        {/* ── Top bar ── */}
         <div className="no-print fixed top-4 left-4 right-4 z-[210] flex items-center justify-between pointer-events-none">
           <button
             onClick={() => window.history.back()}
             className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-black/70 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all backdrop-blur-md">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-
-          {/* Refresh stays at top — it's a utility action, not a CTA */}
           {!shareToken && (
             <button
               onClick={generateAndSave}
@@ -284,21 +333,15 @@ export default function DomainReport() {
             <div className="h-2" style={{ background: reportTheme?.gradient }} />
             <div className="p-8 text-center">
               <div className="flex justify-center mb-4">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
-                  style={{ background: reportTheme?.gradient }}>
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: reportTheme?.gradient }}>
                   <Trophy className="w-10 h-10 text-black" />
                 </div>
               </div>
-              <p className="text-xs font-mono uppercase tracking-widest mb-2"
-                style={{ color: reportTheme?.primary }}>
+              <p className="text-xs font-mono uppercase tracking-widest mb-2" style={{ color: reportTheme?.primary }}>
                 ChipVerse · Skill Report
               </p>
-              <h1 className="text-3xl font-black text-white font-['Orbitron'] mb-1">
-                {data.domainName}
-              </h1>
-              <p className="text-gray-400 text-sm mb-6">
-                {data.userName || user.name} · Generated {generatedDate}
-              </p>
+              <h1 className="text-3xl font-black text-white font-['Orbitron'] mb-1">{data.domainName}</h1>
+              <p className="text-gray-400 text-sm mb-6">{data.userName || user.name} · Generated {generatedDate}</p>
 
               {/* Completion ring */}
               <div className="flex justify-center mb-6">
@@ -320,8 +363,8 @@ export default function DomainReport() {
               <div className="grid grid-cols-3 gap-4">
                 {[
                   { icon: <Zap className="w-5 h-5" style={{ color: reportTheme?.primary }} />, value: data.totalXpEarned.toLocaleString(), label: 'XP Earned' },
-                  { icon: <CheckCircle2 className="w-5 h-5 text-green-400" />,                 value: `${data.levelsCompleted}/${data.totalLevels}`,    label: 'Levels Done' },
-                  { icon: <Star className="w-5 h-5 text-yellow-400" />,                        value: data.badgesEarned.length,                         label: 'Badges' },
+                  { icon: <CheckCircle2 className="w-5 h-5 text-green-400" />, value: `${data.levelsCompleted}/${data.totalLevels}`, label: 'Levels Done' },
+                  { icon: <Star className="w-5 h-5 text-yellow-400" />, value: data.badgesEarned.length, label: 'Badges' },
                 ].map((s, i) => (
                   <div key={i} className="bg-white/5 rounded-2xl p-4 border border-white/5 text-center">
                     <div className="flex justify-center mb-2">{s.icon}</div>
@@ -336,9 +379,7 @@ export default function DomainReport() {
           {/* ── Radar + Breakdown ── */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
-              <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">
-                Skill Radar
-              </h2>
+              <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">Skill Radar</h2>
               <ResponsiveContainer width="100%" height={240}>
                 <RadarChart data={radarChartData}>
                   <PolarGrid stroke="#ffffff15" />
@@ -355,9 +396,7 @@ export default function DomainReport() {
             </div>
 
             <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
-              <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">
-                Sublevel Breakdown
-              </h2>
+              <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">Sublevel Breakdown</h2>
               <div className="space-y-4">
                 {Object.entries(data.subLevelBreakdown).map(([type, v]: any) => {
                   const pct  = v.total ? Math.round((v.completed / v.total) * 100) : 0;
@@ -414,16 +453,13 @@ export default function DomainReport() {
 
           {/* ── Level progress ── */}
           <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md mb-6">
-            <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-5">
-              Level Progress
-            </h2>
+            <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-5">Level Progress</h2>
             <div className="space-y-3">
               {data.levelDetails.map((l: any) => (
                 <div key={l.levelId}
                   className="flex items-center gap-4 p-3 rounded-xl border transition-all"
                   style={{
-                    borderColor: l.status === 'completed'   ? `${reportTheme?.primary}44`
-                                : l.status === 'in_progress' ? '#f59e0b44' : '#ffffff0a',
+                    borderColor: l.status === 'completed' ? `${reportTheme?.primary}44` : l.status === 'in_progress' ? '#f59e0b44' : '#ffffff0a',
                     background:  l.status === 'completed' ? reportTheme?.card : 'rgba(255,255,255,0.02)',
                   }}>
                   <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
@@ -446,9 +482,7 @@ export default function DomainReport() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-mono font-bold" style={{ color: reportTheme?.primary }}>
-                      +{l.xpEarned} XP
-                    </div>
+                    <div className="text-sm font-mono font-bold" style={{ color: reportTheme?.primary }}>+{l.xpEarned} XP</div>
                     <div className="text-xs capitalize mt-0.5" style={{ color: statusColor(l.status) }}>
                       {l.status.replace('_', ' ')}
                     </div>
@@ -461,9 +495,7 @@ export default function DomainReport() {
           {/* ── Badges ── */}
           {data.badgesEarned.length > 0 && (
             <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-md mb-6">
-              <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">
-                Badges Earned
-              </h2>
+              <h2 className="text-white font-bold font-['Orbitron'] text-sm uppercase tracking-wider mb-4">Badges Earned</h2>
               <div className="flex flex-wrap gap-3">
                 {data.badgesEarned.map((badge: string, i: number) => (
                   <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl border"
@@ -476,46 +508,30 @@ export default function DomainReport() {
             </div>
           )}
 
-          {/*
-            ── BOTTOM CTA — Share & Download ──────────────────────────────────
-            Only shown when NOT viewing a shared report (shareToken view is
-            read-only for external users who may not have an account).
-            Hidden on print so the PDF stays clean.
-          */}
+          {/* ── Bottom CTA ── */}
           {!shareToken && (
             <div className="no-print rounded-3xl overflow-hidden mb-6 border border-white/10"
               style={{ background: `linear-gradient(135deg, ${reportTheme?.card}, rgba(0,0,0,0.95))` }}>
-              {/* Accent line at top */}
               <div className="h-px" style={{ background: reportTheme?.gradient }} />
-
               <div className="p-8 text-center">
-                {/* Icon */}
                 <div className="flex justify-center mb-4">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
                     style={{ background: reportTheme?.gradient + '22', border: `1px solid ${reportTheme?.border}` }}>
                     <Trophy className="w-7 h-7" style={{ color: reportTheme?.primary }} />
                   </div>
                 </div>
-
-                <h3 className="text-white font-black font-['Orbitron'] text-lg mb-1">
-                  Share Your Progress
-                </h3>
+                <h3 className="text-white font-black font-['Orbitron'] text-lg mb-1">Share Your Progress</h3>
                 <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">
                   Let the world see your {data.domainName} skills. Download a PDF or share a live link.
                 </p>
-
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  {/* Share link button */}
                   <button
                     onClick={handleCopyLink}
                     className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-gray-200 text-sm font-semibold hover:bg-white/10 transition-all w-full sm:w-auto justify-center">
                     {copied
                       ? <><Check className="w-4 h-4 text-green-400" /> Link Copied!</>
-                      : <><Share2 className="w-4 h-4" /> Copy Share Link</>
-                    }
+                      : <><Share2 className="w-4 h-4" /> Copy Share Link</>}
                   </button>
-
-                  {/* Download PDF button */}
                   <button
                     onClick={() => window.print()}
                     className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all w-full sm:w-auto justify-center"
@@ -523,11 +539,8 @@ export default function DomainReport() {
                     <Download className="w-4 h-4" /> Download PDF
                   </button>
                 </div>
-
                 {shareUrl && (
-                  <p className="text-gray-600 text-xs mt-5 font-mono break-all max-w-sm mx-auto">
-                    {shareUrl}
-                  </p>
+                  <p className="text-gray-600 text-xs mt-5 font-mono break-all max-w-sm mx-auto">{shareUrl}</p>
                 )}
               </div>
             </div>

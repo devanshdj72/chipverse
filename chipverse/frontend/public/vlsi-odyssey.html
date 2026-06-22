@@ -1,0 +1,4091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHIPVERSE — VLSI ODYSSEY · WHERE SILICON MEETS DESTINY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;700;900&family=Rajdhani:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --cyan:#00f5ff;
+  --blue:#0066ff;
+  --purple:#7700ff;
+  --silver:#a8c0d0;
+  --glow:rgba(0,245,255,0.15);
+  --deep:#000510;
+}
+html{scroll-behavior:smooth}
+body{
+  background:#000;
+  color:#fff;
+  font-family:'Rajdhani',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* CUSTOM CURSOR */
+#cursor{
+  position:fixed;width:16px;height:16px;
+  border:1.5px solid var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transition:transform 0.1s ease,border-color 0.2s;
+  mix-blend-mode:difference;
+}
+#cursor-dot{
+  position:fixed;width:4px;height:4px;
+  background:var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+}
+
+/* CANVAS */
+#canvas-container{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;
+}
+canvas{display:block}
+
+/* SCROLL CONTAINER */
+#scroll-container{
+  position:relative;z-index:1;
+  pointer-events:none;
+}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:20px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(to bottom,rgba(0,5,16,0.9),transparent);
+  pointer-events:all;
+}
+.nav-logo{
+  font-family:'Orbitron',monospace;
+  font-size:13px;font-weight:700;
+  letter-spacing:4px;color:var(--cyan);
+  text-shadow:0 0 20px var(--cyan);
+}
+.nav-chapters{
+  display:flex;gap:6px;
+}
+.nav-dot{
+  width:6px;height:6px;border-radius:50%;
+  border:1px solid rgba(0,245,255,0.3);
+  background:transparent;cursor:pointer;
+  transition:all 0.3s;pointer-events:all;
+}
+.nav-dot.active{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.nav-chapter-label{
+  font-size:11px;letter-spacing:2px;
+  color:rgba(168,192,208,0.5);
+  font-family:'Share Tech Mono',monospace;
+}
+
+/* PROGRESS BAR */
+#progress-bar{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(to right,var(--purple),var(--blue),var(--cyan));
+  z-index:200;box-shadow:0 0 10px var(--cyan);
+  transition:width 0.1s;
+}
+
+/* CHAPTER SECTIONS */
+.chapter{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  padding:80px 40px;
+  position:relative;
+  pointer-events:all;
+}
+
+/* HOLOGRAPHIC PANELS */
+.holo-panel{
+  background:rgba(0,20,40,0.6);
+  border:1px solid rgba(0,245,255,0.2);
+  border-radius:2px;
+  backdrop-filter:blur(12px);
+  padding:40px 50px;
+  max-width:800px;
+  position:relative;
+  box-shadow:
+    0 0 40px rgba(0,102,255,0.1),
+    inset 0 0 40px rgba(0,245,255,0.03);
+}
+.holo-panel::before,.holo-panel::after{
+  content:'';position:absolute;
+  width:20px;height:20px;
+  border-color:var(--cyan);border-style:solid;
+}
+.holo-panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.holo-panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+
+/* CHAPTER LABELS */
+.chapter-index{
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;letter-spacing:5px;
+  color:var(--cyan);
+  margin-bottom:16px;
+  opacity:0.7;
+}
+.chapter-title{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(28px,5vw,56px);
+  font-weight:900;
+  line-height:1.1;
+  margin-bottom:24px;
+  background:linear-gradient(135deg,#fff 0%,var(--cyan) 50%,var(--blue) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(0,245,255,0.3));
+}
+.chapter-text{
+  font-size:clamp(15px,2vw,20px);
+  line-height:1.8;
+  color:var(--silver);
+  font-weight:300;
+  letter-spacing:0.5px;
+}
+.chapter-text em{
+  color:var(--cyan);font-style:normal;font-weight:600;
+}
+
+/* NARRATION LINES */
+.narration{
+  text-align:center;
+  max-width:600px;
+}
+.narration-line{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(14px,2vw,22px);
+  font-weight:300;
+  letter-spacing:3px;
+  line-height:2;
+  opacity:0;
+  transform:translateY(20px);
+  color:rgba(255,255,255,0.85);
+}
+.narration-line.highlight{
+  color:var(--cyan);
+  font-size:clamp(18px,3vw,32px);
+  font-weight:700;
+  text-shadow:0 0 30px var(--cyan);
+}
+
+/* TIMELINE */
+.timeline{
+  display:flex;flex-direction:column;gap:0;
+  max-width:700px;width:100%;
+  margin-top:30px;
+}
+.timeline-item{
+  display:flex;gap:30px;align-items:flex-start;
+  padding:20px 0;
+  border-left:1px solid rgba(0,245,255,0.15);
+  padding-left:30px;
+  position:relative;
+  opacity:0;transform:translateX(-20px);
+}
+.timeline-item::before{
+  content:'';position:absolute;
+  left:-5px;top:28px;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--cyan);
+  box-shadow:0 0 12px var(--cyan);
+}
+.timeline-year{
+  font-family:'Share Tech Mono',monospace;
+  font-size:12px;color:var(--cyan);
+  min-width:50px;letter-spacing:2px;
+  padding-top:2px;
+}
+.timeline-content h3{
+  font-family:'Orbitron',monospace;
+  font-size:14px;font-weight:700;
+  letter-spacing:2px;margin-bottom:6px;
+  color:#fff;
+}
+.timeline-content p{font-size:14px;color:var(--silver);line-height:1.6;}
+
+/* GRID CARDS */
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:16px;
+  max-width:900px;width:100%;
+  margin-top:30px;
+}
+.info-card{
+  background:rgba(0,20,50,0.7);
+  border:1px solid rgba(0,102,255,0.3);
+  border-radius:2px;
+  padding:20px;
+  opacity:0;transform:translateY(20px);
+  transition:border-color 0.3s,box-shadow 0.3s;
+  cursor:default;
+}
+.info-card:hover{
+  border-color:var(--cyan);
+  box-shadow:0 0 20px rgba(0,245,255,0.1);
+}
+.info-card-icon{
+  font-size:24px;margin-bottom:10px;
+}
+.info-card h3{
+  font-family:'Orbitron',monospace;
+  font-size:11px;letter-spacing:2px;
+  color:var(--cyan);margin-bottom:8px;
+}
+.info-card p{font-size:13px;color:var(--silver);line-height:1.5;}
+
+/* VLSI FLOW */
+.flow-container{
+  display:flex;
+  gap:2px;
+  margin-top:30px;
+  flex-wrap:wrap;
+  justify-content:center;
+  max-width:900px;
+}
+.flow-step{
+  background:rgba(0,30,60,0.8);
+  border:1px solid rgba(0,245,255,0.15);
+  padding:14px 20px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;letter-spacing:1px;
+  color:var(--silver);
+  position:relative;
+  opacity:0;transform:scale(0.8);
+  cursor:pointer;
+  transition:all 0.3s;
+}
+.flow-step:hover{
+  background:rgba(0,100,200,0.3);
+  border-color:var(--cyan);
+  color:#fff;
+}
+.flow-step.active-step{
+  background:rgba(0,245,255,0.1);
+  border-color:var(--cyan);
+  color:var(--cyan);
+  box-shadow:0 0 15px rgba(0,245,255,0.2);
+}
+.flow-arrow{
+  display:flex;align-items:center;
+  color:rgba(0,245,255,0.3);
+  font-size:18px;padding:0 4px;
+  align-self:center;
+}
+
+/* TOOLTIP */
+.tooltip{
+  position:fixed;
+  background:rgba(0,20,40,0.95);
+  border:1px solid var(--cyan);
+  padding:12px 16px;
+  font-size:12px;color:var(--silver);
+  max-width:250px;line-height:1.6;
+  pointer-events:none;z-index:500;
+  opacity:0;transition:opacity 0.2s;
+  font-family:'Rajdhani',sans-serif;
+}
+.tooltip h4{color:var(--cyan);font-family:'Orbitron',monospace;font-size:11px;margin-bottom:6px;}
+
+/* CTA SECTION */
+#cta-section{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:80px 40px;
+  position:relative;
+  pointer-events:all;
+}
+.cta-eyebrow{
+  font-family:'Share Tech Mono',monospace;
+  font-size:12px;letter-spacing:6px;
+  color:var(--cyan);opacity:0.6;
+  margin-bottom:30px;
+}
+.cta-title{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(24px,5vw,64px);
+  font-weight:900;
+  line-height:1.1;
+  margin-bottom:20px;
+}
+.cta-title span{
+  display:block;
+  background:linear-gradient(135deg,#fff,var(--cyan),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.cta-subtitle{
+  font-size:clamp(14px,2vw,20px);
+  color:var(--silver);max-width:500px;
+  line-height:1.8;margin-bottom:60px;
+}
+.cta-button{
+  position:relative;
+  display:inline-block;
+  padding:20px 60px;
+  font-family:'Orbitron',monospace;
+  font-size:clamp(12px,1.5vw,16px);
+  font-weight:700;letter-spacing:4px;
+  color:#000;
+  background:linear-gradient(135deg,var(--cyan),var(--blue));
+  border:none;cursor:pointer;
+  clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);
+  overflow:hidden;
+  transition:transform 0.2s;
+  pointer-events:all;
+}
+.cta-button:hover{transform:scale(1.05);}
+.cta-button::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  opacity:0;transition:opacity 0.3s;
+}
+.cta-button:hover::before{opacity:1;}
+.cta-button span{position:relative;z-index:1;}
+.cta-glow{
+  position:absolute;
+  width:200px;height:60px;
+  background:radial-gradient(ellipse,rgba(0,245,255,0.4),transparent);
+  bottom:-30px;left:50%;transform:translateX(-50%);
+  filter:blur(20px);
+  animation:glowPulse 2s ease-in-out infinite;
+}
+
+/* PARTICLE BURST */
+.particle-burst{
+  position:absolute;pointer-events:none;
+}
+
+/* SCAN LINE EFFECT */
+.scanlines{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:2;
+  background:repeating-linear-gradient(
+    0deg,transparent,transparent 2px,
+    rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px
+  );
+}
+
+/* CHAPTER DIVIDER */
+.chapter-divider{
+  width:100%;max-width:600px;
+  height:1px;
+  background:linear-gradient(to right,transparent,var(--cyan),transparent);
+  margin:30px auto;
+  opacity:0.3;
+}
+
+/* TECH BADGE */
+.tech-badges{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;
+}
+.badge{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:2px;
+  padding:5px 12px;
+  border:1px solid rgba(0,245,255,0.2);
+  color:var(--cyan);
+  background:rgba(0,245,255,0.05);
+  opacity:0;
+}
+
+/* HERO */
+#hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;position:relative;
+  pointer-events:all;
+}
+.hero-subtitle{
+  font-family:'Share Tech Mono',monospace;
+  font-size:clamp(10px,1.5vw,14px);
+  letter-spacing:8px;color:var(--cyan);
+  margin-bottom:20px;opacity:0;
+}
+.hero-title{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(28px,7vw,96px);
+  font-weight:900;line-height:0.9;
+  letter-spacing:-1px;
+  opacity:0;
+  background:linear-gradient(135deg,#fff 0%,var(--cyan) 40%,var(--blue) 70%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 40px rgba(0,245,255,0.5));
+}
+.hero-tagline{
+  font-size:clamp(13px,2vw,18px);
+  color:var(--silver);letter-spacing:4px;
+  margin-top:20px;opacity:0;
+  font-weight:300;
+}
+.scroll-hint{
+  position:absolute;bottom:40px;
+  display:flex;flex-direction:column;
+  align-items:center;gap:8px;
+  opacity:0;animation:fadeInUp 1s 3s ease both;
+}
+.scroll-hint span{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:4px;color:rgba(168,192,208,0.5);
+}
+.scroll-line{
+  width:1px;height:60px;
+  background:linear-gradient(to bottom,var(--cyan),transparent);
+  animation:scrollPulse 2s ease-in-out infinite;
+}
+
+/* CHAPTER SPECIFIC LAYOUTS */
+.two-col{
+  display:grid;grid-template-columns:1fr 1fr;gap:40px;
+  align-items:center;max-width:1000px;width:100%;
+}
+.three-col{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
+  max-width:900px;width:100%;margin-top:30px;
+}
+
+/* INVENTOR CARDS */
+.inventor-card{
+  background:rgba(0,15,30,0.8);
+  border:1px solid rgba(0,102,255,0.2);
+  padding:24px;text-align:center;
+  opacity:0;transform:translateY(30px);
+  transition:all 0.3s;
+}
+.inventor-card:hover{border-color:var(--cyan);}
+.inventor-icon{
+  width:50px;height:50px;margin:0 auto 12px;
+  border:2px solid var(--cyan);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  background:rgba(0,245,255,0.05);
+}
+.inventor-name{
+  font-family:'Orbitron',monospace;font-size:12px;
+  letter-spacing:2px;color:var(--cyan);margin-bottom:6px;
+}
+.inventor-desc{font-size:12px;color:var(--silver);}
+
+/* FABRICATION STEPS */
+.fab-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px;max-width:900px;width:100%;margin-top:24px;
+}
+.fab-step{
+  background:rgba(0,20,50,0.8);
+  border-top:2px solid var(--blue);
+  padding:16px 14px;
+  opacity:0;transform:translateY(15px);
+}
+.fab-step-num{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;color:var(--blue);
+  margin-bottom:8px;letter-spacing:1px;
+}
+.fab-step h4{
+  font-family:'Orbitron',monospace;
+  font-size:10px;letter-spacing:1px;
+  color:#fff;margin-bottom:6px;
+}
+.fab-step p{font-size:11px;color:var(--silver);line-height:1.5;}
+
+/* QUANTUM SECTION */
+.quantum-cards{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;max-width:900px;width:100%;margin-top:24px;
+}
+.quantum-card{
+  background:linear-gradient(135deg,rgba(119,0,255,0.1),rgba(0,102,255,0.1));
+  border:1px solid rgba(119,0,255,0.3);
+  padding:24px;
+  opacity:0;transform:translateY(20px);
+}
+.quantum-card h3{
+  font-family:'Orbitron',monospace;font-size:12px;
+  letter-spacing:2px;color:#b066ff;margin-bottom:10px;
+}
+.quantum-card p{font-size:13px;color:var(--silver);line-height:1.6;}
+
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glowPulse{0%,100%{opacity:0.5;transform:translateX(-50%) scaleX(0.8)}50%{opacity:1;transform:translateX(-50%) scaleX(1.2)}}
+@keyframes scrollPulse{0%,100%{opacity:0.3;scaleY(0.8)}50%{opacity:1}}
+@keyframes energyPulse{0%{box-shadow:0 0 0 0 rgba(0,245,255,0.4)}70%{box-shadow:0 0 0 20px rgba(0,245,255,0)}100%{box-shadow:0 0 0 0 rgba(0,245,255,0)}}
+@keyframes rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:0.4}95%{opacity:1}97%{opacity:0.6}98%{opacity:1}}
+
+/* GLITCH EFFECT */
+.glitch{
+  animation:flicker 4s ease-in-out infinite;
+}
+
+/* CIRCUIT LINES */
+.circuit-overlay{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;overflow:hidden;opacity:0.05;
+}
+
+/* RTL TABS */
+.rtl-tab{ border-bottom:2px solid transparent; }
+.rtl-tab:hover{ color:var(--cyan)!important; }
+.active-tab{ color:var(--cyan)!important;border-bottom-color:var(--cyan)!important; }
+
+/* MOSFET SVG hover */
+.mosfet-layer{ cursor:pointer;transition:opacity 0.2s; }
+.mosfet-layer:hover{ opacity:0.7; }
+
+/* VG slider */
+input[type=range]{
+  -webkit-appearance:none;height:4px;
+  background:rgba(0,245,255,0.15);border-radius:2px;outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--cyan);cursor:pointer;
+  box-shadow:0 0 8px var(--cyan);
+}
+
+/* CHIP CANVAS */
+#chip-canvas{ border:1px solid rgba(0,245,255,0.08);background:#000a18; }
+
+/* EQUATION FLOAT */
+@keyframes float-up{from{transform:translateY(0);opacity:0.3}to{transform:translateY(-100px);opacity:0}}
+
+/* SCAN FLICKER */
+@keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+.scan-line{
+  position:fixed;left:0;width:100%;height:2px;
+  background:linear-gradient(to right,transparent,rgba(0,245,255,0.06),transparent);
+  pointer-events:none;z-index:2;
+  animation:scan 8s linear infinite;
+}
+
+  .two-col{grid-template-columns:1fr;}
+  .three-col{grid-template-columns:repeat(2,1fr);}
+  nav{padding:15px 20px;}
+  .holo-panel{padding:24px;}
+  .flow-container{flex-direction:column;}
+}
+
+/* HOVER EFFECTS */
+a{color:var(--cyan);text-decoration:none;}
+::selection{background:rgba(0,245,255,0.2);}
+
+/* HUD CORNER DECORATIONS */
+.hud-corner{
+  position:fixed;pointer-events:none;z-index:50;
+  opacity:0.4;
+}
+.hud-corner svg{display:block;}
+.hud-tl{top:70px;left:20px;}
+.hud-br{bottom:20px;right:20px;}
+
+/* STATUS LINE */
+.status-line{
+  position:fixed;bottom:20px;left:40px;z-index:100;
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  color:rgba(0,245,255,0.4);letter-spacing:2px;
+}
+
+/* CHAPTER GLOW BG */
+.chapter-glow{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:600px;height:600px;
+  background:radial-gradient(ellipse,rgba(0,102,255,0.08),transparent 70%);
+  pointer-events:none;
+}
+
+/* ── FORCE IMAGE VISIBILITY ── */
+.photo-frame img,
+.inv-portrait img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  min-height:1px;
+  opacity:0;
+  transition:opacity 0.6s ease;
+}
+.photo-frame img.loaded,
+.inv-portrait img.loaded { opacity:1; }
+
+/* Canvas scenes fill the frame completely */
+canvas.scene-canvas {
+  position:absolute !important;
+  top:0 !important; left:0 !important;
+  width:100% !important; height:100% !important;
+  display:block !important;
+  z-index:0;
+}
+/* shimmer while canvas initialises */
+.photo-frame::before {
+  content:'';
+  position:absolute;inset:0;z-index:0;
+  background:linear-gradient(
+    90deg,
+    rgba(0,10,25,0.9) 0%,
+    rgba(0,30,60,0.5) 50%,
+    rgba(0,10,25,0.9) 100%
+  );
+  background-size:200% 100%;
+  animation:shimmer 1.8s infinite;
+}
+@keyframes shimmer {
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.photo-frame.img-loaded::before { display:none; }
+.photo-frame{
+  position:relative !important;
+  overflow:hidden;
+  border:1px solid rgba(0,245,255,0.25);
+  background:#000a18;
+  flex-shrink:0;
+  display:block;
+}
+.photo-frame img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(0.65) brightness(0.82) contrast(1.12);
+  transition:filter 0.5s,transform 0.7s;
+}
+.photo-frame:hover img{
+  filter:saturate(1.1) brightness(0.95) contrast(1.1);
+  transform:scale(1.05);
+}
+.photo-caption{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(transparent,rgba(0,5,16,0.95));
+  padding:28px 12px 10px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:2px;
+  color:rgba(0,245,255,0.75);z-index:5;
+  pointer-events:none;
+}
+.photo-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,102,255,0.07),transparent 55%);
+  pointer-events:none;z-index:2;
+}
+.photo-frame::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);
+  pointer-events:none;z-index:3;
+}
+.img-badge-label{
+  position:absolute;top:10px;left:10px;
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  letter-spacing:3px;color:var(--cyan);
+  background:rgba(0,5,16,0.75);padding:3px 8px;
+  border-left:2px solid var(--cyan);z-index:6;
+  pointer-events:none;
+}
+.photo-strip{display:flex;gap:10px;max-width:900px;width:100%;margin-top:16px;}
+.photo-strip .photo-frame{flex:1;height:190px;}
+.photo-mosaic{display:grid;gap:10px;max-width:900px;width:100%;margin-top:16px;}
+.pm-2{grid-template-columns:1.55fr 1fr;}
+.pm-3{grid-template-columns:1fr 1fr 1fr;}
+.pm-2x2{grid-template-columns:1fr 1fr;}
+/* round inventor portraits */
+.inv-portrait{
+  width:88px;height:88px;border-radius:50%;overflow:hidden;
+  border:2px solid rgba(0,245,255,0.35);margin:0 auto 12px;
+  flex-shrink:0;position:relative;background:#000a18;
+  display:block;
+}
+.inv-portrait canvas.scene-canvas {
+  border-radius:50%;
+}
+.inv-portrait img{width:100%;height:100%;object-fit:cover;object-position:top center;
+  filter:saturate(0.5) brightness(0.9) contrast(1.1);}
+.inv-portrait::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);
+  pointer-events:none;z-index:3;
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+<div id="progress-bar"></div>
+<div class="scanlines"></div>
+<div class="scan-line"></div>
+
+<!-- HUD decorations -->
+<div class="hud-corner hud-tl">
+  <svg width="60" height="60" viewBox="0 0 60 60"><path d="M0 60 L0 0 L60 0" fill="none" stroke="#00f5ff" stroke-width="0.5"/><circle cx="0" cy="0" r="3" fill="#00f5ff"/></svg>
+</div>
+<div class="hud-corner hud-br">
+  <svg width="60" height="60" viewBox="0 0 60 60"><path d="M60 0 L60 60 L0 60" fill="none" stroke="#00f5ff" stroke-width="0.5"/><circle cx="60" cy="60" r="3" fill="#00f5ff"/></svg>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div style="display:flex;flex-direction:column;line-height:1.1">
+    <div class="nav-logo glitch" style="font-size:15px;letter-spacing:5px;cursor:pointer" onclick="window.scrollTo({top:0,behavior:'smooth'})">⬡ CHIPVERSE</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;color:rgba(0,245,255,0.4);margin-top:2px">WHERE SILICON MEETS DESTINY</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="nav-chapters" id="nav-dots"></div>
+    <span class="nav-chapter-label" id="nav-label">PROLOGUE</span>
+  </div>
+</nav>
+
+<!-- STATUS -->
+<div class="status-line" id="status-line">SYS::ONLINE ▶ SCROLL TO EXPLORE</div>
+
+<!-- THREE.JS CANVAS -->
+<div id="canvas-container"></div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"><h4></h4><p></p></div>
+
+<!-- SCROLL CONTAINER -->
+<div id="scroll-container">
+
+<!-- HERO -->
+<section id="hero">
+  <!-- Hero BG: extreme close-up microchip die (Wikimedia CC) -->
+  <div style="position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;">
+    <canvas class="scene-canvas" data-scene="franklin" style="width:100%;height:100%;display:block;width:100%;height:100%;object-fit:cover;opacity:0.07;filter:saturate(0) blur(3px) brightness(0.7);"></canvas>
+  </div>
+  <div class="chapter-glow"></div>
+
+  <!-- CHIPVERSE PRESENTS badge -->
+  <div id="cv-presents" style="
+    text-align:center;
+    margin-bottom:32px;
+    opacity:0;
+    ">
+    <!-- Chipverse logo mark -->
+    <div style="
+      display:inline-flex;align-items:center;gap:14px;
+      background:rgba(0,10,25,0.7);
+      border:1px solid rgba(0,245,255,0.18);
+      padding:10px 28px 10px 18px;
+      margin-bottom:14px;
+      backdrop-filter:blur(8px);
+      ">
+      <!-- Hexagonal logo SVG -->
+      <svg width="36" height="40" viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="18,1 35,10 35,30 18,39 1,30 1,10" fill="none" stroke="url(#chipGrad)" stroke-width="1.5"/>
+        <polygon points="18,7 29,13 29,27 18,33 7,27 7,13" fill="rgba(0,245,255,0.06)" stroke="rgba(0,245,255,0.2)" stroke-width="0.8"/>
+        <!-- Circuit traces inside hex -->
+        <line x1="18" y1="13" x2="18" y2="27" stroke="#00f5ff" stroke-width="0.6" opacity="0.5"/>
+        <line x1="12" y1="18" x2="24" y2="22" stroke="#0066ff" stroke-width="0.6" opacity="0.5"/>
+        <line x1="12" y1="22" x2="24" y2="18" stroke="#7700ff" stroke-width="0.6" opacity="0.4"/>
+        <circle cx="18" cy="20" r="2.5" fill="#00f5ff" opacity="0.9"/>
+        <circle cx="18" cy="20" r="4.5" fill="none" stroke="#00f5ff" stroke-width="0.5" opacity="0.4"/>
+        <!-- Corner dots -->
+        <circle cx="18" cy="7"  r="1" fill="#00f5ff" opacity="0.6"/>
+        <circle cx="29" cy="13" r="1" fill="#0066ff" opacity="0.6"/>
+        <circle cx="29" cy="27" r="1" fill="#0066ff" opacity="0.6"/>
+        <circle cx="18" cy="33" r="1" fill="#00f5ff" opacity="0.6"/>
+        <circle cx="7"  cy="27" r="1" fill="#7700ff" opacity="0.6"/>
+        <circle cx="7"  cy="13" r="1" fill="#7700ff" opacity="0.6"/>
+        <defs>
+          <linearGradient id="chipGrad" x1="0" y1="0" x2="36" y2="40">
+            <stop offset="0%" stop-color="#00f5ff"/>
+            <stop offset="50%" stop-color="#0066ff"/>
+            <stop offset="100%" stop-color="#7700ff"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div style="text-align:left">
+        <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:900;letter-spacing:5px;
+          background:linear-gradient(90deg,#00f5ff,#0066ff,#b066ff);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+          CHIPVERSE
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+          color:rgba(168,192,208,0.5);margin-top:1px;">
+          WHERE SILICON MEETS DESTINY
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:6px;
+      color:rgba(168,192,208,0.35);text-transform:uppercase;">
+      ── presents ──
+    </div>
+  </div>
+
+  <div class="hero-subtitle" id="hs1">THE EVOLUTION OF SILICON</div>
+  <div class="hero-title" id="ht1">VLSI<br>ODYSSEY</div>
+  <div class="hero-tagline" id="ht2">FROM THE VOID · TO THE FUTURE · OF CIVILIZATION</div>
+
+  <!-- Slogan -->
+  <div id="hero-slogan" style="
+    margin-top:28px;
+    font-family:'Rajdhani',sans-serif;
+    font-size:clamp(12px,1.8vw,17px);
+    letter-spacing:3px;
+    color:rgba(168,192,208,0.45);
+    font-weight:300;
+    opacity:0;
+    text-align:center;
+    ">
+    GUIDING EVERY VLSI ENTHUSIAST FROM ATOM TO ARCHITECTURE
+  </div>
+
+  <div class="scroll-hint" style="margin-top:40px">
+    <span>SCROLL TO BEGIN</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- CH1: VOID -->
+<section class="chapter" id="ch1">
+  <div class="chapter-glow"></div>
+  <div class="holo-panel">
+    <div class="chapter-index">CHAPTER I // THE VOID</div>
+    <h2 class="chapter-title">Before Silicon</h2>
+    <div class="narration" id="narration1">
+      <p class="narration-line">Before silicon changed civilization…</p>
+      <p class="narration-line">Humanity lived in <em style="color:#fff">darkness.</em></p>
+      <p class="narration-line">No computers. No internet.</p>
+      <p class="narration-line highlight">Only imagination.</p>
+    </div>
+    <div class="chapter-divider"></div>
+    <p class="chapter-text">
+      For millennia, humanity navigated the cosmos by starlight, moved by wind and muscle,
+      communicated across distances only as fast as a horse could run.
+      Then came the discovery that would change everything —
+      <em>the invisible force that binds atoms</em>.
+    </p>
+  </div>
+</section>
+
+<!-- CH2: ELECTRICITY -->
+<section class="chapter" id="ch2">
+  <div class="chapter-glow"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:30px">
+      <div class="chapter-index">CHAPTER II // THE SPARK</div>
+      <h2 class="chapter-title">Discovery of Electricity</h2>
+      <p class="chapter-text">
+        Brilliant minds learned to <em>capture lightning in a bottle</em>.
+        Electricity became the heartbeat of civilization.
+      </p>
+    </div>
+    <div class="three-col" id="inventors">
+      <div class="inventor-card">
+        <div class="inv-portrait">
+          <canvas class="scene-canvas" data-scene="franklin" style="width:100%;height:100%;display:block;"></canvas>
+        </div>
+        <div class="inventor-name">Benjamin Franklin</div>
+        <div class="inventor-desc">Proved electricity's nature with kite and key, 1752</div>
+      </div>
+      <div class="inventor-card">
+        <div class="inv-portrait">
+          <canvas class="scene-canvas" data-scene="faraday" style="width:100%;height:100%;display:block;"></canvas>
+        </div>
+        <div class="inventor-name">Michael Faraday</div>
+        <div class="inventor-desc">Electromagnetic induction — the engine of all generators</div>
+      </div>
+      <div class="inventor-card">
+        <div class="inv-portrait">
+          <canvas class="scene-canvas" data-scene="tesla" style="width:100%;height:100%;display:block;"></canvas>
+        </div>
+        <div class="inventor-name">Nikola Tesla</div>
+        <div class="inventor-desc">Alternating current — how electricity travels the world</div>
+      </div>
+    </div>
+
+    <!-- Electricity photo strip -->
+    <div class="photo-strip" id="elec-photos" style="opacity:0;transform:translateY(20px)">
+      <div class="photo-frame" style="height:180px">
+        <span class="img-badge-label">LIGHTNING</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="lightning" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">ATMOSPHERIC DISCHARGE</div>
+      </div>
+      <div class="photo-frame" style="height:180px">
+        <span class="img-badge-label">TESLA COIL</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="teslacoil" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">HIGH VOLTAGE RESONANCE</div>
+      </div>
+      <div class="photo-frame" style="height:180px">
+        <span class="img-badge-label">FIRST BULB</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="bulb" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">INCANDESCENT ERA 1879</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CH3: VACUUM TUBES -->
+<section class="chapter" id="ch3">
+  <div class="chapter-glow"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:20px">
+      <div class="chapter-index">CHAPTER III // VACUUM TUBES</div>
+      <h2 class="chapter-title">Birth of Computing</h2>
+      <p class="chapter-text">
+        The first electronic computers filled entire buildings.
+        <em>ENIAC</em> — 18,000 vacuum tubes, 30 tons of iron —
+        could perform 5,000 additions per second.
+        Miraculous. Yet terribly fragile.
+      </p>
+      <div class="chapter-divider"></div>
+      <div class="timeline" id="timeline3">
+        <div class="timeline-item">
+          <div class="timeline-year">1904</div>
+          <div class="timeline-content"><h3>DIODE TUBE</h3><p>Fleming's diode — first vacuum tube, allowing one-way current flow</p></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">1946</div>
+          <div class="timeline-content"><h3>ENIAC</h3><p>First general-purpose electronic computer. 1,800 sq ft. 150kW power consumption</p></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">1947</div>
+          <div class="timeline-content"><h3>THE TURNING POINT</h3><p>Bell Labs — three men about to change history forever</p></div>
+        </div>
+      </div>
+    </div>
+    <!-- Vacuum tube + ENIAC photo mosaic -->
+    <div class="photo-mosaic pm-2" id="tube-photos" style="opacity:0;transform:translateY(20px)">
+      <div class="photo-frame" style="height:240px">
+        <span class="img-badge-label">ENIAC · 1946</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="eniac" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">ENIAC — 18,000 VACUUM TUBES · PHILADELPHIA 1946</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="photo-frame" style="height:113px">
+          <span class="img-badge-label">VACUUM TUBE</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="vacuumtubes" style="width:100%;height:100%;display:block;"></canvas>
+          <div class="photo-caption">THERMIONIC VALVES</div>
+        </div>
+        <div class="photo-frame" style="height:113px">
+          <span class="img-badge-label">OPERATORS</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="eniacops" style="width:100%;height:100%;display:block;"></canvas>
+          <div class="photo-caption">HUMAN COMPUTERS · ENIAC OPERATORS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CH4: TRANSISTOR — THE LEGEND -->
+<section class="chapter" id="ch4">
+  <div class="chapter-glow" style="background:radial-gradient(ellipse,rgba(0,245,255,0.12),transparent 70%)"></div>
+  <div style="max-width:1000px;width:100%">
+
+    <!-- Two-col: text + legendary photo -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;margin-bottom:20px">
+      <div class="holo-panel" style="border-color:rgba(0,245,255,0.4);box-shadow:0 0 60px rgba(0,245,255,0.08)">
+        <div class="chapter-index">CHAPTER IV // THE TRANSISTOR</div>
+        <h2 class="chapter-title" style="font-size:clamp(24px,5vw,60px)">The Invention<br>That Changed<br>Everything</h2>
+        <p class="chapter-text">
+          December 23, 1947. Bell Laboratories, Murray Hill, New Jersey.
+          <em>John Bardeen</em>, <em>Walter Brattain</em>, and <em>William Shockley</em>
+          demonstrated something almost impossibly small —
+          a device that could amplify signals using semiconducting crystals.
+          A transistor.
+        </p>
+        <div class="chapter-divider"></div>
+        <p class="chapter-text">
+          <em>"A tiny device… smaller than imagination…
+          would reshape human civilization forever."</em>
+        </p>
+      </div>
+      <!-- First transistor photo -->
+      <div>
+        <div class="photo-frame" style="height:280px">
+          <span class="img-badge-label">BELL LABS · 1947</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="belllabs" style="width:100%;height:100%;display:block;"></canvas>
+          <div class="photo-caption">SHOCKLEY · BARDEEN · BRATTAIN — NOBEL PRIZE 1956</div>
+        </div>
+        <div class="photo-strip" style="margin-top:10px;height:130px">
+          <div class="photo-frame" style="height:130px">
+            <span class="img-badge-label">POINT-CONTACT</span>
+            <div class="photo-overlay"></div>
+            <canvas class="scene-canvas" data-scene="transistor" style="width:100%;height:100%;display:block;"></canvas>
+            <div class="photo-caption">FIRST TRANSISTOR 1947</div>
+          </div>
+          <div class="photo-frame" style="height:130px">
+            <span class="img-badge-label">BELL LABS</span>
+            <div class="photo-overlay"></div>
+            <canvas class="scene-canvas" data-scene="belllabs2" style="width:100%;height:100%;display:block;"></canvas>
+            <div class="photo-caption">MURRAY HILL · NJ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" id="semicon-cards">
+      <div class="info-card" data-tip="Silicon" data-desc="Group IV semiconductor. 4 valence electrons. Foundation of all modern electronics.">
+        <div class="info-card-icon">⬡</div>
+        <h3>SILICON</h3>
+        <p>4 valence electrons. Perfect semiconductor bandgap of 1.1 eV</p>
+      </div>
+      <div class="info-card" data-tip="Doping" data-desc="Adding impurities to silicon to control conductivity. N-type adds electrons (phosphorus). P-type adds holes (boron).">
+        <div class="info-card-icon">⚗</div>
+        <h3>DOPING</h3>
+        <p>N-type: extra electrons. P-type: electron holes. Controlled conductivity</p>
+      </div>
+      <div class="info-card" data-tip="PN Junction" data-desc="Where P-type meets N-type. A depletion region forms. Current flows in one direction only — the diode principle.">
+        <div class="info-card-icon">⟷</div>
+        <h3>PN JUNCTION</h3>
+        <p>P meets N. Depletion region forms. The birth of the diode</p>
+      </div>
+      <div class="info-card" data-tip="MOSFET" data-desc="Metal-Oxide-Semiconductor Field-Effect Transistor. Gate voltage controls channel current. The dominant transistor type — trillions fabricated per year.">
+        <div class="info-card-icon">⌗</div>
+        <h3>MOSFET</h3>
+        <p>Gate controls channel. Dominant switch in all modern chips</p>
+      </div>
+      <div class="info-card" data-tip="CMOS" data-desc="Complementary MOS — pairs NMOS and PMOS. Near-zero static power. The reason your phone battery lasts all day.">
+        <div class="info-card-icon">⊕</div>
+        <h3>CMOS</h3>
+        <p>Complementary logic. Near-zero static power consumption</p>
+      </div>
+      <div class="info-card" data-tip="Energy Bands" data-desc="Valence band (filled electrons) and conduction band (free electrons). Bandgap determines if material is insulator, semiconductor, or conductor.">
+        <div class="info-card-icon">≋</div>
+        <h3>ENERGY BANDS</h3>
+        <p>Valence + conduction bands. Bandgap defines behavior</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MOORE'S LAW INTERLUDE -->
+<section class="chapter" id="moores">
+  <div class="chapter-glow"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:24px">
+      <div class="chapter-index">INTERLUDE // MOORE'S LAW</div>
+      <h2 class="chapter-title">Doubling Every<br>Two Years</h2>
+      <p class="chapter-text">
+        Gordon Moore's 1965 observation became the most powerful
+        self-fulfilling prophecy in human history. Every two years,
+        transistor density doubled — and with it, the intelligence of our machines.
+      </p>
+    </div>
+    <div style="background:rgba(0,15,30,0.85);border:1px solid rgba(0,245,255,0.15);padding:30px;max-width:900px;width:100%">
+      <canvas id="moores-chart" width="840" height="320" style="width:100%;height:auto"></canvas>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:900px;width:100%;margin-top:16px" id="moores-stats">
+      <div style="background:rgba(0,20,50,0.8);border:1px solid rgba(0,245,255,0.15);padding:16px;text-align:center;opacity:0;transform:translateY(15px)">
+        <div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--cyan)">2,300</div>
+        <div style="font-size:11px;color:var(--silver);letter-spacing:1px;margin-top:4px">Intel 4004 (1971)</div>
+      </div>
+      <div style="background:rgba(0,20,50,0.8);border:1px solid rgba(0,245,255,0.15);padding:16px;text-align:center;opacity:0;transform:translateY(15px)">
+        <div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--blue)">7.2B</div>
+        <div style="font-size:11px;color:var(--silver);letter-spacing:1px;margin-top:4px">A12 Bionic (2018)</div>
+      </div>
+      <div style="background:rgba(0,20,50,0.8);border:1px solid rgba(0,245,255,0.15);padding:16px;text-align:center;opacity:0;transform:translateY(15px)">
+        <div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--purple)">114B</div>
+        <div style="font-size:11px;color:var(--silver);letter-spacing:1px;margin-top:4px">H100 GPU (2022)</div>
+      </div>
+      <div style="background:rgba(0,20,50,0.8);border:1px solid rgba(0,245,255,0.15);padding:16px;text-align:center;opacity:0;transform:translateY(15px)">
+        <div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#00ff88">192B</div>
+        <div style="font-size:11px;color:var(--silver);letter-spacing:1px;margin-top:4px">M3 Ultra (2024)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSISTOR INTERACTIVE EXPLORER -->
+<section class="chapter" id="transistor-lab" style="padding:60px 40px">
+  <div class="chapter-glow" style="background:radial-gradient(ellipse,rgba(0,245,255,0.1),transparent 70%)"></div>
+  <div style="max-width:1000px;width:100%">
+    <div class="holo-panel" style="margin-bottom:24px">
+      <div class="chapter-index">INTERACTIVE // TRANSISTOR ANATOMY</div>
+      <h2 class="chapter-title" style="font-size:clamp(22px,4vw,44px)">Explore the MOSFET</h2>
+      <p class="chapter-text">Hover over each layer to understand how the transistor works at the atomic scale.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+      <!-- SVG MOSFET diagram -->
+      <div style="background:rgba(0,10,25,0.9);border:1px solid rgba(0,245,255,0.2);padding:24px">
+        <svg id="mosfet-svg" viewBox="0 0 400 320" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">
+          <!-- Silicon substrate -->
+          <rect id="layer-substrate" x="20" y="220" width="360" height="60" rx="2" fill="#0a1a2e" stroke="#1a3a5e" stroke-width="1" class="mosfet-layer" data-name="P-Type Silicon Substrate" data-info="Lightly doped p-type silicon. The foundation. Boron dopants create electron holes as majority carriers. Resistivity ~10 Ω·cm."/>
+          <text x="200" y="256" text-anchor="middle" fill="#336688" font-size="10" font-family="Share Tech Mono,monospace" letter-spacing="2">P-TYPE SILICON SUBSTRATE</text>
+
+          <!-- N+ Source -->
+          <rect id="layer-source" x="40" y="170" width="80" height="52" rx="2" fill="#001a3a" stroke="#0066ff" stroke-width="1.5" class="mosfet-layer" data-name="N+ Source" data-info="Heavily doped n-type region. Phosphorus atoms donate electrons. ~10²⁰ carriers/cm³. Connected to ground in NMOS."/>
+          <text x="80" y="200" text-anchor="middle" fill="#4488ff" font-size="10" font-family="Share Tech Mono,monospace">N+</text>
+          <text x="80" y="213" text-anchor="middle" fill="#336699" font-size="9" font-family="Share Tech Mono,monospace">SOURCE</text>
+
+          <!-- N+ Drain -->
+          <rect id="layer-drain" x="280" y="170" width="80" height="52" rx="2" fill="#001a3a" stroke="#0066ff" stroke-width="1.5" class="mosfet-layer" data-name="N+ Drain" data-info="Heavily doped n-type region. Mirror of source. Connected to supply voltage VDD. Current flows source→drain when gate is ON."/>
+          <text x="320" y="200" text-anchor="middle" fill="#4488ff" font-size="10" font-family="Share Tech Mono,monospace">N+</text>
+          <text x="320" y="213" text-anchor="middle" fill="#336699" font-size="9" font-family="Share Tech Mono,monospace">DRAIN</text>
+
+          <!-- Channel region -->
+          <rect id="layer-channel" x="120" y="190" width="160" height="32" rx="1" fill="#001428" stroke="rgba(0,245,255,0.2)" stroke-width="1" stroke-dasharray="4,2" class="mosfet-layer" data-name="Channel Region" data-info="The critical p-type region between source and drain. When gate voltage exceeds threshold (Vth), electrons are attracted, forming an inversion layer — the conducting channel. This is the ON state."/>
+          <text x="200" y="210" text-anchor="middle" fill="rgba(0,245,255,0.4)" font-size="9" font-family="Share Tech Mono,monospace" letter-spacing="1">CHANNEL</text>
+
+          <!-- Gate oxide -->
+          <rect id="layer-oxide" x="115" y="158" width="170" height="14" rx="1" fill="#001f10" stroke="#00aa44" stroke-width="1.5" class="mosfet-layer" data-name="Gate Oxide (SiO₂/HfO₂)" data-info="Ultra-thin dielectric — just 1-2nm in modern nodes! Electrically isolates gate from channel. High-k dielectrics (HfO₂) replaced SiO₂ at 45nm to reduce leakage current."/>
+          <text x="200" y="168" text-anchor="middle" fill="#00aa44" font-size="9" font-family="Share Tech Mono,monospace" letter-spacing="1">GATE OXIDE</text>
+
+          <!-- Gate metal -->
+          <rect id="layer-gate" x="115" y="128" width="170" height="32" rx="2" fill="#0d1a0d" stroke="#00ff88" stroke-width="2" class="mosfet-layer" data-name="Metal Gate (Poly / TiN)" data-info="Controls the channel. Applying voltage Vgs > Vth inverts the channel from p-type to n-type, allowing current flow. Modern gates use metal (TiN, TaN) for better performance."/>
+          <text x="200" y="147" text-anchor="middle" fill="#00ff88" font-size="11" font-family="Share Tech Mono,monospace" font-weight="bold" letter-spacing="2">GATE</text>
+
+          <!-- Source metal contact -->
+          <rect x="60" y="130" width="40" height="42" rx="1" fill="#0d0d1a" stroke="#4466aa" stroke-width="1"/>
+          <text x="80" y="152" text-anchor="middle" fill="#4466aa" font-size="9" font-family="Share Tech Mono,monospace">VS</text>
+
+          <!-- Drain metal contact -->
+          <rect x="300" y="130" width="40" height="42" rx="1" fill="#0d0d1a" stroke="#4466aa" stroke-width="1"/>
+          <text x="320" y="152" text-anchor="middle" fill="#4466aa" font-size="9" font-family="Share Tech Mono,monospace">VD</text>
+
+          <!-- Wire connections -->
+          <line x1="80" y1="130" x2="80" y2="100" stroke="#4466aa" stroke-width="1.5"/>
+          <line x1="80" y1="100" x2="60" y2="100" stroke="#4466aa" stroke-width="1.5"/>
+          <text x="52" y="104" text-anchor="end" fill="#6688bb" font-size="9" font-family="Share Tech Mono,monospace">S</text>
+
+          <line x1="320" y1="130" x2="320" y2="100" stroke="#4466aa" stroke-width="1.5"/>
+          <line x1="320" y1="100" x2="345" y2="100" stroke="#4466aa" stroke-width="1.5"/>
+          <text x="350" y="104" fill="#6688bb" font-size="9" font-family="Share Tech Mono,monospace">D</text>
+
+          <line x1="200" y1="128" x2="200" y2="100" stroke="#00ff88" stroke-width="2"/>
+          <line x1="200" y1="100" x2="220" y2="100" stroke="#00ff88" stroke-width="2"/>
+          <text x="225" y="104" fill="#00ff88" font-size="9" font-family="Share Tech Mono,monospace">VG</text>
+
+          <!-- Body contact -->
+          <line x1="200" y1="280" x2="200" y2="295" stroke="#336688" stroke-width="1.5"/>
+          <text x="200" y="308" text-anchor="middle" fill="#336688" font-size="9" font-family="Share Tech Mono,monospace">BODY (GND)</text>
+
+          <!-- Electron flow animation dots -->
+          <circle class="electron-flow" cx="130" cy="206" r="2.5" fill="#00f5ff" opacity="0">
+            <animate attributeName="cx" from="130" to="270" dur="1.8s" repeatCount="indefinite" begin="0s"/>
+            <animate attributeName="opacity" values="0;1;1;0" dur="1.8s" repeatCount="indefinite" begin="0s"/>
+          </circle>
+          <circle class="electron-flow" cx="130" cy="206" r="2.5" fill="#00f5ff" opacity="0">
+            <animate attributeName="cx" from="130" to="270" dur="1.8s" repeatCount="indefinite" begin="0.6s"/>
+            <animate attributeName="opacity" values="0;1;1;0" dur="1.8s" repeatCount="indefinite" begin="0.6s"/>
+          </circle>
+          <circle class="electron-flow" cx="130" cy="206" r="2.5" fill="#00f5ff" opacity="0">
+            <animate attributeName="cx" from="130" to="270" dur="1.8s" repeatCount="indefinite" begin="1.2s"/>
+            <animate attributeName="opacity" values="0;1;1;0" dur="1.8s" repeatCount="indefinite" begin="1.2s"/>
+          </circle>
+
+          <!-- Labels -->
+          <text x="200" y="50" text-anchor="middle" fill="rgba(0,245,255,0.5)" font-size="11" font-family="Share Tech Mono,monospace" letter-spacing="3">NMOS TRANSISTOR</text>
+          <text x="200" y="65" text-anchor="middle" fill="rgba(168,192,208,0.3)" font-size="9" font-family="Share Tech Mono,monospace">hover layers to explore</text>
+        </svg>
+      </div>
+
+      <!-- Info panel -->
+      <div>
+        <div id="mosfet-info" style="background:rgba(0,20,40,0.9);border:1px solid rgba(0,245,255,0.2);padding:24px;min-height:200px">
+          <div style="font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:var(--cyan);margin-bottom:12px" id="mosfet-title">SELECT A LAYER</div>
+          <p style="font-size:14px;color:var(--silver);line-height:1.8" id="mosfet-desc">Hover over any layer of the MOSFET diagram to see detailed information about its structure, materials, and function in modern semiconductor devices.</p>
+        </div>
+
+        <!-- Gate voltage simulator -->
+        <div style="background:rgba(0,15,30,0.9);border:1px solid rgba(0,255,136,0.2);padding:20px;margin-top:16px">
+          <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;color:#00ff88;margin-bottom:16px">GATE VOLTAGE SIMULATOR</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <span style="font-size:12px;color:var(--silver);min-width:30px">VG:</span>
+            <input type="range" id="vg-slider" min="0" max="18" value="0" step="1" style="flex:1;accent-color:#00ff88">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:#00ff88;min-width:40px" id="vg-val">0.0V</span>
+          </div>
+          <div style="height:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);margin-bottom:12px;position:relative;overflow:hidden">
+            <div id="current-bar" style="height:100%;background:linear-gradient(to right,rgba(0,100,200,0.5),var(--cyan));width:0%;transition:width 0.3s;box-shadow:0 0 8px var(--cyan)"></div>
+          </div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--silver);line-height:1.8" id="gate-state">
+            &gt; State: <span style="color:#ff4444">OFF (V &lt; Vth)</span><br>
+            &gt; Channel: <span style="color:#ff4444">DEPLETED</span><br>
+            &gt; Ids current: <span style="color:var(--silver)">≈ 0 nA (leakage only)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CH5: FABRICATION -->
+<section class="chapter" id="ch5">
+  <div class="chapter-glow"></div>
+  <div style="max-width:980px;width:100%">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;margin-bottom:20px">
+      <div class="holo-panel">
+        <div class="chapter-index">CHAPTER V // SILICON FABRICATION</div>
+        <h2 class="chapter-title">The Art of the Impossible</h2>
+        <p class="chapter-text">
+          Modern semiconductor fabs are the most complex manufacturing environments
+          humans have ever built. Robots handle silicon wafers in rooms
+          <em>1,000× cleaner than a hospital operating theater</em>.
+          EUV lasers with 13.5nm wavelength etch features <em>smaller than a virus</em>.
+        </p>
+      </div>
+      <!-- ASML EUV machine photo -->
+      <div class="photo-frame" style="height:260px">
+        <span class="img-badge-label">ASML EUV</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="euv" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">ASML NXE:3400 · EUV LITHOGRAPHY · €150M PER UNIT</div>
+      </div>
+    </div>
+
+    <!-- Fab photo strip -->
+    <div class="photo-strip" style="margin-bottom:16px;opacity:0;transform:translateY(20px)" id="fab-photos">
+      <div class="photo-frame" style="height:170px">
+        <span class="img-badge-label">SILICON WAFER</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="wafer" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">300mm SILICON WAFER</div>
+      </div>
+      <div class="photo-frame" style="height:170px">
+        <span class="img-badge-label">CLEANROOM</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="cleanroom" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">CLASS-1 CLEANROOM · ISO 3</div>
+      </div>
+      <div class="photo-frame" style="height:170px">
+        <span class="img-badge-label">WAFER HANDLING</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="wafer" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">WAFER SIZE EVOLUTION 1970–2024</div>
+      </div>
+      <div class="photo-frame" style="height:170px">
+        <span class="img-badge-label">DIE CLOSE-UP</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="chipdie" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">CHIP DIE · 5nm PROCESS NODE</div>
+      </div>
+    </div>
+
+    <div class="fab-grid" id="fab-grid">
+      <div class="fab-step"><div class="fab-step-num">01</div><h4>WAFER GROWTH</h4><p>Pure silicon crystal grown from molten silicon. 300mm diameter ingot sliced to 0.7mm wafers</p></div>
+      <div class="fab-step"><div class="fab-step-num">02</div><h4>OXIDATION</h4><p>Thermal SiO₂ gate dielectric grown. Sub-nm precision. Electrical insulation between gate and channel</p></div>
+      <div class="fab-step"><div class="fab-step-num">03</div><h4>DEPOSITION</h4><p>CVD/PVD layers. Polysilicon, metals, dielectrics. Atomic layer deposition for ultimate precision</p></div>
+      <div class="fab-step"><div class="fab-step-num">04</div><h4>EUV LITHOGRAPHY</h4><p>Extreme UV light (13.5nm) projects chip patterns. Features smaller than 5nm possible</p></div>
+      <div class="fab-step"><div class="fab-step-num">05</div><h4>ETCHING</h4><p>Plasma removes material with atomic precision. Dry etch or wet etch, sub-Angstrom control</p></div>
+      <div class="fab-step"><div class="fab-step-num">06</div><h4>ION IMPLANT</h4><p>Dopant atoms fired at wafer surface. Precise control of semiconductor properties</p></div>
+      <div class="fab-step"><div class="fab-step-num">07</div><h4>CMP</h4><p>Chemical-Mechanical Planarization — polishes wafer flat to atomic smoothness between layers</p></div>
+      <div class="fab-step"><div class="fab-step-num">08</div><h4>METALLIZATION</h4><p>Copper interconnects deposited and patterned. 15+ metal layers in modern chips</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CH6: COMPUTING REVOLUTION -->
+<section class="chapter" id="ch6">
+  <div class="chapter-glow"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:20px">
+      <div class="chapter-index">CHAPTER VI // COMPUTING REVOLUTION</div>
+      <h2 class="chapter-title">Silicon Enters<br>Human Life</h2>
+      <p class="chapter-text">
+        Moore's Law predicted transistor count would double every two years.
+        It held for <em>50 years</em>. Today's M3 Ultra has
+        <em>192 billion transistors</em>. More transistors than stars visible to the naked eye.
+      </p>
+    </div>
+
+    <!-- Processor photo mosaic -->
+    <div class="photo-mosaic pm-3" id="cpu-photos" style="opacity:0;transform:translateY(20px);margin-bottom:16px">
+      <div class="photo-frame" style="height:160px">
+        <span class="img-badge-label">INTEL 4004 · 1971</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="intel4004" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">FIRST CPU · 2,300 TRANSISTORS</div>
+      </div>
+      <div class="photo-frame" style="height:160px">
+        <span class="img-badge-label">INTEL PENTIUM · 1993</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="intel486" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">PC REVOLUTION · 3.1M TRANSISTORS</div>
+      </div>
+      <div class="photo-frame" style="height:160px">
+        <span class="img-badge-label">MODERN SoC · 2024</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="applem1" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">APPLE M-SERIES · 192B TRANSISTORS</div>
+      </div>
+    </div>
+
+    <div class="timeline" id="timeline6">
+      <div class="timeline-item"><div class="timeline-year">1971</div><div class="timeline-content"><h3>INTEL 4004</h3><p>First commercial microprocessor. 2,300 transistors. 10μm process. Changed computing forever</p></div></div>
+      <div class="timeline-item"><div class="timeline-year">1981</div><div class="timeline-content"><h3>IBM PC</h3><p>Personal computing enters homes. Intel x86 architecture defined two generations of computing</p></div></div>
+      <div class="timeline-item"><div class="timeline-year">1993</div><div class="timeline-content"><h3>PENTIUM ERA</h3><p>3.1 million transistors. 60MHz. The PC revolution accelerates exponentially</p></div></div>
+      <div class="timeline-item"><div class="timeline-year">2007</div><div class="timeline-content"><h3>IPHONE + ARM</h3><p>ARM SoC architecture enables smartphone revolution. Computing becomes intimate</p></div></div>
+      <div class="timeline-item"><div class="timeline-year">2024</div><div class="timeline-content"><h3>2nm NODES</h3><p>TSMC N2 process. Sub-2nm features. Gate-all-around transistors. AI acceleration built-in</p></div></div>
+    </div>
+    <div class="tech-badges" id="tech-badges">
+      <span class="badge">CPU</span><span class="badge">GPU</span><span class="badge">FPGA</span>
+      <span class="badge">ASIC</span><span class="badge">SoC</span><span class="badge">DRAM</span>
+      <span class="badge">NAND FLASH</span><span class="badge">HBM</span><span class="badge">NVLINK</span>
+    </div>
+  </div>
+</section>
+
+<!-- CH7: EMBEDDED SYSTEMS -->
+<section class="chapter" id="ch7">
+  <div class="chapter-glow"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:20px">
+      <div class="chapter-index">CHAPTER VII // EMBEDDED SYSTEMS</div>
+      <h2 class="chapter-title">Computing<br>Escaped the<br>Computer</h2>
+      <p class="chapter-text">
+        <em>"Computing escaped the computer. It entered everything."</em><br><br>
+        Your car runs on 70+ microcontrollers. Your pacemaker runs firmware that
+        has never crashed. Satellites navigate by embedded processors
+        designed to survive cosmic radiation. The world became
+        <em>one vast distributed computer</em>.
+      </p>
+    </div>
+
+    <!-- Embedded systems photo strip -->
+    <div class="photo-strip" id="embedded-photos" style="opacity:0;transform:translateY(20px);margin-bottom:16px">
+      <div class="photo-frame" style="height:175px">
+        <span class="img-badge-label">ARDUINO / MCU</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="arduino" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">MICROCONTROLLER · ARM CORTEX-M</div>
+      </div>
+      <div class="photo-frame" style="height:175px">
+        <span class="img-badge-label">PCB / FPGA</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="fpga" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">FPGA · XILINX VIRTEX</div>
+      </div>
+      <div class="photo-frame" style="height:175px">
+        <span class="img-badge-label">SATELLITE</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="satellite" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">RAD-HARD EMBEDDED · GPS SATELLITE</div>
+      </div>
+      <div class="photo-frame" style="height:175px">
+        <span class="img-badge-label">MEDICAL IMPLANT</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="pacemaker" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">PACEMAKER · RTOS · 0 CRASHES</div>
+      </div>
+    </div>
+
+    <div class="card-grid" id="embedded-cards" style="margin-top:4px">
+      <div class="info-card"><div class="info-card-icon">🚗</div><h3>AUTOMOTIVE</h3><p>ADAS, engine control, safety systems. MISRA-C compliant real-time firmware</p></div>
+      <div class="info-card"><div class="info-card-icon">🛸</div><h3>AEROSPACE</h3><p>Flight control computers with triple-redundancy. DO-178C certified software</p></div>
+      <div class="info-card"><div class="info-card-icon">💓</div><h3>MEDICAL</h3><p>Implantable devices running RTOS on ultra-low-power ARM Cortex-M cores</p></div>
+      <div class="info-card"><div class="info-card-icon">🌐</div><h3>IoT</h3><p>50 billion connected devices. Edge AI inference. Sub-mW microcontrollers</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- RTL TO SILICON ANIMATOR -->
+<section class="chapter" id="rtl-anim" style="padding:60px 40px">
+  <div class="chapter-glow"></div>
+  <div style="max-width:1000px;width:100%">
+    <div class="holo-panel" style="margin-bottom:24px">
+      <div class="chapter-index">VISUALIZATION // RTL → GDSII</div>
+      <h2 class="chapter-title" style="font-size:clamp(22px,4vw,44px)">Code Becomes<br>Silicon</h2>
+      <p class="chapter-text">Watch how Verilog RTL transforms into a physical chip layout. Each stage is a profound act of engineering.</p>
+    </div>
+    <div style="background:rgba(0,10,20,0.95);border:1px solid rgba(0,245,255,0.1);padding:0;overflow:hidden">
+      <!-- Stage tabs -->
+      <div style="display:flex;border-bottom:1px solid rgba(0,245,255,0.1)" id="rtl-tabs">
+        <div class="rtl-tab active-tab" onclick="showRTLStage(0)" style="padding:12px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--cyan);border-bottom:2px solid var(--cyan);cursor:pointer;transition:all 0.3s">RTL</div>
+        <div class="rtl-tab" onclick="showRTLStage(1)" style="padding:12px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--silver);cursor:pointer;transition:all 0.3s">NETLIST</div>
+        <div class="rtl-tab" onclick="showRTLStage(2)" style="padding:12px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--silver);cursor:pointer;transition:all 0.3s">FLOORPLAN</div>
+        <div class="rtl-tab" onclick="showRTLStage(3)" style="padding:12px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--silver);cursor:pointer;transition:all 0.3s">ROUTED</div>
+        <div class="rtl-tab" onclick="showRTLStage(4)" style="padding:12px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--silver);cursor:pointer;transition:all 0.3s">GDSII</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;min-height:300px">
+        <!-- Code / visual left -->
+        <div style="padding:24px;border-right:1px solid rgba(0,245,255,0.08)">
+          <div id="rtl-left" style="font-family:'Share Tech Mono',monospace;font-size:12px;line-height:1.9;color:#88aacc"></div>
+        </div>
+        <!-- Description right -->
+        <div style="padding:24px">
+          <canvas id="chip-canvas" width="360" height="260" style="width:100%;height:auto;display:block"></canvas>
+        </div>
+      </div>
+      <div style="padding:16px 24px;border-top:1px solid rgba(0,245,255,0.08);background:rgba(0,245,255,0.02)">
+        <div id="rtl-desc" style="font-family:'Rajdhani',sans-serif;font-size:14px;color:var(--silver);line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CH8: VLSI DESIGN -->
+<section class="chapter" id="ch8">
+  <div class="chapter-glow" style="background:radial-gradient(ellipse,rgba(0,100,255,0.1),transparent 70%)"></div>
+  <div style="max-width:1000px;width:100%">
+    <div class="holo-panel" style="margin-bottom:24px">
+      <div class="chapter-index">CHAPTER VIII // VLSI DESIGN</div>
+      <h2 class="chapter-title">How Silicon<br>Is Designed</h2>
+      <p class="chapter-text">
+        From specification to silicon — the complete VLSI design flow
+        transforms human ideas into physical atoms.
+        Click each step to explore the technology.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="background:rgba(0,20,50,0.7);border:1px solid rgba(0,100,255,0.3);padding:20px">
+        <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:#4488ff;margin-bottom:14px">FRONTEND FLOW</div>
+        <div class="flow-container" id="frontend-flow" style="flex-direction:column;gap:4px;margin:0">
+          <div class="flow-step active-step" onclick="showTip(this,'RTL Design','Hardware described in Verilog/SystemVerilog. RTL = Register Transfer Level. Describes behavior of flip-flops and combinational logic.')">RTL / VERILOG</div>
+          <div class="flow-step" onclick="showTip(this,'Functional Simulation','Verify design logic before synthesis. ModelSim, Questa, VCS simulators. Waveform analysis.')">SIMULATION</div>
+          <div class="flow-step" onclick="showTip(this,'UVM Verification','Universal Verification Methodology — constrained-random stimulus, functional coverage, scoreboards. Industry standard.')">UVM VERIFICATION</div>
+          <div class="flow-step" onclick="showTip(this,'Formal Verification','Mathematical proof that design meets specification. No need for test vectors. Catches corner cases missed by simulation.')">FORMAL VERIFY</div>
+          <div class="flow-step" onclick="showTip(this,'Synthesis','RTL converted to gate-level netlist. Synopsys Design Compiler / Cadence Genus. Timing/area optimization.')">SYNTHESIS</div>
+        </div>
+      </div>
+      <div style="background:rgba(0,20,50,0.7);border:1px solid rgba(119,0,255,0.3);padding:20px">
+        <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:#b066ff;margin-bottom:14px">BACKEND FLOW</div>
+        <div class="flow-container" id="backend-flow" style="flex-direction:column;gap:4px;margin:0">
+          <div class="flow-step" style="border-color:rgba(119,0,255,0.3)" onclick="showTip(this,'Floorplanning','Partition the chip area. Place macro blocks, IO cells, power rings. Critical for timing and power.')">FLOORPLAN</div>
+          <div class="flow-step" style="border-color:rgba(119,0,255,0.3)" onclick="showTip(this,'Placement','Standard cells placed within rows. Timing-driven placement. Congestion-aware algorithms.')">PLACEMENT</div>
+          <div class="flow-step" style="border-color:rgba(119,0,255,0.3)" onclick="showTip(this,'Clock Tree Synthesis','Build balanced clock distribution network. Minimize skew and insertion delay. H-tree / fishbone topologies.')">CTS</div>
+          <div class="flow-step" style="border-color:rgba(119,0,255,0.3)" onclick="showTip(this,'Routing','Connect all nets with metal wires across 15+ layers. DRC-clean. Signal integrity verified.')">ROUTING</div>
+          <div class="flow-step" style="border-color:rgba(119,0,255,0.3)" onclick="showTip(this,'Signoff & GDSII','STA, DRC, LVS checks. Physical verification. GDSII file sent to foundry for fabrication.')">GDSII SIGNOFF</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.1);padding:16px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--silver);line-height:2" id="tip-display">
+      &gt; Click any step above to explore the technology in detail...
+    </div>
+  </div>
+</section>
+
+<!-- CH9: AI HARDWARE -->
+<section class="chapter" id="ch9">
+  <div class="chapter-glow" style="background:radial-gradient(ellipse,rgba(119,0,255,0.1),transparent 70%)"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:20px">
+      <div class="chapter-index">CHAPTER IX // AI & HARDWARE ACCELERATION</div>
+      <h2 class="chapter-title">AI Rewrites<br>Silicon</h2>
+      <p class="chapter-text">
+        <em>"Artificial intelligence demanded more power… and silicon evolved again."</em>
+        A single H100 GPU performs 4 quadrillion operations per second.
+        A modern datacenter contains more transistors than there are
+        <em>neurons in every human brain on Earth</em>.
+      </p>
+    </div>
+
+    <!-- AI / Datacenter photo mosaic -->
+    <div class="photo-mosaic pm-2" id="ai-photos" style="opacity:0;transform:translateY(20px);margin-bottom:16px">
+      <div class="photo-frame" style="height:230px">
+        <span class="img-badge-label">NVIDIA H100</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="h100" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">NVIDIA H100 · 80B TRANSISTORS · 700W · 4 PETAFLOPS</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="photo-frame" style="height:108px">
+          <span class="img-badge-label">AI DATACENTER</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="datacenter" style="width:100%;height:100%;display:block;"></canvas>
+          <div class="photo-caption">GPU CLUSTER · EXASCALE COMPUTE</div>
+        </div>
+        <div class="photo-frame" style="height:108px">
+          <span class="img-badge-label">NEURAL NETWORK</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="neuralnet" style="width:100%;height:100%;display:block;object-fit:contain;background:#000a18;padding:10px"></canvas>
+          <div class="photo-caption">DEEP NEURAL NETWORK TOPOLOGY</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quantum-cards" id="ai-cards">
+      <div class="quantum-card" style="border-color:rgba(0,100,255,0.3)"><h3 style="color:#4488ff">GPU / TENSOR CORES</h3><p>Massively parallel matrix math. 10,000+ CUDA cores. Transformer attention heads computed in silicon</p></div>
+      <div class="quantum-card" style="border-color:rgba(0,200,100,0.3)"><h3 style="color:#00cc66">NPU / AI ACCELERATORS</h3><p>Dedicated neural processing units. INT8/FP8 precision. 10× efficiency over general GPU compute</p></div>
+      <div class="quantum-card" style="border-color:rgba(255,100,0,0.3)"><h3 style="color:#ff6600">HPC DATACENTERS</h3><p>Liquid-cooled GPU clusters. NVLink interconnects. 1 exaFLOP/s compute. Cities of silicon thinking</p></div>
+      <div class="quantum-card" style="border-color:rgba(200,0,200,0.3)"><h3 style="color:#cc44cc">CHIPLETS & 3D ICs</h3><p>Heterogeneous integration. HBM stacked on logic die. CoWoS, FOVEROS packaging. Moore's Law by area</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CH10: LIMITS OF SILICON -->
+<section class="chapter" id="ch10">
+  <div class="chapter-glow"></div>
+  <div style="max-width:900px;width:100%">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;margin-bottom:20px">
+      <div class="holo-panel">
+        <div class="chapter-index">CHAPTER X // THE LIMITS</div>
+        <h2 class="chapter-title">Where Physics<br>Pushes Back</h2>
+        <p class="chapter-text">
+          At 2nm, transistor gates span only <em>a few atomic bonds</em>.
+          Quantum tunneling lets electrons teleport through barriers.
+          Heat density approaches the surface of the sun.
+          Classical silicon faces its final frontier.
+        </p>
+        <div class="chapter-divider"></div>
+        <div class="tech-badges" id="limits-badges">
+          <span class="badge">FinFET</span><span class="badge">GAAFET</span><span class="badge">CFET</span>
+          <span class="badge">Nanosheet</span><span class="badge">Tunnel FET</span><span class="badge">Neg-Cap FET</span>
+        </div>
+      </div>
+      <!-- SEM image of FinFET or nano transistor -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="photo-frame" style="height:180px">
+          <span class="img-badge-label">FinFET SEM</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="finfet" style="width:100%;height:100%;display:block;object-fit:contain;background:#000a18;padding:16px"></canvas>
+          <div class="photo-caption">FinFET 3D GATE STRUCTURE · 5nm NODE</div>
+        </div>
+        <div class="photo-frame" style="height:120px">
+          <span class="img-badge-label">NANOSHEET · GAAFET</span>
+          <div class="photo-overlay"></div>
+          <canvas class="scene-canvas" data-scene="gaafet" style="width:100%;height:100%;display:block;object-fit:contain;background:#000a18;padding:12px"></canvas>
+          <div class="photo-caption">GATE-ALL-AROUND · 2nm NANOSHEET</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Limits photo strip -->
+    <div class="photo-strip" id="limits-photos" style="opacity:0;transform:translateY(20px);margin-bottom:16px">
+      <div class="photo-frame" style="height:160px">
+        <span class="img-badge-label">SILICON ATOM</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="silicon_lattice" style="width:100%;height:100%;display:block;object-fit:contain;background:#000814;padding:10px"></canvas>
+        <div class="photo-caption">Si DIAMOND CUBIC LATTICE · a=5.43Å</div>
+      </div>
+      <div class="photo-frame" style="height:160px">
+        <span class="img-badge-label">QUANTUM TUNNELING</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="quantum_tunnel" style="width:100%;height:100%;display:block;object-fit:contain;background:#000814;padding:10px"></canvas>
+        <div class="photo-caption">ELECTRON TUNNELING THROUGH SiO₂</div>
+      </div>
+      <div class="photo-frame" style="height:160px">
+        <span class="img-badge-label">HBM STACK</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="hbm" style="width:100%;height:100%;display:block;object-fit:contain;background:#000814;padding:10px"></canvas>
+        <div class="photo-caption">3D IC STACKING · TSV INTERCONNECTS</div>
+      </div>
+    </div>
+
+    <div class="card-grid" id="limits-cards">
+      <div class="info-card"><h3>QUANTUM TUNNELING</h3><p>Electrons pass through gate oxide quantum-mechanically. Gate leakage increases exponentially below 2nm</p></div>
+      <div class="info-card"><h3>FINFET → GAAFET</h3><p>Gate-all-around surrounds channel on 4 sides. Nanosheet FETs. Samsung/TSMC 3nm nodes</p></div>
+      <div class="info-card"><h3>CFET</h3><p>Complementary FET stacks NMOS atop PMOS. Cuts cell area by 50%. Next-gen CMOS architecture</p></div>
+      <div class="info-card"><h3>3D STACKING</h3><p>TSV-connected die stacks. HBM memory on logic. 3D NAND. Silicon grows upward, not smaller</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CH11: FUTURE -->
+<section class="chapter" id="ch11">
+  <div class="chapter-glow" style="background:radial-gradient(ellipse,rgba(119,0,255,0.15),transparent 70%)"></div>
+  <div style="max-width:900px;width:100%">
+    <div class="holo-panel" style="margin-bottom:20px;border-color:rgba(119,0,255,0.4)">
+      <div class="chapter-index">CHAPTER XI // THE FUTURE</div>
+      <h2 class="chapter-title" style="background:linear-gradient(135deg,#fff,#b066ff,var(--blue));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">
+        Beyond Silicon
+      </h2>
+      <p class="chapter-text">
+        <em>"The future of civilization will be designed in silicon.<br>
+        And maybe… by you."</em>
+      </p>
+    </div>
+
+    <!-- Future technology photo strip -->
+    <div class="photo-strip" id="future-photos" style="opacity:0;transform:translateY(20px);margin-bottom:16px">
+      <div class="photo-frame" style="height:190px">
+        <span class="img-badge-label">QUANTUM COMPUTER</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="ibm_quantum" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">IBM QUANTUM · SUPERCONDUCTING QUBITS</div>
+      </div>
+      <div class="photo-frame" style="height:190px">
+        <span class="img-badge-label">PHOTONIC CHIP</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="chip_generic" style="width:100%;height:100%;display:block;"></canvas>
+        <div class="photo-caption">PHOTONIC IC · LIGHT-SPEED COMPUTE</div>
+      </div>
+      <div class="photo-frame" style="height:190px">
+        <span class="img-badge-label">CARBON NANOTUBE</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="cnt" style="width:100%;height:100%;display:block;object-fit:contain;background:#000814;padding:8px"></canvas>
+        <div class="photo-caption">CNT TRANSISTOR · POST-SILICON ERA</div>
+      </div>
+      <div class="photo-frame" style="height:190px">
+        <span class="img-badge-label">NEUROMORPHIC</span>
+        <div class="photo-overlay"></div>
+        <canvas class="scene-canvas" data-scene="neuro" style="width:100%;height:100%;display:block;object-fit:contain;background:#050010;padding:8px;filter:hue-rotate(200deg) saturate(0.6) brightness(0.8)"></canvas>
+        <div class="photo-caption">NEUROMORPHIC · BRAIN-INSPIRED SILICON</div>
+      </div>
+    </div>
+
+    <div class="quantum-cards" id="future-cards">
+      <div class="quantum-card"><h3>QUANTUM COMPUTING</h3><p>Qubits leverage superposition and entanglement. Exponential speedup for optimization, cryptography, drug discovery</p></div>
+      <div class="quantum-card"><h3>NEUROMORPHIC CHIPS</h3><p>Brain-inspired architectures. Intel Loihi, IBM TrueNorth. Spiking neural networks with μW power budgets</p></div>
+      <div class="quantum-card"><h3>PHOTONIC ICs</h3><p>Light replaces electrons. Zero resistance. Speed of light interconnects. Silicon photonics for AI computing</p></div>
+      <div class="quantum-card"><h3>GRAPHENE / CNT</h3><p>Carbon nanotubes and 2D materials. 10× mobility over silicon. Post-silicon transistor era begins</p></div>
+      <div class="quantum-card"><h3>AI-DESIGNED CHIPS</h3><p>Google's reinforcement learning places chips better than humans. AI designs the chips that run AI</p></div>
+      <div class="quantum-card"><h3>SPACE ELECTRONICS</h3><p>Radiation-hardened ASICs. GaN power devices. Chips designed for the vacuum of interplanetary space</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section id="cta-section">
+  <!-- Animated background chip image -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0">
+    <canvas class="scene-canvas" data-scene="franklin" style="width:100%;height:100%;display:block;width:100%;height:100%;object-fit:cover;opacity:0.04;filter:saturate(0) blur(4px);transform:scale(1.1)"></canvas>
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,5,16,0.3) 0%,rgba(0,5,16,0.97) 70%)"></div>
+  </div>
+
+  <!-- Glowing orbs -->
+  <div style="position:absolute;top:30%;left:20%;width:400px;height:400px;background:radial-gradient(ellipse,rgba(0,102,255,0.07),transparent 70%);pointer-events:none;animation:glowPulse 4s ease-in-out infinite"></div>
+  <div style="position:absolute;bottom:30%;right:20%;width:350px;height:350px;background:radial-gradient(ellipse,rgba(119,0,255,0.07),transparent 70%);pointer-events:none;animation:glowPulse 4s ease-in-out infinite 2s"></div>
+
+  <!-- Full CHIPVERSE logo mark (large) -->
+  <div id="cta-logo" style="opacity:0;transform:translateY(30px);margin-bottom:32px;text-align:center">
+    <div style="display:inline-flex;flex-direction:column;align-items:center;gap:10px">
+      <!-- Large hexagonal SVG mark -->
+      <svg width="72" height="80" viewBox="0 0 72 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 0 18px rgba(0,245,255,0.5))">
+        <polygon points="36,2 70,20 70,60 36,78 2,60 2,20" fill="none" stroke="url(#ctaGrad1)" stroke-width="1.5"/>
+        <polygon points="36,12 60,25 60,55 36,68 12,55 12,25" fill="rgba(0,245,255,0.04)" stroke="rgba(0,245,255,0.15)" stroke-width="1"/>
+        <polygon points="36,22 50,30 50,50 36,58 22,50 22,30" fill="rgba(0,102,255,0.06)" stroke="rgba(0,102,255,0.2)" stroke-width="0.8"/>
+        <!-- Inner circuit cross -->
+        <line x1="36" y1="26" x2="36" y2="54" stroke="#00f5ff" stroke-width="0.8" opacity="0.6"/>
+        <line x1="22" y1="33" x2="50" y2="47" stroke="#0066ff" stroke-width="0.8" opacity="0.6"/>
+        <line x1="22" y1="47" x2="50" y2="33" stroke="#7700ff" stroke-width="0.8" opacity="0.5"/>
+        <!-- Center node -->
+        <circle cx="36" cy="40" r="4" fill="#00f5ff" opacity="0.95"/>
+        <circle cx="36" cy="40" r="7" fill="none" stroke="#00f5ff" stroke-width="0.8" opacity="0.4"/>
+        <circle cx="36" cy="40" r="11" fill="none" stroke="#0066ff" stroke-width="0.5" opacity="0.3"/>
+        <!-- Corner nodes -->
+        <circle cx="36" cy="2"  r="1.5" fill="#00f5ff" opacity="0.8"/>
+        <circle cx="70" cy="20" r="1.5" fill="#0066ff" opacity="0.8"/>
+        <circle cx="70" cy="60" r="1.5" fill="#0066ff" opacity="0.8"/>
+        <circle cx="36" cy="78" r="1.5" fill="#00f5ff" opacity="0.8"/>
+        <circle cx="2"  cy="60" r="1.5" fill="#7700ff" opacity="0.8"/>
+        <circle cx="2"  cy="20" r="1.5" fill="#7700ff" opacity="0.8"/>
+        <!-- Pulse rings (animated) -->
+        <circle cx="36" cy="40" r="16" fill="none" stroke="#00f5ff" stroke-width="0.4" opacity="0.2">
+          <animate attributeName="r" from="10" to="30" dur="2.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" from="0.4" to="0" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="36" cy="40" r="16" fill="none" stroke="#0066ff" stroke-width="0.4" opacity="0.2">
+          <animate attributeName="r" from="10" to="30" dur="2.5s" repeatCount="indefinite" begin="1.25s"/>
+          <animate attributeName="opacity" from="0.4" to="0" dur="2.5s" repeatCount="indefinite" begin="1.25s"/>
+        </circle>
+        <defs>
+          <linearGradient id="ctaGrad1" x1="0" y1="0" x2="72" y2="80">
+            <stop offset="0%" stop-color="#00f5ff"/>
+            <stop offset="50%" stop-color="#0066ff"/>
+            <stop offset="100%" stop-color="#7700ff"/>
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <!-- CHIPVERSE wordmark -->
+      <div style="
+        font-family:'Orbitron',monospace;
+        font-size:clamp(28px,5vw,52px);
+        font-weight:900;
+        letter-spacing:10px;
+        background:linear-gradient(135deg,#00f5ff 0%,#0066ff 50%,#b066ff 100%);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+        filter:drop-shadow(0 0 24px rgba(0,245,255,0.3));
+      ">CHIPVERSE</div>
+
+      <!-- Slogan -->
+      <div style="
+        font-family:'Share Tech Mono',monospace;
+        font-size:clamp(10px,1.4vw,13px);
+        letter-spacing:5px;
+        color:rgba(168,192,208,0.5);
+        margin-top:2px;
+      ">WHERE SILICON MEETS DESTINY</div>
+
+      <!-- Sub-tagline -->
+      <div style="
+        font-family:'Rajdhani',sans-serif;
+        font-size:clamp(12px,1.6vw,15px);
+        letter-spacing:2px;
+        color:rgba(0,245,255,0.35);
+        margin-top:6px;
+        font-weight:300;
+        max-width:500px;
+        text-align:center;
+        line-height:1.6;
+      ">GUIDING VLSI ENTHUSIASTS FROM ATOM TO ARCHITECTURE · FROM CURIOSITY TO CAREER</div>
+    </div>
+  </div>
+
+  <!-- Divider line -->
+  <div id="cta-div" style="width:320px;height:1px;background:linear-gradient(to right,transparent,rgba(0,245,255,0.3),transparent);margin:0 auto 40px;opacity:0"></div>
+
+  <!-- What CHIPVERSE offers -->
+  <div id="cta-features" style="
+    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+    max-width:780px;width:100%;margin-bottom:44px;
+    opacity:0;transform:translateY(20px);
+  ">
+    <div style="background:rgba(0,15,35,0.8);border:1px solid rgba(0,245,255,0.12);padding:18px 16px;text-align:center;transition:border-color 0.3s" onmouseenter="this.style.borderColor='rgba(0,245,255,0.4)'" onmouseleave="this.style.borderColor='rgba(0,245,255,0.12)'">
+      <div style="font-size:22px;margin-bottom:8px">🎓</div>
+      <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);margin-bottom:6px">LEARN</div>
+      <div style="font-size:12px;color:var(--silver);line-height:1.5">Structured VLSI curriculum. RTL to GDSII. Frontend to backend</div>
+    </div>
+    <div style="background:rgba(0,15,35,0.8);border:1px solid rgba(0,102,255,0.12);padding:18px 16px;text-align:center;transition:border-color 0.3s" onmouseenter="this.style.borderColor='rgba(0,102,255,0.4)'" onmouseleave="this.style.borderColor='rgba(0,102,255,0.12)'">
+      <div style="font-size:22px;margin-bottom:8px">⚡</div>
+      <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:#4488ff;margin-bottom:6px">PRACTICE</div>
+      <div style="font-size:12px;color:var(--silver);line-height:1.5">Hands-on Verilog labs. Simulation tools. Real chip projects</div>
+    </div>
+    <div style="background:rgba(0,15,35,0.8);border:1px solid rgba(119,0,255,0.12);padding:18px 16px;text-align:center;transition:border-color 0.3s" onmouseenter="this.style.borderColor='rgba(119,0,255,0.4)'" onmouseleave="this.style.borderColor='rgba(119,0,255,0.12)'">
+      <div style="font-size:22px;margin-bottom:8px">🚀</div>
+      <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:#b066ff;margin-bottom:6px">LAUNCH</div>
+      <div style="font-size:12px;color:var(--silver);line-height:1.5">Career roadmaps. Industry mentors. Silicon Valley connections</div>
+    </div>
+  </div>
+
+  <!-- Emotional quote -->
+  <div class="cta-eyebrow" id="cta-ey">EVERY REVOLUTION BEGAN WITH CURIOSITY</div>
+  <div class="cta-title" id="cta-t">
+    <span>Your Journey</span>
+    <span>Starts Now.</span>
+  </div>
+  <p class="cta-subtitle" id="cta-s">
+    You have witnessed the complete arc of human technological evolution —
+    from the first spark to quantum processors.
+    The next chapter is yours to write.
+  </p>
+
+  <!-- CTA Button -->
+  <div style="position:relative;display:inline-block" id="cta-btn-wrap">
+    <button class="cta-button" id="cta-btn" onclick="ctaClick()" style="padding:22px 70px;font-size:clamp(12px,1.6vw,17px)">
+      <span>⬡ &nbsp;ENTER CHIPVERSE&nbsp; ⬡</span>
+    </button>
+    <div class="cta-glow"></div>
+  </div>
+
+  <!-- Secondary CTA -->
+  <div id="cta-secondary" style="margin-top:20px;opacity:0">
+    <a href="/domains"
+       onclick="localStorage.setItem('chipverse_odyssey_seen','1')"
+       style="
+      font-family:'Share Tech Mono',monospace;font-size:11px;
+      letter-spacing:3px;color:rgba(168,192,208,0.4);
+      text-decoration:none;border-bottom:1px solid rgba(168,192,208,0.15);
+      padding-bottom:2px;transition:color 0.3s,border-color 0.3s;
+    " onmouseenter="this.style.color='rgba(0,245,255,0.7)';this.style.borderColor='rgba(0,245,255,0.3)'"
+       onmouseleave="this.style.color='rgba(168,192,208,0.4)';this.style.borderColor='rgba(168,192,208,0.15)'">
+      EXPLORE THE SYLLABUS FIRST →
+    </a>
+  </div>
+
+  <!-- Footer -->
+  <div id="cta-footer" style="
+    margin-top:80px;width:100%;max-width:900px;
+    border-top:1px solid rgba(0,245,255,0.06);
+    padding-top:32px;opacity:0;
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+  ">
+    <!-- Footer logo row -->
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="20" height="22" viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.4">
+        <polygon points="18,1 35,10 35,30 18,39 1,30 1,10" fill="none" stroke="#00f5ff" stroke-width="1.5"/>
+        <circle cx="18" cy="20" r="3" fill="#00f5ff" opacity="0.8"/>
+      </svg>
+      <span style="font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:4px;color:rgba(0,245,255,0.3)">CHIPVERSE</span>
+    </div>
+
+    <!-- Slogan footer -->
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;color:rgba(168,192,208,0.2);text-align:center">
+      WHERE SILICON MEETS DESTINY · GUIDING VLSI ENTHUSIASTS WORLDWIDE
+    </div>
+
+    <!-- Footer links -->
+    <div style="display:flex;gap:30px;flex-wrap:wrap;justify-content:center">
+      <a href="#" style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(168,192,208,0.2);text-decoration:none;transition:color 0.3s"
+         onmouseenter="this.style.color='rgba(0,245,255,0.5)'" onmouseleave="this.style.color='rgba(168,192,208,0.2)'">COURSES</a>
+      <a href="#" style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(168,192,208,0.2);text-decoration:none;transition:color 0.3s"
+         onmouseenter="this.style.color='rgba(0,245,255,0.5)'" onmouseleave="this.style.color='rgba(168,192,208,0.2)'">COMMUNITY</a>
+      <a href="#" style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(168,192,208,0.2);text-decoration:none;transition:color 0.3s"
+         onmouseenter="this.style.color='rgba(0,245,255,0.5)'" onmouseleave="this.style.color='rgba(168,192,208,0.2)'">BLOG</a>
+      <a href="#" style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(168,192,208,0.2);text-decoration:none;transition:color 0.3s"
+         onmouseenter="this.style.color='rgba(0,245,255,0.5)'" onmouseleave="this.style.color='rgba(168,192,208,0.2)'">CAREERS</a>
+      <a href="#" style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(168,192,208,0.2);text-decoration:none;transition:color 0.3s"
+         onmouseenter="this.style.color='rgba(0,245,255,0.5)'" onmouseleave="this.style.color='rgba(168,192,208,0.2)'">CONTACT</a>
+    </div>
+
+    <!-- Copyright -->
+    <div style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;color:rgba(168,192,208,0.12);text-align:center;margin-top:8px">
+      © 2025 CHIPVERSE · VLSI ODYSSEY · ALL RIGHTS RESERVED · BUILT FOR THE SILICON GENERATION
+    </div>
+  </div>
+
+</section>
+
+</div><!-- end scroll container -->
+
+<script>
+// ═══════════════════════════════════════════
+// CURSOR
+// ═══════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursor-dot');
+let mx=window.innerWidth/2, my=window.innerHeight/2;
+let cx=mx, cy=my;
+
+document.addEventListener('mousemove', e=>{
+  mx=e.clientX; my=e.clientY;
+  cursorDot.style.left=mx+'px';
+  cursorDot.style.top=my+'px';
+});
+
+function animateCursor(){
+  cx+=(mx-cx)*0.15; cy+=(my-cy)*0.15;
+  cursor.style.left=(cx-8)+'px';
+  cursor.style.top=(cy-8)+'px';
+  requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+document.addEventListener('mousedown',()=>{cursor.style.transform='scale(0.7)';});
+document.addEventListener('mouseup',()=>{cursor.style.transform='scale(1)';});
+
+// ═══════════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════════
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
+camera.position.set(0,0,50);
+
+const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setClearColor(0x000510,1);
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// ── STAR FIELD ──
+const starGeo = new THREE.BufferGeometry();
+const starCount = 4000;
+const starPos = new Float32Array(starCount*3);
+const starSizes = new Float32Array(starCount);
+for(let i=0;i<starCount;i++){
+  starPos[i*3]=(Math.random()-0.5)*2000;
+  starPos[i*3+1]=(Math.random()-0.5)*2000;
+  starPos[i*3+2]=(Math.random()-0.5)*2000;
+  starSizes[i]=Math.random()*2+0.5;
+}
+starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+starGeo.setAttribute('size',new THREE.BufferAttribute(starSizes,1));
+
+const starMat = new THREE.PointsMaterial({
+  color:0xaaccff,size:0.5,sizeAttenuation:true,
+  transparent:true,opacity:0.8
+});
+const stars = new THREE.Points(starGeo,starMat);
+scene.add(stars);
+
+// ── NEBULA PARTICLES ──
+function createParticleSystem(count,color,spread,size){
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+    const theta=Math.random()*Math.PI*2;
+    const phi=Math.acos(2*Math.random()-1);
+    const r=Math.random()*spread;
+    pos[i*3]=r*Math.sin(phi)*Math.cos(theta);
+    pos[i*3+1]=r*Math.sin(phi)*Math.sin(theta);
+    pos[i*3+2]=r*Math.cos(phi);
+  }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const mat = new THREE.PointsMaterial({color,size,sizeAttenuation:true,transparent:true,opacity:0.4});
+  return new THREE.Points(geo,mat);
+}
+
+const nebula1 = createParticleSystem(800,0x0066ff,200,1.5);
+const nebula2 = createParticleSystem(400,0x00f5ff,150,1.0);
+const nebula3 = createParticleSystem(300,0x7700ff,100,0.8);
+scene.add(nebula1,nebula2,nebula3);
+
+// ── ELECTRON ORBIT ──
+const electronGroup = new THREE.Group();
+for(let i=0;i<3;i++){
+  const ring = new THREE.TorusGeometry(8+i*4, 0.05, 8, 80);
+  const ringMat = new THREE.MeshBasicMaterial({color:i===0?0x00f5ff:i===1?0x0066ff:0x7700ff,transparent:true,opacity:0.3});
+  const ringMesh = new THREE.Mesh(ring,ringMat);
+  ringMesh.rotation.x = (i*Math.PI)/3;
+  ringMesh.rotation.y = (i*Math.PI)/4;
+  electronGroup.add(ringMesh);
+
+  // electron dot
+  const eDot = new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8),new THREE.MeshBasicMaterial({color:i===0?0x00f5ff:i===1?0x0066ff:0x7700ff}));
+  eDot.userData = {orbit:8+i*4, speed:0.5/(i+1), angle:i*2, ring:ringMesh};
+  electronGroup.add(eDot);
+}
+electronGroup.position.set(0,0,-20);
+electronGroup.userData.type='electron';
+scene.add(electronGroup);
+
+// ── CIRCUIT GRID ──
+const gridGroup = new THREE.Group();
+const gridMat = new THREE.LineBasicMaterial({color:0x001840,transparent:true,opacity:0.4});
+for(let i=-20;i<=20;i+=2){
+  const hGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-30,i,0),new THREE.Vector3(30,i,0)]);
+  const vGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i,-20,0),new THREE.Vector3(i,20,0)]);
+  gridGroup.add(new THREE.Line(hGeo,gridMat));
+  gridGroup.add(new THREE.Line(vGeo,gridMat));
+}
+gridGroup.position.z=-30;
+scene.add(gridGroup);
+
+// ── FLOATING CHIPS ──
+const chipGroup = new THREE.Group();
+for(let i=0;i<6;i++){
+  const chip = new THREE.Mesh(
+    new THREE.BoxGeometry(3,3,0.3),
+    new THREE.MeshBasicMaterial({color:0x001133,wireframe:false})
+  );
+  const chipWire = new THREE.Mesh(
+    new THREE.BoxGeometry(3,3,0.3),
+    new THREE.MeshBasicMaterial({color:0x0044aa,wireframe:true})
+  );
+  chip.position.set((Math.random()-0.5)*60,(Math.random()-0.5)*40,(Math.random()-0.5)*20-20);
+  chip.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
+  chipWire.position.copy(chip.position);
+  chipWire.rotation.copy(chip.rotation);
+  chip.userData = {speed:{x:(Math.random()-0.5)*0.002,y:(Math.random()-0.5)*0.002,r:Math.random()*0.005+0.002}};
+  chipGroup.add(chip,chipWire);
+}
+scene.add(chipGroup);
+
+// ── ENERGY LINES ──
+const lineGroup = new THREE.Group();
+function createEnergyLine(){
+  const points=[];
+  let x=(Math.random()-0.5)*80;
+  for(let i=0;i<20;i++){
+    x+=((Math.random()-0.5)*4);
+    points.push(new THREE.Vector3(x,-30+i*3,((Math.random()-0.5)*5)-25));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = new THREE.LineBasicMaterial({color:Math.random()>0.5?0x00f5ff:0x0066ff,transparent:true,opacity:Math.random()*0.4+0.1});
+  return new THREE.Line(geo,mat);
+}
+for(let i=0;i<12;i++) lineGroup.add(createEnergyLine());
+scene.add(lineGroup);
+
+// ── CENTRAL HOLOGRAPHIC CHIP ──
+const mainChip = new THREE.Group();
+const chipCore = new THREE.Mesh(
+  new THREE.BoxGeometry(12,12,1.5),
+  new THREE.MeshBasicMaterial({color:0x001122})
+);
+const chipFrame = new THREE.Mesh(
+  new THREE.BoxGeometry(12,12,1.5),
+  new THREE.MeshBasicMaterial({color:0x00f5ff,wireframe:true,transparent:true,opacity:0.6})
+);
+mainChip.add(chipCore,chipFrame);
+
+// inner circuit details
+for(let i=0;i<5;i++){
+  const detail = new THREE.Mesh(
+    new THREE.BoxGeometry(1+Math.random()*2, 0.1, 0.1),
+    new THREE.MeshBasicMaterial({color:0x0066ff,transparent:true,opacity:0.5})
+  );
+  detail.position.set((Math.random()-0.5)*8,(Math.random()-0.5)*8,1);
+  mainChip.add(detail);
+}
+mainChip.position.set(0,0,-10);
+mainChip.visible=false;
+scene.add(mainChip);
+
+// ── QUANTUM SPHERE ──
+const quantumSphere = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(15,2),
+  new THREE.MeshBasicMaterial({color:0x7700ff,wireframe:true,transparent:true,opacity:0.2})
+);
+quantumSphere.visible=false;
+scene.add(quantumSphere);
+
+// ── LIGHTING ──
+const ambientLight = new THREE.AmbientLight(0x001144,0.5);
+scene.add(ambientLight);
+
+// ══ SCENE STATE ══
+let currentChapter = 0;
+const totalChapters = 12;
+
+// ═══════════════════════════════════════════
+// SCROLL & CHAPTER MANAGEMENT
+// ═══════════════════════════════════════════
+const chapterIds = ['hero','ch1','ch2','ch3','ch4','transistor-lab','moores','ch5','ch6','ch7','rtl-anim','ch8','ch9','ch10','ch11','cta-section'];
+const chapterNames = ['∅','I','II','III','IV','IV+','IV++','V','VI','VII','VII+','VIII','IX','X','XI','◉'];
+
+// Build nav dots
+const navDots = document.getElementById('nav-dots');
+chapterNames.forEach((n,i)=>{
+  const dot = document.createElement('div');
+  dot.className='nav-dot'+(i===0?' active':'');
+  dot.title=n;
+  dot.onclick=()=>{ document.getElementById(chapterIds[i])?.scrollIntoView({behavior:'smooth'}); };
+  navDots.appendChild(dot);
+});
+
+function updateChapter(idx){
+  if(idx===currentChapter) return;
+  currentChapter=idx;
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  document.getElementById('nav-label').textContent='CHAPTER '+chapterNames[idx];
+  updateScene(idx);
+}
+
+function updateScene(idx){
+  // Chapter-specific 3D state transitions
+  if(idx<=1){
+    // Deep space
+    gsap.to(camera.position,{z:50,duration:2,ease:'power2.inOut'});
+    gsap.to(stars,{duration:0.5});
+    electronGroup.visible=false;
+    mainChip.visible=false;
+    quantumSphere.visible=false;
+    gsap.to(renderer,{duration:1});
+  } else if(idx===2){
+    // Electricity
+    gsap.to(camera.position,{z:40,x:5,duration:2,ease:'power2.inOut'});
+    electronGroup.visible=true;
+    gsap.to(electronGroup.position,{z:-5,duration:1.5,ease:'power2.out'});
+  } else if(idx===3){
+    gsap.to(camera.position,{z:35,x:-5,y:3,duration:2});
+  } else if(idx===4){
+    // Transistor legend
+    gsap.to(camera.position,{z:30,x:0,y:0,duration:2});
+    electronGroup.visible=true;
+  } else if(idx===5){
+    // Fab
+    gsap.to(camera.position,{z:45,duration:2});
+    mainChip.visible=true;
+    gsap.to(mainChip.position,{z:0,duration:1.5,ease:'back.out'});
+  } else if(idx>=6&&idx<=8){
+    mainChip.visible=true;
+    gsap.to(camera.position,{z:35,duration:1.5});
+  } else if(idx===9){
+    // AI - purple glow
+    quantumSphere.visible=true;
+    gsap.to(quantumSphere.scale,{x:1,y:1,z:1,duration:2,ease:'power2.out'});
+  } else if(idx>=10){
+    // Future
+    quantumSphere.visible=true;
+    gsap.to(camera.position,{z:60,duration:2});
+    gsap.to(quantumSphere.rotation,{y:Math.PI*2,duration:8,ease:'none',repeat:-1});
+  }
+}
+
+// Electricity photos
+ScrollTrigger.create({
+  trigger:'#elec-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#elec-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+// CPU photos
+ScrollTrigger.create({
+  trigger:'#cpu-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#cpu-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+// Vacuum tube photos
+ScrollTrigger.create({
+  trigger:'#tube-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#tube-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+// Fab photos
+ScrollTrigger.create({
+  trigger:'#fab-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#fab-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+// Embedded photos
+ScrollTrigger.create({
+  trigger:'#embedded-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#embedded-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+// AI photos
+ScrollTrigger.create({
+  trigger:'#ai-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#ai-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+// Future photos
+ScrollTrigger.create({
+  trigger:'#future-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#future-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+let ticking=false;
+window.addEventListener('scroll',()=>{
+  if(!ticking){
+    ticking=true;
+    requestAnimationFrame(()=>{
+      const scrolled = window.scrollY;
+      const total = document.body.scrollHeight - window.innerHeight;
+      const progress = Math.min(scrolled/total,1);
+      document.getElementById('progress-bar').style.width=(progress*100)+'%';
+
+      // Find current chapter
+      chapterIds.forEach((id,i)=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        const rect = el.getBoundingClientRect();
+        if(rect.top<=window.innerHeight*0.5 && rect.bottom>=window.innerHeight*0.3){
+          updateChapter(i);
+        }
+      });
+
+      // Parallax camera
+      const norm = (scrolled/total)*2-1;
+      camera.rotation.y = norm*0.05;
+      camera.rotation.x = -norm*0.02;
+
+      ticking=false;
+    });
+  }
+});
+
+// ═══════════════════════════════════════════
+// GSAP SCROLL ANIMATIONS
+// ═══════════════════════════════════════════
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero entrance — CHIPVERSE presents first
+gsap.to('#cv-presents',{opacity:1,duration:1,delay:0.3,ease:'power2.out'});
+gsap.to('#hs1',{opacity:1,duration:1,delay:1.2,ease:'power2.out'});
+gsap.to('#ht1',{opacity:1,duration:1.5,delay:1.7,ease:'power2.out'});
+gsap.to('#ht2',{opacity:1,duration:1,delay:2.5,ease:'power2.out'});
+gsap.to('#hero-slogan',{opacity:1,duration:1,delay:3.1,ease:'power2.out'});
+
+// Narration lines
+document.querySelectorAll('.narration-line').forEach((el,i)=>{
+  ScrollTrigger.create({
+    trigger:el.closest('.chapter'),
+    start:'top 70%',
+    onEnter:()=>{
+      gsap.to(el,{opacity:1,y:0,duration:0.8,delay:i*0.3,ease:'power2.out'});
+    }
+  });
+});
+
+// Timeline items
+document.querySelectorAll('.timeline-item').forEach((el,i)=>{
+  ScrollTrigger.create({
+    trigger:el.closest('.chapter'),start:'top 60%',
+    onEnter:()=>gsap.to(el,{opacity:1,x:0,duration:0.6,delay:i*0.15,ease:'power2.out'})
+  });
+});
+
+// Inventor cards
+ScrollTrigger.create({
+  trigger:'#inventors',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#inventors .inventor-card').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.6,delay:i*0.15,ease:'back.out(1.2)'});
+    });
+  }
+});
+
+// Semiconductor cards
+ScrollTrigger.create({
+  trigger:'#semicon-cards',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#semicon-cards .info-card').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out(1.2)'});
+    });
+  }
+});
+
+// Fab steps
+ScrollTrigger.create({
+  trigger:'#fab-grid',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#fab-grid .fab-step').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.5,delay:i*0.08,ease:'power2.out'});
+    });
+  }
+});
+
+// Timeline 6
+ScrollTrigger.create({
+  trigger:'#timeline6',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#timeline6 .timeline-item').forEach((el,i)=>{
+      gsap.to(el,{opacity:1,x:0,duration:0.6,delay:i*0.12,ease:'power2.out'});
+    });
+  }
+});
+
+// Tech badges
+ScrollTrigger.create({
+  trigger:'#tech-badges',start:'top 85%',
+  onEnter:()=>{
+    document.querySelectorAll('#tech-badges .badge').forEach((b,i)=>{
+      gsap.to(b,{opacity:1,duration:0.4,delay:i*0.06,ease:'power2.out'});
+    });
+    document.querySelectorAll('#limits-badges .badge').forEach((b,i)=>{
+      gsap.to(b,{opacity:1,duration:0.4,delay:i*0.06,ease:'power2.out'});
+    });
+  }
+});
+
+// Embedded cards
+ScrollTrigger.create({
+  trigger:'#embedded-cards',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#embedded-cards .info-card').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out(1.2)'});
+    });
+  }
+});
+
+// AI cards
+ScrollTrigger.create({
+  trigger:'#ai-cards',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#ai-cards .quantum-card').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out(1.2)'});
+    });
+  }
+});
+
+// Limits cards
+ScrollTrigger.create({
+  trigger:'#limits-cards',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#limits-cards .info-card').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out(1.2)'});
+    });
+  }
+});
+
+// Future cards
+ScrollTrigger.create({
+  trigger:'#future-cards',start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('#future-cards .quantum-card').forEach((c,i)=>{
+      gsap.to(c,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out(1.2)'});
+    });
+  }
+});
+
+// Flow steps
+ScrollTrigger.create({
+  trigger:'#ch8',start:'top 60%',
+  onEnter:()=>{
+    document.querySelectorAll('.flow-step').forEach((s,i)=>{
+      gsap.to(s,{opacity:1,scale:1,duration:0.4,delay:i*0.06,ease:'back.out'});
+    });
+  }
+});
+
+// CTA entrance — CHIPVERSE finale
+ScrollTrigger.create({
+  trigger:'#cta-section',start:'top 70%',
+  onEnter:()=>{
+    gsap.to('#cta-logo',   {opacity:1,y:0,duration:1.0,delay:0.1,ease:'power2.out'});
+    gsap.to('#cta-div',    {opacity:1,duration:0.8,delay:0.6,ease:'power2.out'});
+    gsap.to('#cta-features',{opacity:1,y:0,duration:0.8,delay:0.8,ease:'back.out(1.2)'});
+    gsap.to('#cta-ey',     {opacity:1,y:0,duration:0.8,delay:1.1,ease:'power2.out'});
+    gsap.to('#cta-t',      {opacity:1,y:0,duration:1.0,delay:1.4,ease:'power2.out'});
+    gsap.to('#cta-s',      {opacity:1,y:0,duration:0.8,delay:1.7,ease:'power2.out'});
+    gsap.to('#cta-btn-wrap',{opacity:1,scale:1,duration:0.8,delay:2.0,ease:'back.out(1.5)'});
+    gsap.to('#cta-secondary',{opacity:1,duration:0.6,delay:2.4,ease:'power2.out'});
+    gsap.to('#cta-footer', {opacity:1,duration:0.8,delay:2.8,ease:'power2.out'});
+    mainChip.visible=true;
+    gsap.to(mainChip.rotation,{y:Math.PI*4,duration:8,ease:'none',repeat:-1});
+  }
+});
+
+// Limits photos
+ScrollTrigger.create({
+  trigger:'#limits-photos',start:'top 80%',
+  onEnter:()=>gsap.to('#limits-photos',{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+});
+
+// Initial hidden states for CTA
+gsap.set('#cta-logo',{opacity:0,y:30});
+gsap.set('#cta-div',{opacity:0});
+gsap.set('#cta-features',{opacity:0,y:20});
+gsap.set('#cta-ey',{opacity:0,y:20});
+gsap.set('#cta-t',{opacity:0,y:30});
+gsap.set('#cta-s',{opacity:0,y:20});
+gsap.set('#cta-btn-wrap',{opacity:0,scale:0.9});
+gsap.set('#cta-secondary',{opacity:0});
+gsap.set('#cta-footer',{opacity:0});
+
+// ═══════════════════════════════════════════
+// TOOLTIP SYSTEM
+// ═══════════════════════════════════════════
+const tooltip = document.getElementById('tooltip');
+
+document.querySelectorAll('[data-tip]').forEach(el=>{
+  el.addEventListener('mouseenter',e=>{
+    tooltip.querySelector('h4').textContent=el.dataset.tip;
+    tooltip.querySelector('p').textContent=el.dataset.desc||'';
+    tooltip.style.opacity='1';
+  });
+  el.addEventListener('mousemove',e=>{
+    let tx=e.clientX+16, ty=e.clientY+16;
+    if(tx+260>window.innerWidth) tx=e.clientX-270;
+    if(ty+100>window.innerHeight) ty=e.clientY-110;
+    tooltip.style.left=tx+'px';
+    tooltip.style.top=ty+'px';
+  });
+  el.addEventListener('mouseleave',()=>{tooltip.style.opacity='0';});
+});
+
+// VLSI flow tips
+function showTip(el,title,desc){
+  document.querySelectorAll('.flow-step').forEach(s=>s.classList.remove('active-step'));
+  el.classList.add('active-step');
+  document.getElementById('tip-display').innerHTML=`<span style="color:var(--cyan)">&gt; ${title}</span><br><br>${desc}`;
+}
+
+// ═══════════════════════════════════════════
+// CTA INTERACTION
+// ═══════════════════════════════════════════
+function ctaClick(){
+  const btn = document.getElementById('cta-btn');
+  btn.innerHTML='<span>⬡ &nbsp;INITIALIZING CHIPVERSE...&nbsp; ⬡</span>';
+  btn.style.background='linear-gradient(135deg,#7700ff,#0066ff)';
+
+  // Ripple particle burst
+  for(let i=0;i<30;i++){
+    const p = document.createElement('div');
+    const colors=['#00f5ff','#0066ff','#7700ff','#00ff88'];
+    p.style.cssText=`position:fixed;width:${3+Math.random()*4}px;height:${3+Math.random()*4}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:50%;pointer-events:none;z-index:9998;
+      left:50%;top:50%;transform:translate(-50%,-50%)`;
+    document.body.appendChild(p);
+    const angle=Math.random()*Math.PI*2;
+    const dist=120+Math.random()*280;
+    gsap.to(p,{
+      x:Math.cos(angle)*dist, y:Math.sin(angle)*dist,
+      opacity:0, scale:0, duration:1.2+Math.random()*0.8,
+      ease:'power3.out', onComplete:()=>p.remove()
+    });
+  }
+
+  // Full-screen flash
+  const flash = document.createElement('div');
+  flash.style.cssText='position:fixed;inset:0;background:rgba(0,245,255,0.12);z-index:9997;pointer-events:none;';
+  document.body.appendChild(flash);
+  gsap.to(flash,{opacity:0,duration:1.2,ease:'power2.out',onComplete:()=>flash.remove()});
+
+  // Play entrance chord
+  if(audioCtx){
+    [220,330,440,554,660].forEach((f,i)=>{
+      setTimeout(()=>playTone(f,'sine',0.6,0.05),i*60);
+    });
+  }
+
+  setTimeout(()=>{
+    btn.innerHTML='<span>⬡ &nbsp;WELCOME TO CHIPVERSE&nbsp; ⬡</span>';
+    btn.style.background='linear-gradient(135deg,#00ff88,#00f5ff)';
+    btn.style.color='#000';
+  },2200);
+
+  setTimeout(() => {
+    localStorage.setItem('chipverse_odyssey_seen', '1');
+    window.location.href = '/domains';
+  }, 3500);
+}
+
+// ═══════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════
+const clock = new THREE.Clock();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Rotate stars slowly
+  stars.rotation.y = t*0.00008;
+  stars.rotation.x = t*0.00004;
+
+  // Nebula drift
+  nebula1.rotation.y = t*0.003;
+  nebula2.rotation.x = t*0.002;
+  nebula3.rotation.z = t*0.004;
+
+  // Electron orbits
+  if(electronGroup.visible){
+    electronGroup.rotation.y = t*0.1;
+    electronGroup.rotation.x = t*0.05;
+    electronGroup.children.forEach(c=>{
+      if(c.userData.orbit){
+        const u = c.userData;
+        u.angle += u.speed*0.02;
+        c.position.set(
+          Math.cos(u.angle)*u.orbit,
+          Math.sin(u.angle*0.7)*u.orbit*0.4,
+          Math.sin(u.angle)*u.orbit*0.3
+        );
+      }
+    });
+  }
+
+  // Floating chips
+  chipGroup.children.forEach((c,i)=>{
+    if(c.userData.speed){
+      c.rotation.x += c.userData.speed.r;
+      c.rotation.y += c.userData.speed.r*0.7;
+      c.position.y += Math.sin(t*0.5+i)*0.01;
+    }
+  });
+
+  // Main chip
+  if(mainChip.visible){
+    mainChip.rotation.y += 0.005;
+    mainChip.position.y = Math.sin(t*0.7)*1.5;
+    mainChip.children[1].material.opacity = 0.4+Math.sin(t*2)*0.2;
+  }
+
+  // Quantum sphere
+  if(quantumSphere.visible){
+    quantumSphere.rotation.y += 0.003;
+    quantumSphere.rotation.z += 0.001;
+    quantumSphere.material.opacity = 0.1+Math.sin(t*1.5)*0.08;
+  }
+
+  // Grid pulse
+  gridGroup.position.z = -30+Math.sin(t*0.3)*2;
+  gridGroup.children.forEach((l,i)=>{
+    l.material.opacity=0.04+Math.sin(t*0.5+i*0.1)*0.03;
+  });
+
+  // Mouse parallax on 3D
+  const tx=(mx/window.innerWidth-0.5)*4;
+  const ty=(my/window.innerHeight-0.5)*2;
+  camera.position.x += (tx-camera.position.x)*0.02;
+  camera.position.y += (-ty-camera.position.y)*0.02;
+
+  renderer.render(scene,camera);
+}
+animate();
+
+// ═══════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+// ═══════════════════════════════════════════
+// STATUS LINE UPDATE
+// ═══════════════════════════════════════════
+// Status line initial text
+document.getElementById('status-line').textContent = 'CHIPVERSE::ONLINE ▶ WHERE SILICON MEETS DESTINY';
+
+// ═══════════════════════════════════════════
+// MOORE'S LAW CHART
+// ═══════════════════════════════════════════
+function drawMooresChart(){
+  const canvas = document.getElementById('moores-chart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const data = [
+    {year:1971,transistors:2300,label:'4004'},
+    {year:1979,transistors:29000,label:'8088'},
+    {year:1985,transistors:275000,label:'386'},
+    {year:1993,transistors:3100000,label:'Pentium'},
+    {year:2000,transistors:42000000,label:'P4'},
+    {year:2006,transistors:291000000,label:'Core 2'},
+    {year:2010,transistors:1170000000,label:'i7-980X'},
+    {year:2015,transistors:7200000000,label:'A9'},
+    {year:2018,transistors:8500000000,label:'A12'},
+    {year:2020,transistors:11800000000,label:'M1'},
+    {year:2022,transistors:80000000000,label:'H100'},
+    {year:2024,transistors:192000000000,label:'M3 Ultra'},
+  ];
+
+  const pad = {l:60,r:30,t:20,b:50};
+  const gW = W-pad.l-pad.r, gH = H-pad.t-pad.b;
+
+  // Log scale
+  const minLog = Math.log10(2300);
+  const maxLog = Math.log10(2e11);
+  const minYear = 1971, maxYear = 2024;
+
+  function xPos(year){ return pad.l + (year-minYear)/(maxYear-minYear)*gW; }
+  function yPos(v){ return pad.t + gH - (Math.log10(v)-minLog)/(maxLog-minLog)*gH; }
+
+  // Grid lines
+  ctx.strokeStyle='rgba(0,245,255,0.05)';
+  ctx.lineWidth=1;
+  for(let y=minYear;y<=maxYear;y+=5){
+    const x=xPos(y);
+    ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+gH);ctx.stroke();
+    if(y%10===1||y===2024){
+      ctx.fillStyle='rgba(168,192,208,0.3)';ctx.font='10px Share Tech Mono,monospace';
+      ctx.textAlign='center';ctx.fillText(y,x,H-10);
+    }
+  }
+  for(let p=4;p<=12;p+=1){
+    const y=yPos(Math.pow(10,p));
+    if(y<pad.t||y>pad.t+gH) continue;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+gW,y);ctx.stroke();
+    const labels=['','','','','10K','100K','1M','10M','100M','1B','10B','100B','1T'];
+    ctx.fillStyle='rgba(168,192,208,0.3)';ctx.font='9px Share Tech Mono,monospace';
+    ctx.textAlign='right';ctx.fillText(labels[p]||'',pad.l-5,y+3);
+  }
+
+  // Moore's Law theoretical line
+  const gradient = ctx.createLinearGradient(pad.l,0,pad.l+gW,0);
+  gradient.addColorStop(0,'rgba(119,0,255,0.3)');
+  gradient.addColorStop(1,'rgba(0,102,255,0.3)');
+  ctx.strokeStyle=gradient;ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.moveTo(xPos(1971),yPos(2300));
+  ctx.lineTo(xPos(2024),yPos(2300*Math.pow(2,(2024-1971)/2)));
+  ctx.stroke();ctx.setLineDash([]);
+
+  // Actual data line
+  const lineGrad = ctx.createLinearGradient(pad.l,0,pad.l+gW,0);
+  lineGrad.addColorStop(0,'#0066ff');lineGrad.addColorStop(0.5,'#00f5ff');lineGrad.addColorStop(1,'#00ff88');
+  ctx.strokeStyle=lineGrad;ctx.lineWidth=2.5;
+  ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=xPos(d.year),y=yPos(d.transistors);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Data points + labels
+  data.forEach((d,i)=>{
+    const x=xPos(d.year), y=yPos(d.transistors);
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle=i===data.length-1?'#00ff88':'#00f5ff';ctx.fill();
+    ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.stroke();
+    if(i===0||i===data.length-1||i===5||i===8||i===10){
+      ctx.fillStyle=i===data.length-1?'#00ff88':'rgba(168,192,208,0.7)';
+      ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+      ctx.fillText(d.label,x,y-8);
+    }
+  });
+
+  // Axis labels
+  ctx.fillStyle='rgba(0,245,255,0.5)';ctx.font='10px Share Tech Mono,monospace';ctx.textAlign='center';
+  ctx.fillText('TRANSISTOR COUNT (LOG SCALE)',W/2,H-2);
+}
+
+ScrollTrigger.create({
+  trigger:'#moores',start:'top 70%',
+  onEnter:()=>{
+    setTimeout(drawMooresChart,300);
+    document.querySelectorAll('#moores-stats > div').forEach((el,i)=>{
+      gsap.to(el,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out'});
+    });
+  }
+});
+
+// ═══════════════════════════════════════════
+// MOSFET INTERACTIVE
+// ═══════════════════════════════════════════
+document.querySelectorAll('.mosfet-layer').forEach(el=>{
+  el.style.cursor='pointer';
+  el.style.transition='opacity 0.2s';
+  el.addEventListener('mouseenter',()=>{
+    el.style.opacity='0.75';
+    document.getElementById('mosfet-title').textContent=el.dataset.name||'';
+    document.getElementById('mosfet-desc').textContent=el.dataset.info||'';
+  });
+  el.addEventListener('mouseleave',()=>{ el.style.opacity='1'; });
+});
+
+// Gate voltage simulator
+const vgSlider = document.getElementById('vg-slider');
+if(vgSlider){
+  vgSlider.addEventListener('input',function(){
+    const v = parseFloat(this.value)/10;
+    const vth = 0.7;
+    document.getElementById('vg-val').textContent=v.toFixed(1)+'V';
+    const bar = document.getElementById('current-bar');
+    const state = document.getElementById('gate-state');
+    if(v<vth){
+      bar.style.width='0%';
+      state.innerHTML=`&gt; State: <span style="color:#ff4444">OFF (V &lt; Vth)</span><br>&gt; Channel: <span style="color:#ff4444">DEPLETED</span><br>&gt; Ids: <span style="color:var(--silver)">≈ ${(Math.random()*5+1).toFixed(1)} nA (leakage)</span>`;
+    } else {
+      const pct = Math.min(((v-vth)/(1.8-vth))*100,100);
+      bar.style.width=pct+'%';
+      const cur = ((v-vth)*(v-vth)*250).toFixed(1);
+      state.innerHTML=`&gt; State: <span style="color:#00ff88">ON (V &gt; Vth)</span><br>&gt; Channel: <span style="color:#00ff88">INVERTED (n-type)</span><br>&gt; Ids: <span style="color:var(--cyan)">${cur} μA</span>`;
+    }
+    // Show/hide electron flow animation
+    document.querySelectorAll('.electron-flow').forEach(e=>{
+      e.style.opacity = v>=vth?'1':'0';
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// RTL TO SILICON ANIMATOR
+// ═══════════════════════════════════════════
+const rtlStages = [
+  {
+    tab:'RTL',
+    code:`<span style="color:#7700ff">module</span> adder_4bit (<br>  <span style="color:#0088ff">input</span>  [3:0] A, B,<br>  <span style="color:#0088ff">input</span>       cin,<br>  <span style="color:#0088ff">output</span> [3:0] sum,<br>  <span style="color:#0088ff">output</span>       cout<br>);<br><br><span style="color:#00aa44">// Behavioral RTL description</span><br><span style="color:#7700ff">assign</span> {cout, sum} = A + B + cin;<br><br><span style="color:#7700ff">endmodule</span>`,
+    desc:'Verilog RTL describes hardware behavior. This 4-bit adder uses one line of code — but synthesizes to 9 full adder cells, 36 transistors, and carefully timed paths through silicon.'
+  },
+  {
+    tab:'NETLIST',
+    code:`<span style="color:#888">// Gate-level netlist after synthesis</span><br>FA_X1 U1 (.A(A[0]),.B(B[0]),.CI(cin),<br>           .S(sum[0]),.CO(c1));<br>FA_X1 U2 (.A(A[1]),.B(B[1]),.CI(c1),<br>           .S(sum[1]),.CO(c2));<br>FA_X1 U3 (.A(A[2]),.B(B[2]),.CI(c2),<br>           .S(sum[2]),.CO(c3));<br>FA_X1 U4 (.A(A[3]),.B(B[3]),.CI(c3),<br>           .S(sum[3]),.CO(cout));<br><span style="color:#00aa44">// Timing: 1.8ns critical path</span>`,
+    desc:'Synthesis maps RTL to standard cells from a technology library. Each FA_X1 is a full adder cell — a carefully optimized group of transistors from TSMC/Samsung\'s process design kit.'
+  },
+  {
+    tab:'FLOORPLAN',
+    code:`<span style="color:#888">// Floorplan DEF excerpt</span><br>DIEAREA ( 0 0 ) ( 180000 180000 ) ;<br><br>COMPONENTS 4 ;<br>  - U1 FA_X1 + PLACED ( 12000 8000 ) N ;<br>  - U2 FA_X1 + PLACED ( 36000 8000 ) N ;<br>  - U3 FA_X1 + PLACED ( 60000 8000 ) N ;<br>  - U4 FA_X1 + PLACED ( 84000 8000 ) N ;<br>END COMPONENTS<br><span style="color:#00aa44">// Core utilization: 28%</span>`,
+    desc:'Floorplanning places macro blocks and standard cells in the die area. Power rings, IO pads, and macro positions are defined. This determines routing congestion and thermal distribution.'
+  },
+  {
+    tab:'ROUTED',
+    code:`<span style="color:#888">// Routing summary (innovus)</span><br>Total wire length: 847.3 μm<br>Via count: 312<br>Metal layers used: M1–M6<br>DRC violations: 0<br>Antenna violations: 0<br><br>Clock tree:<br>  Skew: 12 ps<br>  Insertion delay: 142 ps<br>  Buffers inserted: 24<br><span style="color:#00ff88">// Timing closure: PASS ✓</span>`,
+    desc:'Routing connects all nets using metal layers. Modern chips use 15+ metal layers. The clock tree ensures every flip-flop receives the clock edge simultaneously — within picoseconds of each other.'
+  },
+  {
+    tab:'GDSII',
+    code:`<span style="color:#888">// GDSII stream format</span><br>HEADER 600<br>BGNLIB<br>  LIBNAME adder_4bit_gds<br>  UNITS 0.001 1e-09<br>BGNSTR<br>  STRNAME adder_core<br>  BOUNDARY<br>    LAYER 1  <span style="color:#888">// M1 metal</span><br>    DATATYPE 0<br>    XY 12000:8000;...<br>  ENDSTR<br>ENDLIB<br><span style="color:#00ff88">// → Sent to TSMC fab ✓</span>`,
+    desc:'GDSII is the final physical layout file — a binary stream describing every polygon on every layer. This file is sent to the foundry where electron-beam lithography creates the masks that will print your design onto silicon.'
+  }
+];
+
+let currentRTLStage = 0;
+
+function showRTLStage(idx){
+  currentRTLStage = idx;
+  const stage = rtlStages[idx];
+  document.getElementById('rtl-left').innerHTML = stage.code;
+  document.getElementById('rtl-desc').innerHTML = `<span style="color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px">&gt; ${stage.tab} STAGE</span> — ${stage.desc}`;
+  document.querySelectorAll('.rtl-tab').forEach((t,i)=>{
+    t.style.color = i===idx?'var(--cyan)':'var(--silver)';
+    t.style.borderBottom = i===idx?'2px solid var(--cyan)':'2px solid transparent';
+  });
+  drawChipCanvas(idx);
+}
+
+function drawChipCanvas(stage){
+  const canvas = document.getElementById('chip-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle='#000a18';ctx.fillRect(0,0,W,H);
+
+  if(stage===0){
+    // RTL: abstract waveform/logic diagram
+    ctx.strokeStyle='rgba(0,245,255,0.4)';ctx.lineWidth=1.5;
+    // Clock
+    const clk=[[10,40],[10,40],[10,70],[60,70],[60,40],[110,40],[110,70],[160,70],[160,40],[210,40],[210,70],[260,70],[260,40],[310,40],[310,70],[350,70]];
+    ctx.beginPath();clk.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));ctx.stroke();
+    ctx.fillStyle='rgba(0,245,255,0.3)';ctx.font='9px Share Tech Mono,monospace';ctx.fillText('CLK',360,58);
+
+    // Data signal
+    ctx.strokeStyle='rgba(0,102,255,0.6)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(10,120);ctx.lineTo(85,120);ctx.lineTo(85,90);ctx.lineTo(185,90);ctx.lineTo(185,120);ctx.lineTo(310,120);ctx.lineTo(310,90);ctx.lineTo(350,90);ctx.stroke();
+    ctx.fillStyle='rgba(0,102,255,0.6)';ctx.font='9px Share Tech Mono,monospace';ctx.fillText('A[3:0]',360,105);
+
+    // Sum output
+    ctx.strokeStyle='rgba(0,255,136,0.6)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(10,180);ctx.lineTo(120,180);ctx.lineTo(120,150);ctx.lineTo(230,150);ctx.lineTo(230,180);ctx.lineTo(350,180);ctx.stroke();
+    ctx.fillStyle='rgba(0,255,136,0.6)';ctx.font='9px Share Tech Mono,monospace';ctx.fillText('SUM',360,168);
+
+    ctx.fillStyle='rgba(168,192,208,0.4)';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('TIMING WAVEFORM',W/2,240);
+
+  } else if(stage===1){
+    // Gate-level schematic blocks
+    const cells=[{x:30,y:80,w:60,h:40,label:'FA'},{x:130,y:80,w:60,h:40,label:'FA'},{x:230,y:80,w:60,h:40,label:'FA'},{x:310,y:80,w:60,h:40,label:'FA'}];
+    cells.forEach((c,i)=>{
+      ctx.fillStyle='rgba(0,20,50,0.9)';ctx.fillRect(c.x,c.y,c.w,c.h);
+      ctx.strokeStyle=`hsl(${200+i*15},80%,50%)`;ctx.lineWidth=1.5;ctx.strokeRect(c.x,c.y,c.w,c.h);
+      ctx.fillStyle='#aaccee';ctx.font='bold 12px Share Tech Mono,monospace';ctx.textAlign='center';
+      ctx.fillText(c.label,c.x+c.w/2,c.y+c.h/2+5);
+      ctx.fillStyle='rgba(100,150,200,0.5)';ctx.font='9px Share Tech Mono,monospace';
+      ctx.fillText('U'+(i+1),c.x+c.w/2,c.y-5);
+      // carry wire
+      if(i<3){
+        ctx.strokeStyle='rgba(0,255,136,0.5)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(c.x+c.w,c.y+c.h/2);ctx.lineTo(c.x+c.w+10,c.y+c.h/2);ctx.stroke();
+      }
+    });
+    // Input lines
+    cells.forEach((c,i)=>{
+      ctx.strokeStyle='rgba(0,102,255,0.4)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(c.x,c.y+15);ctx.lineTo(c.x-15,c.y+15);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(c.x,c.y+25);ctx.lineTo(c.x-15,c.y+25);ctx.stroke();
+    });
+    ctx.fillStyle='rgba(168,192,208,0.4)';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('4-BIT RIPPLE CARRY ADDER — GATE NETLIST',W/2,200);
+
+  } else if(stage===2){
+    // Floorplan view
+    ctx.strokeStyle='rgba(0,245,255,0.3)';ctx.lineWidth=1;ctx.strokeRect(20,20,W-40,H-40);
+    ctx.fillStyle='rgba(0,245,255,0.03)';ctx.fillRect(20,20,W-40,H-40);
+
+    // Power ring
+    ctx.strokeStyle='rgba(255,150,0,0.3)';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+    ctx.strokeRect(35,35,W-70,H-70);ctx.setLineDash([]);
+
+    // Standard cell rows
+    const colors=['rgba(0,102,255,0.4)','rgba(0,200,100,0.4)','rgba(119,0,255,0.4)','rgba(0,100,200,0.4)'];
+    const labels=['U1 FA_X1','U2 FA_X1','U3 FA_X1','U4 FA_X1'];
+    [0,1,2,3].forEach(i=>{
+      ctx.fillStyle=colors[i];ctx.fillRect(50+i*70,60,55,50);
+      ctx.strokeStyle=colors[i].replace('0.4','0.8');ctx.lineWidth=1;ctx.strokeRect(50+i*70,60,55,50);
+      ctx.fillStyle='#aaccee';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+      ctx.fillText(labels[i],77+i*70,90);
+    });
+    ctx.fillStyle='rgba(168,192,208,0.4)';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('FLOORPLAN — STANDARD CELL PLACEMENT',W/2,200);
+    ctx.fillText('Core area: 180×180 μm',W/2,218);
+
+  } else if(stage===3){
+    // Routed chip view — metal layers
+    ctx.strokeStyle='rgba(0,245,255,0.2)';ctx.lineWidth=1;ctx.strokeRect(20,20,W-40,H-40);
+
+    // Metal 1 (horizontal)
+    ctx.strokeStyle='rgba(0,102,255,0.5)';ctx.lineWidth=2;
+    [40,60,80,100,120,140,160,180].forEach(y=>{
+      ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W-30,y);ctx.stroke();
+    });
+    // Metal 2 (vertical)
+    ctx.strokeStyle='rgba(0,200,100,0.4)';ctx.lineWidth=2;
+    [40,70,100,130,160,190,220,250,290,320].forEach(x=>{
+      ctx.beginPath();ctx.moveTo(x,30);ctx.lineTo(x,H-30);ctx.stroke();
+    });
+    // Vias
+    ctx.fillStyle='rgba(255,200,0,0.6)';
+    [[70,60],[100,80],[130,100],[160,60],[190,80],[220,100],[70,140],[130,160]].forEach(([x,y])=>{
+      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+    });
+    ctx.fillStyle='rgba(168,192,208,0.4)';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('POST-ROUTE — M1 (blue) M2 (green) VIAS (yellow)',W/2,210);
+
+  } else {
+    // GDSII — polygon view
+    const polys=[
+      {pts:[[50,40],[150,40],[150,80],[50,80]],color:'rgba(0,102,255,0.6)',layer:'M1'},
+      {pts:[[80,80],[120,80],[120,140],[80,140]],color:'rgba(0,200,100,0.6)',layer:'M2'},
+      {pts:[[160,40],[260,40],[260,80],[160,80]],color:'rgba(0,102,255,0.6)',layer:'M1'},
+      {pts:[[190,80],[230,80],[230,140],[190,140]],color:'rgba(0,200,100,0.6)',layer:'M2'},
+      {pts:[[50,150],[350,150],[350,180],[50,180]],color:'rgba(255,150,0,0.4)',layer:'POLY'},
+      {pts:[[100,60],[140,60],[140,75],[100,75]],color:'rgba(119,0,255,0.7)',layer:'VIA'},
+      {pts:[[210,60],[250,60],[250,75],[210,75]],color:'rgba(119,0,255,0.7)',layer:'VIA'},
+    ];
+    polys.forEach(p=>{
+      ctx.beginPath();
+      p.pts.forEach((pt,i)=>i===0?ctx.moveTo(pt[0],pt[1]):ctx.lineTo(pt[0],pt[1]));
+      ctx.closePath();ctx.fillStyle=p.color;ctx.fill();
+      ctx.strokeStyle=p.color.replace(/[\d.]+\)$/,'1)');ctx.lineWidth=0.5;ctx.stroke();
+    });
+    ctx.fillStyle='rgba(168,192,208,0.4)';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('GDSII POLYGONS — READY FOR MASK GENERATION',W/2,215);
+  }
+}
+
+// Initialize RTL animator
+ScrollTrigger.create({
+  trigger:'#rtl-anim',start:'top 70%',
+  onEnter:()=>{ showRTLStage(0); }
+});
+
+// Auto-advance RTL stages
+let rtlAutoTimer = null;
+ScrollTrigger.create({
+  trigger:'#rtl-anim',start:'top 30%',end:'bottom 30%',
+  onEnter:()=>{
+    rtlAutoTimer = setInterval(()=>{
+      showRTLStage((currentRTLStage+1)%rtlStages.length);
+    },3000);
+  },
+  onLeave:()=>{ if(rtlAutoTimer){clearInterval(rtlAutoTimer);rtlAutoTimer=null;} },
+  onLeaveBack:()=>{ if(rtlAutoTimer){clearInterval(rtlAutoTimer);rtlAutoTimer=null;} }
+});
+
+// ═══════════════════════════════════════════
+// AUDIO ENGINE (Web Audio API)
+// ═══════════════════════════════════════════
+let audioCtx = null;
+let audioStarted = false;
+
+function initAudio(){
+  if(audioStarted) return;
+  audioStarted = true;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  }catch(e){ return; }
+}
+
+function playTone(freq, type='sine', duration=0.3, vol=0.08){
+  if(!audioCtx) return;
+  try{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.type=type;osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0,audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+duration);
+    osc.start();osc.stop(audioCtx.currentTime+duration+0.05);
+  }catch(e){}
+}
+
+function playChapterTransition(){
+  if(!audioCtx) return;
+  [220,330,440,660].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.4,0.06),i*80));
+}
+
+function playUIClick(){
+  if(!audioCtx) return;
+  playTone(880,'square',0.08,0.04);
+}
+
+// Trigger audio on first interaction
+document.addEventListener('click',initAudio,{once:true});
+document.addEventListener('keydown',initAudio,{once:true});
+
+// Play transition sounds on chapter change
+const _origUpdateChapter = updateChapter;
+// Hook into scroll chapter change to fire audio
+let lastAudioChapter = -1;
+setInterval(()=>{
+  if(currentChapter!==lastAudioChapter){
+    lastAudioChapter=currentChapter;
+    playChapterTransition();
+  }
+},500);
+
+// ═══════════════════════════════════════════
+// ENHANCED CHAPTER SCROLL ANIMATIONS
+// ═══════════════════════════════════════════
+
+// Moore's Law scrolltrigger for stats
+ScrollTrigger.create({
+  trigger:'#moores-stats',start:'top 80%',
+  onEnter:()=>{
+    document.querySelectorAll('#moores-stats > div').forEach((el,i)=>{
+      gsap.to(el,{opacity:1,y:0,duration:0.5,delay:i*0.1,ease:'back.out'});
+    });
+  }
+});
+
+// Transistor lab entrance
+ScrollTrigger.create({
+  trigger:'#transistor-lab',start:'top 70%',
+  onEnter:()=>{
+    gsap.fromTo('#mosfet-svg',{opacity:0,scale:0.9},{opacity:1,scale:1,duration:0.8,ease:'back.out'});
+    gsap.fromTo('#mosfet-info',{opacity:0,x:20},{opacity:1,x:0,duration:0.8,delay:0.3,ease:'power2.out'});
+  }
+});
+
+// ═══════════════════════════════════════════
+// CINEMATIC CAMERA MOVES FOR EACH CHAPTER
+// ═══════════════════════════════════════════
+const cinematicMoves = {
+  0: ()=>{ gsap.to(camera.position,{z:55,x:0,y:5,duration:3,ease:'power3.inOut'}); },
+  1: ()=>{ gsap.to(camera.position,{z:48,duration:2}); nebula1.visible=true; },
+  2: ()=>{ gsap.to(camera.position,{z:40,x:8,duration:2}); electronGroup.visible=true; gsap.to(electronGroup.scale,{x:1.5,y:1.5,z:1.5,duration:1.5,ease:'back.out'}); },
+  3: ()=>{ gsap.to(camera.position,{z:36,x:-8,y:4,duration:2}); },
+  4: ()=>{ gsap.to(camera.position,{z:28,x:0,y:0,duration:2.5,ease:'power2.inOut'}); gsap.to(electronGroup.position,{z:0,duration:1.5}); },
+  5: ()=>{ /* transistor lab */ },
+  6: ()=>{ gsap.to(camera.position,{z:32,duration:2}); mainChip.visible=true; gsap.to(mainChip.rotation,{y:mainChip.rotation.y+Math.PI,duration:1.5}); },
+  7: ()=>{ gsap.to(camera.position,{z:40,x:5,duration:2}); },
+  8: ()=>{ gsap.to(camera.position,{z:45,duration:2}); },
+  9: ()=>{ gsap.to(camera.position,{z:38,duration:2}); },
+  10: ()=>{ gsap.to(camera.position,{z:42,duration:2}); mainChip.visible=true; },
+  11: ()=>{ /* rtl anim */ },
+  12: ()=>{ gsap.to(camera.position,{z:36,duration:2}); },
+  13: ()=>{ gsap.to(camera.position,{z:44,duration:2}); quantumSphere.visible=true; gsap.to(quantumSphere.scale,{x:1.2,y:1.2,z:1.2,duration:2}); },
+  14: ()=>{ gsap.to(camera.position,{z:52,duration:2}); },
+  15: ()=>{ gsap.to(camera.position,{z:60,duration:3,ease:'power2.inOut'}); mainChip.visible=true; quantumSphere.visible=true; },
+  16: ()=>{ gsap.to(camera.position,{z:50,duration:2}); }
+};
+
+const _origUpdateScene = updateScene;
+
+// ═══════════════════════════════════════════
+// CHAPTER REVEAL ANIMATIONS (holo panels)
+// ═══════════════════════════════════════════
+document.querySelectorAll('.holo-panel').forEach(el=>{
+  gsap.set(el,{opacity:0,y:30});
+  ScrollTrigger.create({
+    trigger:el,start:'top 80%',
+    onEnter:()=>gsap.to(el,{opacity:1,y:0,duration:0.8,ease:'power2.out'})
+  });
+});
+
+document.querySelectorAll('.chapter-title').forEach(el=>{
+  ScrollTrigger.create({
+    trigger:el,start:'top 85%',
+    onEnter:()=>{
+      gsap.fromTo(el,
+        {opacity:0,skewX:3,x:-20},
+        {opacity:1,skewX:0,x:0,duration:1,ease:'power3.out'}
+      );
+    }
+  });
+});
+
+// ═══════════════════════════════════════════
+// FLOATING EQUATION PARTICLES
+// ═══════════════════════════════════════════
+const equations = ['E=mc²','∇×B=μ₀J','ΔV=IR','P=VI','Vth=√(2qNaφf/Cox)','IDS=μnCox(W/L)(VGS-Vth)²/2','Q=CV','f=1/2πRC'];
+let eqTimer = 0;
+function spawnEquation(){
+  const eq = equations[Math.floor(Math.random()*equations.length)];
+  const el = document.createElement('div');
+  el.style.cssText=`
+    position:fixed;
+    left:${Math.random()*80+10}%;
+    top:${Math.random()*80+10}%;
+    font-family:'Share Tech Mono',monospace;
+    font-size:${10+Math.random()*6}px;
+    color:rgba(0,245,255,${0.05+Math.random()*0.12});
+    pointer-events:none;z-index:1;
+    white-space:nowrap;
+    letter-spacing:2px;
+  `;
+  el.textContent=eq;
+  document.body.appendChild(el);
+  gsap.to(el,{y:-80,opacity:0,duration:6+Math.random()*4,ease:'power1.out',onComplete:()=>el.remove()});
+}
+setInterval(spawnEquation,1800);
+
+// ═══════════════════════════════════════════
+// CHAPTER TITLE GLITCH EFFECT
+// ═══════════════════════════════════════════
+function glitchText(el){
+  const orig = el.textContent;
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%';
+  let iter=0;
+  const interval = setInterval(()=>{
+    el.textContent = orig.split('').map((c,i)=>{
+      if(i<iter) return c;
+      return chars[Math.floor(Math.random()*chars.length)];
+    }).join('');
+    iter += 1.5;
+    if(iter>orig.length){ el.textContent=orig; clearInterval(interval); }
+  },30);
+}
+
+document.querySelectorAll('.nav-logo').forEach(el=>{
+  el.addEventListener('mouseenter',()=>glitchText(el));
+});
+
+// Status messages updated for CHIPVERSE
+const statusMessages=[
+  'CHIPVERSE::ONLINE ▶ WHERE SILICON MEETS DESTINY',
+  'CH.I LOADED ▶ THE VOID · BEFORE SILICON',
+  'CH.II ACTIVE ▶ ELECTRICITY DISCOVERED',
+  'CH.III RUNNING ▶ VACUUM TUBE SIMULATION',
+  'CH.IV LEGENDARY ▶ PN JUNCTION FORMED · 1947',
+  'CH.IV+ INTERACTIVE ▶ MOSFET EXPLORER READY',
+  'INTERLUDE ▶ MOORE\'S LAW · 50 YEARS OF DOUBLING',
+  'CH.V LOADING ▶ EUV LITHOGRAPHY · 13.5nm LASER',
+  'CH.VI ACTIVE ▶ COMPUTING REVOLUTION · MOORE\'S LAW',
+  'CH.VII RUNNING ▶ EMBEDDED SYSTEMS · RTOS ACTIVE',
+  'CH.VII+ ▶ RTL→GDSII PIPELINE VISUALIZER',
+  'CH.VIII INTERACTIVE ▶ VLSI FLOW · CLICK TO EXPLORE',
+  'CH.IX LOADED ▶ AI SILICON · 4 PETAFLOPS/s',
+  'CH.X CRITICAL ▶ QUANTUM TUNNELING DETECTED · 2nm',
+  'CH.XI ▶ BEYOND SILICON · QUANTUM ERA BEGINS',
+  'CHIPVERSE ▶ YOUR JOURNEY STARTS NOW · ENTER THE UNIVERSE'
+];
+
+// ═══════════════════════════════════════════
+// TYPING EFFECT FOR STATUS LINE
+// ═══════════════════════════════════════════
+function typeStatus(text){
+  const el = document.getElementById('status-line');
+  let i=0;el.textContent='';
+  const t = setInterval(()=>{
+    el.textContent+=text[i++];
+    if(i>=text.length) clearInterval(t);
+  },40);
+}
+
+// Typewriter status update
+let lastTypedChapter = -1;
+setInterval(()=>{
+  if(currentChapter!==lastTypedChapter){
+    lastTypedChapter=currentChapter;
+    typeStatus(statusMessages[Math.min(currentChapter,statusMessages.length-1)]);
+  }
+},600);
+
+// ═══════════════════════════════════════════
+// CTA BUTTON — ADVANCED PARTICLE SYSTEM
+// ═══════════════════════════════════════════
+document.getElementById('cta-btn')?.addEventListener('mousemove', function(e){
+  const rect=this.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  this.style.background=`radial-gradient(circle at ${x}px ${y}px,#00f5ff,#0066ff)`;
+});
+document.getElementById('cta-btn')?.addEventListener('mouseleave',function(){
+  this.style.background='linear-gradient(135deg,var(--cyan),var(--blue))';
+});
+
+// ═══════════════════════════════════════════
+// CANVAS SCENE DRAWING ENGINE
+// All "photos" are procedurally drawn — no external URLs needed
+// ═══════════════════════════════════════════
+
+// Polyfill roundRect for browsers that don't support it
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (w < 2*r) r = w/2;
+    if (h < 2*r) r = h/2;
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.arcTo(x+w, y,   x+w, y+h, r);
+    this.arcTo(x+w, y+h, x,   y+h, r);
+    this.arcTo(x,   y+h, x,   y,   r);
+    this.arcTo(x,   y,   x+w, y,   r);
+    this.closePath();
+    return this;
+  };
+}
+
+function initSceneCanvases() {
+  document.querySelectorAll('canvas.scene-canvas').forEach(cv => {
+    const frame = cv.closest('.photo-frame, .inv-portrait');
+    if (!frame) return;
+    const w = frame.offsetWidth || 300;
+    const h = frame.offsetHeight || 180;
+    cv.width = w * window.devicePixelRatio;
+    cv.height = h * window.devicePixelRatio;
+    cv.style.width = '100%'; cv.style.height = '100%';
+    const ctx = cv.getContext('2d');
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    drawScene(ctx, cv.dataset.scene, w, h);
+  });
+}
+
+function drawScene(ctx, scene, W, H) {
+  ctx.clearRect(0,0,W,H);
+  switch(scene) {
+    case 'franklin':      drawPortrait(ctx,W,H,'⚡','Benjamin\nFranklin','#1a3a6e','#0066cc','NATURAL PHILOSOPHER · 1706–1790'); break;
+    case 'faraday':       drawPortrait(ctx,W,H,'🧲','Michael\nFaraday','#1a2a4e','#0044aa','FATHER OF ELECTROMAGNETISM · 1791–1867'); break;
+    case 'tesla':         drawPortrait(ctx,W,H,'⚡','Nikola\nTesla','#0a1a3e','#0033ff','MASTER OF LIGHTNING · 1856–1943'); break;
+    case 'lightning':     drawLightning(ctx,W,H); break;
+    case 'teslacoil':     drawTeslaCoil(ctx,W,H); break;
+    case 'bulb':          drawBulb(ctx,W,H); break;
+    case 'eniac':         drawENIAC(ctx,W,H); break;
+    case 'vacuumtubes':   drawVacuumTubes(ctx,W,H); break;
+    case 'eniacops':      drawEniacOps(ctx,W,H); break;
+    case 'belllabs':      drawBellLabs(ctx,W,H); break;
+    case 'transistor':    drawFirstTransistor(ctx,W,H); break;
+    case 'belllabs2':     drawBellLabs2(ctx,W,H); break;
+    case 'euv':           drawEUV(ctx,W,H); break;
+    case 'wafer':         drawWafer(ctx,W,H); break;
+    case 'cleanroom':     drawCleanroom(ctx,W,H); break;
+    case 'wafers':        drawWaferSizes(ctx,W,H); break;
+    case 'chipdie':       drawChipDie(ctx,W,H); break;
+    case 'intel4004':     drawChipMacro(ctx,W,H,'Intel 4004','1971','2,300 transistors','#c87533'); break;
+    case 'intel486':      drawChipMacro(ctx,W,H,'Intel 486','1989','1.2M transistors','#aaaaaa'); break;
+    case 'applem1':       drawChipMacro(ctx,W,H,'Apple M1','2020','16B transistors','#888899'); break;
+    case 'arduino':       drawArduino(ctx,W,H); break;
+    case 'fpga':          drawFPGA(ctx,W,H); break;
+    case 'satellite':     drawSatellite(ctx,W,H); break;
+    case 'pacemaker':     drawPacemaker(ctx,W,H); break;
+    case 'h100':          drawH100(ctx,W,H); break;
+    case 'datacenter':    drawDatacenter(ctx,W,H); break;
+    case 'neuralnet':     drawNeuralNet(ctx,W,H); break;
+    case 'finfet':        drawFinFETDiagram(ctx,W,H); break;
+    case 'gaafet':        drawGAAFET(ctx,W,H); break;
+    case 'silicon_lattice': drawSiliconLattice(ctx,W,H); break;
+    case 'quantum_tunnel':  drawQuantumTunnel(ctx,W,H); break;
+    case 'hbm':           drawHBMStack(ctx,W,H); break;
+    case 'ibm_quantum':   drawQuantumComputer(ctx,W,H); break;
+    case 'photonic':      drawPhotonic(ctx,W,H); break;
+    case 'cnt':           drawCNT(ctx,W,H); break;
+    case 'neuro':         drawNeuromorphic(ctx,W,H); break;
+    default:              drawChipGeneric(ctx,W,H); break;
+  }
+}
+
+// ── HELPERS ──
+function bg(ctx,W,H,c1,c2,angle=135){
+  const rad=angle*Math.PI/180;
+  const g=ctx.createLinearGradient(0,0,W*Math.cos(rad),H*Math.sin(rad));
+  g.addColorStop(0,c1); g.addColorStop(1,c2);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+function circuitGrid(ctx,W,H,color='rgba(0,245,255,0.07)',step=20){
+  ctx.strokeStyle=color; ctx.lineWidth=0.5;
+  for(let x=0;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+}
+function label(ctx,W,H,text,color='rgba(0,245,255,0.6)',y=null,size=9){
+  ctx.fillStyle=color; ctx.font=`${size}px 'Share Tech Mono',monospace`;
+  ctx.textAlign='center'; ctx.letterSpacing='2px';
+  ctx.fillText(text.toUpperCase(), W/2, y||H-10);
+}
+function glowCircle(ctx,x,y,r,color){
+  const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,color); g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+}
+
+// ── PORTRAIT CARDS (for inventors) ──
+function drawPortrait(ctx,W,H,icon,name,bg1,bg2,subtitle){
+  bg(ctx,W,H,bg1,bg2);
+  circuitGrid(ctx,W,H,'rgba(0,200,255,0.05)',15);
+  // hex frame
+  const cx=W/2, cy=H*0.38, r=Math.min(W,H)*0.28;
+  glowCircle(ctx,cx,cy,r*1.5,bg2+'55');
+  ctx.strokeStyle='rgba(0,245,255,0.4)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const a=i*Math.PI/3-Math.PI/6;
+    i===0?ctx.moveTo(cx+r*Math.cos(a),cy+r*Math.sin(a)):ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));
+  }
+  ctx.closePath(); ctx.stroke();
+  // Icon
+  ctx.font=`${r*0.9}px serif`; ctx.textAlign='center'; ctx.fillText(icon,cx,cy+r*0.3);
+  // Name
+  const lines=name.split('\n');
+  ctx.fillStyle='#ffffff'; ctx.font=`bold ${Math.min(W*0.1,13)}px 'Orbitron',monospace`;
+  ctx.textAlign='center';
+  lines.forEach((l,i)=>ctx.fillText(l,W/2,H*0.72+i*16));
+  // Subtitle
+  ctx.fillStyle='rgba(0,245,255,0.5)'; ctx.font=`${Math.min(W*0.065,8)}px 'Share Tech Mono',monospace`;
+  ctx.fillText(subtitle,W/2,H*0.93);
+}
+
+// ── LIGHTNING ──
+function drawLightning(ctx,W,H){
+  bg(ctx,W,H,'#050010','#0a0020');
+  // Stars
+  for(let i=0;i<80;i++){
+    ctx.fillStyle=`rgba(255,255,255,${Math.random()*0.6+0.1})`;
+    ctx.beginPath(); ctx.arc(Math.random()*W,Math.random()*H,Math.random()*1.2,0,Math.PI*2); ctx.fill();
+  }
+  // Lightning bolt
+  ctx.strokeStyle='#00f5ff'; ctx.lineWidth=2.5;
+  ctx.shadowBlur=20; ctx.shadowColor='#00f5ff';
+  const pts=[[W*0.5,5],[W*0.4,H*0.25],[W*0.55,H*0.35],[W*0.38,H*0.55],[W*0.52,H*0.65],[W*0.35,H-5]];
+  ctx.beginPath(); pts.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1])); ctx.stroke();
+  // Glow
+  ctx.lineWidth=8; ctx.strokeStyle='rgba(0,245,255,0.15)'; ctx.stroke();
+  ctx.shadowBlur=0;
+  // Clouds suggestion
+  ctx.fillStyle='rgba(30,30,60,0.6)'; ctx.beginPath(); ctx.ellipse(W*0.3,H*0.08,W*0.25,H*0.07,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(W*0.65,H*0.06,W*0.2,H*0.06,0,0,Math.PI*2); ctx.fill();
+  label(ctx,W,H,'ATMOSPHERIC DISCHARGE · 300kV');
+}
+
+// ── TESLA COIL ──
+function drawTeslaCoil(ctx,W,H){
+  bg(ctx,W,H,'#020010','#05001a');
+  // Base cylinder
+  ctx.fillStyle='#1a1a2e'; ctx.fillRect(W*0.38,H*0.7,W*0.24,H*0.25);
+  ctx.strokeStyle='rgba(100,100,200,0.4)'; ctx.lineWidth=1; ctx.strokeRect(W*0.38,H*0.7,W*0.24,H*0.25);
+  // Coil windings
+  ctx.strokeStyle='rgba(0,100,255,0.5)'; ctx.lineWidth=1;
+  for(let i=0;i<12;i++){
+    ctx.beginPath(); ctx.ellipse(W/2,H*0.72+i*3,W*0.12,4,0,0,Math.PI*2); ctx.stroke();
+  }
+  // Top torus
+  ctx.strokeStyle='rgba(0,200,255,0.7)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(W/2,H*0.62,W*0.14,H*0.04,0,0,Math.PI*2); ctx.stroke();
+  // Electric arcs
+  const arcColors=['#00f5ff','#ffffff','#aa88ff'];
+  for(let a=0;a<8;a++){
+    const angle=a*Math.PI/4;
+    const ex=W/2+Math.cos(angle)*(W*0.3+Math.random()*W*0.1);
+    const ey=H*0.62+Math.sin(angle)*(H*0.2+Math.random()*H*0.1);
+    ctx.strokeStyle=arcColors[a%3]; ctx.lineWidth=1;
+    ctx.shadowBlur=8; ctx.shadowColor=arcColors[a%3];
+    ctx.beginPath(); ctx.moveTo(W/2,H*0.62);
+    const mx=W/2+Math.cos(angle+0.3)*W*0.15;
+    const my=H*0.62+Math.sin(angle)*H*0.1;
+    ctx.quadraticCurveTo(mx,my,ex,ey); ctx.stroke();
+  }
+  ctx.shadowBlur=0;
+  label(ctx,W,H,'TESLA COIL · HIGH-VOLTAGE RESONANCE');
+}
+
+// ── LIGHT BULB ──
+function drawBulb(ctx,W,H){
+  bg(ctx,W,H,'#080800','#1a1400');
+  circuitGrid(ctx,W,H,'rgba(255,150,0,0.05)',25);
+  glowCircle(ctx,W/2,H*0.38,H*0.28,'rgba(255,180,0,0.25)');
+  // Bulb glass
+  ctx.strokeStyle='rgba(255,200,100,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(W/2,H*0.35,H*0.22,0,Math.PI*2); ctx.stroke();
+  // Filament
+  ctx.strokeStyle='#ffaa00'; ctx.lineWidth=1.5;
+  ctx.shadowBlur=10; ctx.shadowColor='#ffaa00';
+  const fx=W/2, fy=H*0.35;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){ctx.lineTo(fx-15+i*6,fy+(i%2===0?-8:8));}
+  ctx.stroke(); ctx.shadowBlur=0;
+  // Base
+  ctx.fillStyle='#332200'; ctx.fillRect(W/2-W*0.06,H*0.57,W*0.12,H*0.12);
+  ctx.strokeStyle='rgba(255,150,0,0.3)'; ctx.strokeRect(W/2-W*0.06,H*0.57,W*0.12,H*0.12);
+  label(ctx,W,H,'INCANDESCENT ERA · 1879','rgba(255,150,0,0.6)');
+}
+
+// ── ENIAC ──
+function drawENIAC(ctx,W,H){
+  bg(ctx,W,H,'#050500','#111100');
+  // Room floor
+  ctx.fillStyle='#0a0a00'; ctx.fillRect(0,H*0.75,W,H*0.25);
+  // ENIAC panels
+  const panelColors=['#1a1500','#151000','#1a1a00'];
+  for(let p=0;p<6;p++){
+    const px=p*(W/6); const pw=W/6-2; const ph=H*0.7;
+    ctx.fillStyle=panelColors[p%3]; ctx.fillRect(px,H*0.05,pw,ph);
+    ctx.strokeStyle='rgba(255,150,0,0.3)'; ctx.lineWidth=0.5; ctx.strokeRect(px,H*0.05,pw,ph);
+    // Indicator lights
+    for(let row=0;row<6;row++){
+      for(let col=0;col<4;col++){
+        const lx=px+col*(pw/4)+pw*0.1;
+        const ly=H*0.1+row*H*0.08;
+        const on=Math.random()>0.5;
+        ctx.fillStyle=on?'#ff6600':'#331100';
+        ctx.shadowBlur=on?5:0; ctx.shadowColor='#ff6600';
+        ctx.beginPath(); ctx.arc(lx,ly,2.5,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.shadowBlur=0;
+    // Dial
+    ctx.strokeStyle='rgba(255,100,0,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(px+pw/2,H*0.62,pw*0.15,0,Math.PI*2); ctx.stroke();
+  }
+  label(ctx,W,H,'ENIAC · 18,000 VACUUM TUBES · 1946','rgba(255,150,0,0.7)');
+}
+
+// ── VACUUM TUBES ──
+function drawVacuumTubes(ctx,W,H){
+  bg(ctx,W,H,'#080500','#150d00');
+  const tubes=[{x:W*0.15,y:H*0.2,h:H*0.5},{x:W*0.38,y:H*0.1,h:H*0.65},{x:W*0.6,y:H*0.15,h:H*0.55},{x:W*0.8,y:H*0.25,h:H*0.45}];
+  tubes.forEach(t=>{
+    const w=W*0.14;
+    // Glass envelope
+    const gg=ctx.createLinearGradient(t.x,0,t.x+w,0);
+    gg.addColorStop(0,'rgba(255,140,0,0.1)'); gg.addColorStop(0.5,'rgba(255,180,50,0.25)'); gg.addColorStop(1,'rgba(255,140,0,0.1)');
+    ctx.fillStyle=gg; ctx.beginPath();
+    ctx.roundRect(t.x,t.y,w,t.h,5); ctx.fill();
+    ctx.strokeStyle='rgba(255,160,50,0.5)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(t.x,t.y,w,t.h,5); ctx.stroke();
+    // Internal glow
+    glowCircle(ctx,t.x+w/2,t.y+t.h*0.4,w*0.5,'rgba(255,100,0,0.3)');
+    // Cathode/anode lines
+    ctx.strokeStyle='rgba(255,180,0,0.4)'; ctx.lineWidth=1;
+    [0.3,0.5,0.65].forEach(frac=>{
+      ctx.beginPath(); ctx.moveTo(t.x+w*0.2,t.y+t.h*frac); ctx.lineTo(t.x+w*0.8,t.y+t.h*frac); ctx.stroke();
+    });
+    // Pins
+    for(let i=0;i<4;i++){
+      ctx.fillStyle='rgba(180,140,0,0.7)';
+      ctx.fillRect(t.x+w*0.2+i*(w*0.18),t.y+t.h,w*0.08,H*0.06);
+    }
+  });
+  label(ctx,W,H,'THERMIONIC VALVES · 1904–1960','rgba(255,150,0,0.7)');
+}
+
+// ── ENIAC OPERATORS ──
+function drawEniacOps(ctx,W,H){
+  bg(ctx,W,H,'#080800','#111100');
+  // Panels background
+  ctx.fillStyle='#1a1500'; ctx.fillRect(0,0,W,H*0.85);
+  for(let i=0;i<8;i++){
+    ctx.fillStyle=Math.random()>0.5?'#ff6600':'#331100';
+    ctx.shadowBlur=Math.random()>0.5?4:0; ctx.shadowColor='#ff6600';
+    ctx.beginPath(); ctx.arc(W*0.1+i*(W*0.11),H*0.2,3,0,Math.PI*2); ctx.fill();
+  }
+  ctx.shadowBlur=0;
+  // Two operator silhouettes
+  [[W*0.28,H*0.45],[W*0.6,H*0.42]].forEach((pos,idx)=>{
+    ctx.fillStyle='#1a1a0a';
+    // Body
+    ctx.beginPath(); ctx.ellipse(pos[0],pos[1],W*0.07,H*0.22,0,0,Math.PI*2); ctx.fill();
+    // Head
+    ctx.beginPath(); ctx.arc(pos[0],pos[1]-H*0.2,W*0.045,0,Math.PI*2); ctx.fill();
+  });
+  ctx.fillStyle='rgba(255,150,50,0.5)'; ctx.font=`bold 9px monospace`; ctx.textAlign='center';
+  ctx.fillText('PROGRAMMERS AT ENIAC · 1946',W/2,H*0.95);
+}
+
+// ── BELL LABS (3 scientists) ──
+function drawBellLabs(ctx,W,H){
+  bg(ctx,W,H,'#00050f','#000a20');
+  circuitGrid(ctx,W,H,'rgba(0,100,255,0.06)',20);
+  // Lab bench
+  ctx.fillStyle='#0a1420'; ctx.fillRect(W*0.05,H*0.65,W*0.9,H*0.08);
+  ctx.strokeStyle='rgba(0,100,255,0.3)'; ctx.lineWidth=1; ctx.strokeRect(W*0.05,H*0.65,W*0.9,H*0.08);
+  // Three scientist silhouettes
+  const poses=[{x:W*0.22,y:H*0.5},{x:W*0.5,y:H*0.48},{x:W*0.78,y:H*0.52}];
+  poses.forEach((p,i)=>{
+    ctx.fillStyle=`rgba(${20+i*10},${30+i*8},${60+i*15},0.9)`;
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,W*0.075,H*0.18,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y-H*0.175,W*0.04,0,Math.PI*2); ctx.fill();
+  });
+  // Transistor on bench (central glowing device)
+  glowCircle(ctx,W/2,H*0.62,W*0.06,'rgba(0,245,255,0.4)');
+  ctx.strokeStyle='#00f5ff'; ctx.lineWidth=1.5;
+  ctx.strokeRect(W*0.44,H*0.59,W*0.12,H*0.06);
+  ctx.fillStyle='rgba(0,245,255,0.2)'; ctx.fillRect(W*0.44,H*0.59,W*0.12,H*0.06);
+  // Labels
+  const names=['J.BARDEEN','W.SHOCKLEY','W.BRATTAIN'];
+  poses.forEach((p,i)=>{
+    ctx.fillStyle='rgba(0,200,255,0.5)'; ctx.font='7px monospace'; ctx.textAlign='center';
+    ctx.fillText(names[i],p.x,H*0.7);
+  });
+  label(ctx,W,H,'BELL LABS · MURRAY HILL · DEC 23 1947','#00f5ff');
+}
+
+// ── FIRST TRANSISTOR ──
+function drawFirstTransistor(ctx,W,H){
+  bg(ctx,W,H,'#000a05','#001a10');
+  // Germanium crystal base
+  ctx.fillStyle='#0a2010'; ctx.fillRect(W*0.2,H*0.55,W*0.6,H*0.2);
+  ctx.strokeStyle='rgba(0,200,100,0.4)'; ctx.lineWidth=1; ctx.strokeRect(W*0.2,H*0.55,W*0.6,H*0.2);
+  // Two gold wires
+  ctx.strokeStyle='#ccaa00'; ctx.lineWidth=2;
+  ctx.shadowBlur=6; ctx.shadowColor='#ccaa00';
+  ctx.beginPath(); ctx.moveTo(W*0.35,H*0.2); ctx.lineTo(W*0.38,H*0.55); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W*0.65,H*0.2); ctx.lineTo(W*0.62,H*0.55); ctx.stroke();
+  ctx.shadowBlur=0;
+  // Contact points
+  ctx.fillStyle='#ffdd00'; ctx.shadowBlur=8; ctx.shadowColor='#ffdd00';
+  ctx.beginPath(); ctx.arc(W*0.38,H*0.55,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(W*0.62,H*0.55,4,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  // Germanium glow
+  glowCircle(ctx,W/2,H*0.6,W*0.2,'rgba(0,200,100,0.2)');
+  label(ctx,W,H,'POINT-CONTACT TRANSISTOR · DEC 1947','rgba(0,255,100,0.6)');
+}
+
+// ── BELL LABS 2 ──
+function drawBellLabs2(ctx,W,H){
+  bg(ctx,W,H,'#050a00','#0a1500');
+  circuitGrid(ctx,W,H,'rgba(0,200,100,0.06)',18);
+  // Building exterior
+  ctx.fillStyle='#0d1a05'; ctx.fillRect(W*0.15,H*0.2,W*0.7,H*0.6);
+  // Windows grid
+  for(let r=0;r<4;r++) for(let c=0;c<5;c++){
+    const wx=W*0.2+c*(W*0.12), wy=H*0.27+r*(H*0.11);
+    const lit=Math.random()>0.4;
+    ctx.fillStyle=lit?'rgba(255,240,180,0.6)':'rgba(0,50,0,0.4)';
+    ctx.fillRect(wx,wy,W*0.08,H*0.07);
+    if(lit){ ctx.shadowBlur=4; ctx.shadowColor='#fffaaa'; ctx.fillRect(wx,wy,W*0.08,H*0.07); ctx.shadowBlur=0; }
+  }
+  // Sign
+  ctx.fillStyle='rgba(0,200,100,0.7)'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+  ctx.fillText('BELL TELEPHONE LABORATORIES',W/2,H*0.87);
+  label(ctx,W,H,'MURRAY HILL, NEW JERSEY · 1947','rgba(0,200,100,0.5)');
+}
+
+// ── EUV MACHINE ──
+function drawEUV(ctx,W,H){
+  bg(ctx,W,H,'#001010','#002020');
+  // Main machine body
+  const mg=ctx.createLinearGradient(W*0.1,0,W*0.9,0);
+  mg.addColorStop(0,'#001a1a'); mg.addColorStop(0.5,'#003333'); mg.addColorStop(1,'#001a1a');
+  ctx.fillStyle=mg; ctx.fillRect(W*0.1,H*0.15,W*0.8,H*0.65);
+  ctx.strokeStyle='rgba(0,245,255,0.3)'; ctx.lineWidth=1.5; ctx.strokeRect(W*0.1,H*0.15,W*0.8,H*0.65);
+  // Laser beam
+  ctx.strokeStyle='rgba(0,245,255,0.8)'; ctx.lineWidth=2;
+  ctx.shadowBlur=15; ctx.shadowColor='#00f5ff';
+  ctx.beginPath(); ctx.moveTo(0,H*0.45); ctx.lineTo(W,H*0.45); ctx.stroke();
+  ctx.shadowBlur=0;
+  // Optics circles
+  [W*0.25,W*0.5,W*0.75].forEach(x=>{
+    ctx.strokeStyle='rgba(0,200,255,0.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(x,H*0.45,H*0.12,0,Math.PI*2); ctx.stroke();
+    glowCircle(ctx,x,H*0.45,H*0.08,'rgba(0,200,255,0.15)');
+  });
+  // Detail lines
+  for(let i=0;i<6;i++){
+    ctx.strokeStyle='rgba(0,100,150,0.3)'; ctx.lineWidth=0.5;
+    ctx.strokeRect(W*0.15+i*(W*0.12),H*0.22,W*0.09,H*0.5);
+  }
+  label(ctx,W,H,'ASML EUV LITHOGRAPHY · 13.5nm · €180M','rgba(0,245,255,0.7)');
+}
+
+// ── SILICON WAFER ──
+function drawWafer(ctx,W,H){
+  bg(ctx,W,H,'#000a15','#001530');
+  glowCircle(ctx,W/2,H*0.45,Math.min(W,H)*0.4,'rgba(100,150,255,0.15)');
+  // Wafer circle
+  ctx.strokeStyle='rgba(150,180,255,0.6)'; ctx.lineWidth=2;
+  const wr=Math.min(W,H)*0.35;
+  ctx.beginPath(); ctx.arc(W/2,H*0.45,wr,0,Math.PI*2); ctx.stroke();
+  // Rainbow iridescence
+  for(let i=0;i<12;i++){
+    const a=i/12*Math.PI*2;
+    const h_=i*30;
+    ctx.strokeStyle=`hsla(${h_},80%,60%,0.12)`;
+    ctx.lineWidth=wr*0.1;
+    ctx.beginPath(); ctx.arc(W/2,H*0.45,wr*0.85-i*wr*0.06,a,a+Math.PI/3); ctx.stroke();
+  }
+  // Flat edge
+  ctx.fillStyle='#001530'; ctx.fillRect(W/2-10,H*0.45-wr,20,8);
+  // Chip patterns on wafer
+  ctx.strokeStyle='rgba(0,200,255,0.2)'; ctx.lineWidth=0.3;
+  for(let x=-1;x<1;x+=0.25) for(let y=-1;y<1;y+=0.25){
+    const px=W/2+x*wr, py=H*0.45+y*wr;
+    if((x*x+y*y)<0.85){ctx.strokeRect(px,py,wr*0.22,wr*0.22);}
+  }
+  label(ctx,W,H,'300mm SILICON WAFER · TSMC N3','rgba(150,180,255,0.7)');
+}
+
+// ── CLEANROOM ──
+function drawCleanroom(ctx,W,H){
+  bg(ctx,W,H,'#000a0a','#001520');
+  // Floor perspective
+  ctx.strokeStyle='rgba(0,200,255,0.1)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=8;i++){
+    ctx.beginPath(); ctx.moveTo(i*W/8,H*0.8); ctx.lineTo(W/2,H*0.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,H*0.5+i*(H*0.04)); ctx.lineTo(W,H*0.5+i*(H*0.04)); ctx.stroke();
+  }
+  // Ceiling lights
+  for(let i=0;i<4;i++){
+    ctx.fillStyle='rgba(200,240,255,0.2)'; ctx.fillRect(i*(W/4)+W*0.02,0,W*0.2,H*0.04);
+    ctx.shadowBlur=15; ctx.shadowColor='#ccefff';
+    ctx.fillStyle='rgba(200,240,255,0.05)'; ctx.fillRect(i*(W/4),0,W*0.25,H*0.4);
+    ctx.shadowBlur=0;
+  }
+  // Robot arm silhouette
+  ctx.strokeStyle='rgba(0,200,255,0.4)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(W*0.5,H*0.15); ctx.lineTo(W*0.5,H*0.4); ctx.lineTo(W*0.65,H*0.5); ctx.lineTo(W*0.6,H*0.6); ctx.stroke();
+  // Wafer on pedestal
+  ctx.strokeStyle='rgba(150,180,255,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.ellipse(W*0.3,H*0.65,W*0.1,H*0.04,0,0,Math.PI*2); ctx.stroke();
+  label(ctx,W,H,'CLASS-1 CLEANROOM · ISO 3 · <1 PARTICLE/m³','rgba(0,245,255,0.6)');
+}
+
+// ── WAFER SIZES ──
+function drawWaferSizes(ctx,W,H){
+  bg(ctx,W,H,'#000510','#000a20');
+  const sizes=[{r:12,year:'1970',label:'25mm'},{r:20,year:'1980',label:'100mm'},{r:30,year:'1992',label:'150mm'},{r:42,year:'2001',label:'300mm'}];
+  const spacing=W/(sizes.length+1);
+  sizes.forEach((s,i)=>{
+    const cx=spacing*(i+1), cy=H*0.45;
+    glowCircle(ctx,cx,cy,s.r*1.5,'rgba(100,150,255,0.1)');
+    ctx.strokeStyle='rgba(150,180,255,0.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(cx,cy,s.r,0,Math.PI*2); ctx.stroke();
+    // Iridescence
+    const ig=ctx.createRadialGradient(cx-s.r*0.3,cy-s.r*0.3,1,cx,cy,s.r);
+    ig.addColorStop(0,'rgba(200,220,255,0.15)'); ig.addColorStop(1,'rgba(50,80,150,0.1)');
+    ctx.fillStyle=ig; ctx.beginPath(); ctx.arc(cx,cy,s.r,0,Math.PI*2); ctx.fill();
+    // Labels
+    ctx.fillStyle='rgba(0,245,255,0.6)'; ctx.font='8px monospace'; ctx.textAlign='center';
+    ctx.fillText(s.label,cx,cy+s.r+12);
+    ctx.fillStyle='rgba(168,192,208,0.4)'; ctx.font='7px monospace';
+    ctx.fillText(s.year,cx,cy+s.r+22);
+  });
+  label(ctx,W,H,'WAFER SIZE EVOLUTION · 1970–2024','rgba(150,180,255,0.6)');
+}
+
+// ── CHIP DIE ──
+function drawChipDie(ctx,W,H){
+  bg(ctx,W,H,'#000508','#000a12');
+  // Chip outline
+  const cw=W*0.7, ch=H*0.75, cx=(W-cw)/2, cy=(H-ch)/2;
+  ctx.fillStyle='#050d18'; ctx.fillRect(cx,cy,cw,ch);
+  ctx.strokeStyle='rgba(0,245,255,0.4)'; ctx.lineWidth=1.5; ctx.strokeRect(cx,cy,cw,ch);
+  // Internal blocks (functional units)
+  const blocks=[
+    {x:0.05,y:0.05,w:0.35,h:0.3,c:'rgba(0,100,255,0.25)',n:'CPU CORE'},
+    {x:0.45,y:0.05,w:0.5,h:0.3,c:'rgba(119,0,255,0.2)',n:'GPU'},
+    {x:0.05,y:0.4,w:0.25,h:0.25,c:'rgba(0,200,100,0.2)',n:'CACHE'},
+    {x:0.35,y:0.4,w:0.3,h:0.25,c:'rgba(255,100,0,0.15)',n:'SoC'},
+    {x:0.7,y:0.4,w:0.25,h:0.25,c:'rgba(0,200,255,0.15)',n:'IO'},
+    {x:0.05,y:0.7,w:0.9,h:0.25,c:'rgba(0,50,150,0.2)',n:'MEMORY CONTROLLER'},
+  ];
+  blocks.forEach(b=>{
+    const bx=cx+b.x*cw, by=cy+b.y*ch, bw=b.w*cw, bh=b.h*ch;
+    ctx.fillStyle=b.c; ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle='rgba(0,200,255,0.2)'; ctx.lineWidth=0.5; ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='6px monospace'; ctx.textAlign='center';
+    ctx.fillText(b.n,bx+bw/2,by+bh/2+3);
+  });
+  // Metal routing lines
+  ctx.strokeStyle='rgba(0,245,255,0.1)'; ctx.lineWidth=0.5;
+  for(let i=0;i<20;i++){
+    ctx.beginPath(); ctx.moveTo(cx+Math.random()*cw,cy); ctx.lineTo(cx+Math.random()*cw,cy+ch); ctx.stroke();
+  }
+  label(ctx,W,H,'CHIP DIE · 5nm PROCESS NODE · 15B TRANSISTORS/mm²');
+}
+
+// ── CHIP MACRO (generic with name) ──
+function drawChipMacro(ctx,W,H,name,year,spec,accent){
+  bg(ctx,W,H,'#050500','#0a0a00');
+  // Die shot look
+  const cw=W*0.75, ch=H*0.7;
+  const cx=(W-cw)/2, cy=(H-ch)/2;
+  ctx.fillStyle='#0d0d00'; ctx.fillRect(cx,cy,cw,ch);
+  // Colored metallic layer
+  const lg=ctx.createLinearGradient(cx,cy,cx+cw,cy+ch);
+  lg.addColorStop(0,accent+'33'); lg.addColorStop(0.5,accent+'11'); lg.addColorStop(1,accent+'22');
+  ctx.fillStyle=lg; ctx.fillRect(cx,cy,cw,ch);
+  ctx.strokeStyle=accent+'88'; ctx.lineWidth=1.5; ctx.strokeRect(cx,cy,cw,ch);
+  // Circuit traces
+  ctx.strokeStyle=accent+'33'; ctx.lineWidth=0.5;
+  for(let i=0;i<12;i++){
+    ctx.beginPath(); ctx.moveTo(cx,cy+i*(ch/12)); ctx.lineTo(cx+cw,cy+i*(ch/12)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+i*(cw/12),cy); ctx.lineTo(cx+i*(cw/12),cy+ch); ctx.stroke();
+  }
+  // Center text
+  ctx.fillStyle=accent; ctx.font=`bold ${Math.min(W*0.1,14)}px 'Orbitron',monospace`; ctx.textAlign='center';
+  ctx.fillText(name,W/2,H*0.42);
+  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font=`${Math.min(W*0.07,9)}px monospace`;
+  ctx.fillText(year,W/2,H*0.55);
+  ctx.fillStyle='rgba(168,192,208,0.4)'; ctx.font=`8px monospace`;
+  ctx.fillText(spec,W/2,H*0.66);
+  label(ctx,W,H,name.toUpperCase()+' · '+year,accent+'aa');
+}
+
+// ── ARDUINO ──
+function drawArduino(ctx,W,H){
+  bg(ctx,W,H,'#001500','#002800');
+  // PCB board
+  ctx.fillStyle='#004400'; ctx.fillRect(W*0.1,H*0.1,W*0.8,H*0.75);
+  ctx.strokeStyle='rgba(0,255,0,0.3)'; ctx.lineWidth=1; ctx.strokeRect(W*0.1,H*0.1,W*0.8,H*0.75);
+  // Main chip (ATmega)
+  ctx.fillStyle='#001100'; ctx.fillRect(W*0.3,H*0.3,W*0.25,H*0.3);
+  ctx.strokeStyle='rgba(0,200,0,0.5)'; ctx.lineWidth=1; ctx.strokeRect(W*0.3,H*0.3,W*0.25,H*0.3);
+  // Chip pins
+  for(let i=0;i<7;i++){
+    ctx.fillStyle='rgba(200,180,0,0.6)';
+    ctx.fillRect(W*0.27,H*0.33+i*(H*0.04),W*0.03,H*0.02);
+    ctx.fillRect(W*0.55,H*0.33+i*(H*0.04),W*0.03,H*0.02);
+  }
+  // USB port
+  ctx.fillStyle='#222222'; ctx.fillRect(W*0.7,H*0.4,W*0.1,H*0.15);
+  ctx.strokeStyle='rgba(100,100,200,0.5)'; ctx.strokeRect(W*0.7,H*0.4,W*0.1,H*0.15);
+  // Header pins
+  for(let i=0;i<6;i++){
+    ctx.fillStyle='rgba(180,150,0,0.7)';
+    ctx.fillRect(W*0.15+i*(W*0.06),H*0.12,W*0.025,H*0.06);
+  }
+  // LED
+  ctx.fillStyle='rgba(0,255,0,0.8)'; ctx.shadowBlur=6; ctx.shadowColor='#00ff00';
+  ctx.beginPath(); ctx.arc(W*0.65,H*0.22,4,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  // Traces
+  ctx.strokeStyle='rgba(0,200,0,0.2)'; ctx.lineWidth=0.5;
+  for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(W*0.1+i*W*0.1,H*0.1);ctx.lineTo(W*0.1+i*W*0.1,H*0.85);ctx.stroke();}
+  label(ctx,W,H,'ARDUINO UNO · ATmega328P · 32KB FLASH','rgba(0,255,0,0.5)');
+}
+
+// ── FPGA ──
+function drawFPGA(ctx,W,H){
+  bg(ctx,W,H,'#000510','#000a25');
+  ctx.fillStyle='#05101a'; ctx.fillRect(W*0.1,H*0.1,W*0.8,H*0.75);
+  ctx.strokeStyle='rgba(0,100,255,0.4)'; ctx.lineWidth=1; ctx.strokeRect(W*0.1,H*0.1,W*0.8,H*0.75);
+  // FPGA chip center
+  ctx.fillStyle='#001a3a'; ctx.fillRect(W*0.28,H*0.2,W*0.44,H*0.5);
+  ctx.strokeStyle='rgba(0,200,255,0.5)'; ctx.lineWidth=1.5; ctx.strokeRect(W*0.28,H*0.2,W*0.44,H*0.5);
+  ctx.fillStyle='rgba(0,200,255,0.6)'; ctx.font='bold 10px Orbitron,monospace'; ctx.textAlign='center';
+  ctx.fillText('FPGA',W/2,H*0.47);
+  ctx.fillStyle='rgba(0,150,200,0.4)'; ctx.font='7px monospace';
+  ctx.fillText('XILINX VIRTEX',W/2,H*0.57);
+  // Pin rows
+  for(let i=0;i<8;i++){
+    ['rgba(200,180,0,0.5)','rgba(200,180,0,0.5)'].forEach((c,side)=>{
+      const px=side===0?W*0.1:W*0.9, py=H*0.22+i*(H*0.08);
+      ctx.fillStyle=c; ctx.fillRect(px,py,W*0.04*(side===0?1:-1),H*0.02);
+    });
+  }
+  // Config lines
+  ctx.strokeStyle='rgba(0,100,255,0.15)'; ctx.lineWidth=0.5;
+  for(let i=0;i<10;i++){ctx.beginPath();ctx.moveTo(W*0.1,H*0.1+i*(H*0.08));ctx.lineTo(W*0.9,H*0.1+i*(H*0.08));ctx.stroke();}
+  label(ctx,W,H,'FPGA · 100K LOGIC CELLS · RECONFIGURABLE','rgba(0,200,255,0.6)');
+}
+
+// ── SATELLITE ──
+function drawSatellite(ctx,W,H){
+  bg(ctx,W,H,'#000005','#00000f');
+  // Stars
+  for(let i=0;i<100;i++){
+    ctx.fillStyle=`rgba(255,255,255,${Math.random()*0.7+0.1})`;
+    ctx.beginPath(); ctx.arc(Math.random()*W,Math.random()*H,Math.random(),0,Math.PI*2); ctx.fill();
+  }
+  // Earth curve bottom
+  ctx.strokeStyle='rgba(0,100,200,0.3)'; ctx.lineWidth=40;
+  ctx.beginPath(); ctx.arc(W/2,H*1.5,H,Math.PI*1.1,Math.PI*1.9); ctx.stroke();
+  // Satellite body
+  ctx.fillStyle='#1a1a1a'; ctx.fillRect(W*0.38,H*0.28,W*0.24,H*0.18);
+  ctx.strokeStyle='rgba(200,200,200,0.5)'; ctx.lineWidth=1; ctx.strokeRect(W*0.38,H*0.28,W*0.24,H*0.18);
+  // Solar panels
+  ctx.fillStyle='rgba(0,50,150,0.7)'; ctx.strokeStyle='rgba(0,100,200,0.5)'; ctx.lineWidth=0.5;
+  ctx.fillRect(W*0.1,H*0.3,W*0.26,H*0.12); ctx.strokeRect(W*0.1,H*0.3,W*0.26,H*0.12);
+  ctx.fillRect(W*0.64,H*0.3,W*0.26,H*0.12); ctx.strokeRect(W*0.64,H*0.3,W*0.26,H*0.12);
+  // Grid lines on panels
+  ctx.strokeStyle='rgba(0,200,255,0.2)'; ctx.lineWidth=0.5;
+  for(let i=1;i<5;i++){
+    ctx.beginPath();ctx.moveTo(W*0.1+i*W*0.052,H*0.3);ctx.lineTo(W*0.1+i*W*0.052,H*0.42);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*0.64+i*W*0.052,H*0.3);ctx.lineTo(W*0.64+i*W*0.052,H*0.42);ctx.stroke();
+  }
+  // Antenna
+  ctx.strokeStyle='rgba(200,200,200,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W*0.5,H*0.28); ctx.lineTo(W*0.5,H*0.15); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W*0.5,H*0.15,W*0.04,0,Math.PI*2); ctx.stroke();
+  // Signal waves
+  for(let i=1;i<=3;i++){
+    ctx.strokeStyle=`rgba(0,245,255,${0.4-i*0.1})`; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.arc(W*0.5,H*0.15,W*0.04+i*W*0.04,Math.PI,Math.PI*2); ctx.stroke();
+  }
+  label(ctx,W,H,'GPS SATELLITE · RAD-HARD EMBEDDED · 20,200km','rgba(0,200,255,0.6)');
+}
+
+// ── PACEMAKER ──
+function drawPacemaker(ctx,W,H){
+  bg(ctx,W,H,'#050005','#0f000f');
+  // Body outline
+  ctx.strokeStyle='rgba(200,150,200,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(W*0.2,H*0.1,W*0.6,H*0.5,20); ctx.stroke();
+  ctx.fillStyle='rgba(40,0,40,0.7)';
+  ctx.beginPath(); ctx.roundRect(W*0.2,H*0.1,W*0.6,H*0.5,20); ctx.fill();
+  // Circuit board inside
+  ctx.strokeStyle='rgba(180,100,200,0.3)'; ctx.lineWidth=0.5;
+  for(let i=0;i<5;i++) for(let j=0;j<4;j++){
+    ctx.strokeRect(W*0.25+i*W*0.09,H*0.15+j*H*0.1,W*0.07,H*0.08);
+  }
+  // LED pulse
+  ctx.fillStyle='rgba(200,0,200,0.8)'; ctx.shadowBlur=10; ctx.shadowColor='#ff00ff';
+  ctx.beginPath(); ctx.arc(W*0.5,H*0.35,5,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  // ECG line
+  ctx.strokeStyle='rgba(0,255,200,0.7)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  const ecg=[[0,H*0.72],[W*0.1,H*0.72],[W*0.2,H*0.72],[W*0.25,H*0.55],[W*0.28,H*0.85],[W*0.32,H*0.48],[W*0.36,H*0.72],[W*0.5,H*0.72],[W*0.6,H*0.72],[W*0.65,H*0.58],[W*0.68,H*0.82],[W*0.72,H*0.55],[W*0.75,H*0.72],[W,H*0.72]];
+  ecg.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));
+  ctx.stroke();
+  label(ctx,W,H,'CARDIAC PACEMAKER · ARM CORTEX-M · RTOS','rgba(200,100,220,0.6)');
+}
+
+// ── H100 GPU ──
+function drawH100(ctx,W,H){
+  bg(ctx,W,H,'#030010','#060020');
+  // PCIe card outline
+  ctx.fillStyle='#0a0020'; ctx.fillRect(W*0.05,H*0.15,W*0.9,H*0.6);
+  ctx.strokeStyle='rgba(119,0,255,0.4)'; ctx.lineWidth=1.5; ctx.strokeRect(W*0.05,H*0.15,W*0.9,H*0.6);
+  // Main GPU die
+  ctx.fillStyle='#100030'; ctx.fillRect(W*0.25,H*0.22,W*0.5,H*0.4);
+  const gg=ctx.createLinearGradient(W*0.25,H*0.22,W*0.75,H*0.62);
+  gg.addColorStop(0,'rgba(119,0,255,0.3)'); gg.addColorStop(0.5,'rgba(0,100,255,0.2)'); gg.addColorStop(1,'rgba(119,0,255,0.3)');
+  ctx.fillStyle=gg; ctx.fillRect(W*0.25,H*0.22,W*0.5,H*0.4);
+  ctx.strokeStyle='rgba(119,0,255,0.7)'; ctx.lineWidth=1.5; ctx.strokeRect(W*0.25,H*0.22,W*0.5,H*0.4);
+  // Die label
+  ctx.fillStyle='rgba(200,150,255,0.8)'; ctx.font='bold 10px Orbitron,monospace'; ctx.textAlign='center';
+  ctx.fillText('H100',W/2,H*0.43); ctx.font='7px monospace'; ctx.fillText('80B TRANSISTORS',W/2,H*0.53);
+  // HBM stacks
+  [[W*0.1,H*0.3],[W*0.82,H*0.3],[W*0.1,H*0.5],[W*0.82,H*0.5]].forEach(([hx,hy])=>{
+    ctx.fillStyle='rgba(0,200,255,0.2)'; ctx.fillRect(hx,hy,W*0.1,H*0.12);
+    ctx.strokeStyle='rgba(0,200,255,0.5)'; ctx.strokeRect(hx,hy,W*0.1,H*0.12);
+    ctx.fillStyle='rgba(0,200,255,0.4)'; ctx.font='6px monospace'; ctx.textAlign='center';
+    ctx.fillText('HBM3',hx+W*0.05,hy+H*0.08);
+  });
+  // PCIe gold fingers
+  ctx.fillStyle='rgba(200,180,0,0.6)';
+  for(let i=0;i<20;i++) ctx.fillRect(W*0.1+i*(W*0.04),H*0.8,W*0.025,H*0.04);
+  label(ctx,W,H,'NVIDIA H100 SXM · 700W · 4 PETAFLOPS','rgba(119,0,255,0.7)');
+}
+
+// ── DATACENTER ──
+function drawDatacenter(ctx,W,H){
+  bg(ctx,W,H,'#010205','#02040f');
+  // Server racks - rows
+  for(let row=0;row<3;row++){
+    for(let rack=0;rack<5;rack++){
+      const rx=rack*(W*0.18)+W*0.04, ry=row*(H*0.28)+H*0.05;
+      ctx.fillStyle='#050a15'; ctx.fillRect(rx,ry,W*0.15,H*0.24);
+      ctx.strokeStyle='rgba(0,100,200,0.3)'; ctx.lineWidth=0.5; ctx.strokeRect(rx,ry,W*0.15,H*0.24);
+      // Drive bays LEDs
+      for(let u=0;u<6;u++){
+        const on=Math.random()>0.3;
+        ctx.fillStyle=on?`hsl(${Math.random()>0.8?0:Math.random()>0.5?120:200},100%,50%)`:'#001a00';
+        ctx.shadowBlur=on?3:0; ctx.shadowColor=ctx.fillStyle;
+        ctx.fillRect(rx+W*0.02,ry+u*(H*0.035)+H*0.01,W*0.04,H*0.015);
+        ctx.shadowBlur=0;
+      }
+    }
+  }
+  // Cool lighting glow from ceiling
+  const cg=ctx.createLinearGradient(0,0,0,H*0.3);
+  cg.addColorStop(0,'rgba(0,100,200,0.15)'); cg.addColorStop(1,'transparent');
+  ctx.fillStyle=cg; ctx.fillRect(0,0,W,H);
+  label(ctx,W,H,'AI DATACENTER · GPU CLUSTER · 1 EXAFLOP/s','rgba(0,150,255,0.6)');
+}
+
+// ── NEURAL NETWORK ──
+function drawNeuralNet(ctx,W,H){
+  bg(ctx,W,H,'#000510','#000a20');
+  const layers=[[W*0.1,3],[W*0.3,5],[W*0.5,6],[W*0.7,5],[W*0.9,2]];
+  const yspacing=(H*0.8)/7, ystart=H*0.1;
+  // Draw connections first
+  for(let l=0;l<layers.length-1;l++){
+    const [x1,n1]=layers[l], [x2,n2]=layers[l+1];
+    for(let a=0;a<n1;a++){
+      const y1=ystart+(a+((7-n1)/2))*yspacing+yspacing/2;
+      for(let b=0;b<n2;b++){
+        const y2=ystart+(b+((7-n2)/2))*yspacing+yspacing/2;
+        const act=Math.random();
+        ctx.strokeStyle=`rgba(${act>0.7?'119,0,255':act>0.4?'0,102,255':'0,200,255'},${act*0.4+0.05})`;
+        ctx.lineWidth=act*1.2+0.2;
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      }
+    }
+  }
+  // Draw neurons
+  layers.forEach(([x,n])=>{
+    for(let i=0;i<n;i++){
+      const y=ystart+(i+((7-n)/2))*yspacing+yspacing/2;
+      const act=Math.random();
+      const c=act>0.7?'rgba(119,0,255,0.9)':act>0.4?'rgba(0,102,255,0.9)':'rgba(0,200,255,0.7)';
+      glowCircle(ctx,x,y,12,c.replace('0.9','0.3').replace('0.7','0.2'));
+      ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+    }
+  });
+  label(ctx,W,H,'DEEP NEURAL NETWORK · 175B PARAMETERS','rgba(0,200,255,0.6)');
+}
+
+// ── FINFET DIAGRAM ──
+function drawFinFETDiagram(ctx,W,H){
+  bg(ctx,W,H,'#000a05','#001a10');
+  // 3D perspective fin
+  const cx=W/2, cy=H*0.4;
+  // Source/Drain blocks
+  ctx.fillStyle='rgba(0,100,200,0.4)'; ctx.fillRect(W*0.1,H*0.45,W*0.25,H*0.3);
+  ctx.fillRect(W*0.65,H*0.45,W*0.25,H*0.3);
+  ctx.strokeStyle='rgba(0,200,255,0.5)'; ctx.lineWidth=1;
+  ctx.strokeRect(W*0.1,H*0.45,W*0.25,H*0.3); ctx.strokeRect(W*0.65,H*0.45,W*0.25,H*0.3);
+  // Fin (narrow vertical silicon)
+  ctx.fillStyle='rgba(0,200,100,0.5)'; ctx.fillRect(W*0.44,H*0.25,W*0.12,H*0.5);
+  ctx.strokeStyle='rgba(0,255,100,0.6)'; ctx.strokeRect(W*0.44,H*0.25,W*0.12,H*0.5);
+  // Gate wrapping the fin (3 sides)
+  ctx.strokeStyle='rgba(255,200,0,0.7)'; ctx.lineWidth=4;
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(255,200,0,0.5)';
+  ctx.strokeRect(W*0.38,H*0.38,W*0.24,H*0.2);
+  ctx.shadowBlur=0;
+  // Labels
+  ctx.fillStyle='rgba(0,200,255,0.7)'; ctx.font='8px monospace'; ctx.textAlign='center';
+  ctx.fillText('SOURCE',W*0.225,H*0.42); ctx.fillText('DRAIN',W*0.775,H*0.42);
+  ctx.fillStyle='rgba(0,255,100,0.7)'; ctx.fillText('Si FIN',W/2,H*0.23);
+  ctx.fillStyle='rgba(255,200,0,0.8)'; ctx.fillText('GATE (3-SIDED)',W/2,H*0.35);
+  label(ctx,W,H,'FinFET · 3D GATE · INTEL 22nm → TSMC 5nm','rgba(0,245,255,0.6)');
+}
+
+// ── GAAFET ──
+function drawGAAFET(ctx,W,H){
+  bg(ctx,W,H,'#000510','#001020');
+  // Nanosheet stack
+  [H*0.25,H*0.38,H*0.51].forEach((y,i)=>{
+    ctx.fillStyle=`rgba(0,${100+i*50},200,0.3)`; ctx.fillRect(W*0.25,y,W*0.5,H*0.09);
+    ctx.strokeStyle=`rgba(0,${150+i*40},255,0.6)`; ctx.lineWidth=1; ctx.strokeRect(W*0.25,y,W*0.5,H*0.09);
+    ctx.fillStyle='rgba(200,230,255,0.4)'; ctx.font='7px monospace'; ctx.textAlign='center';
+    ctx.fillText(`NANOSHEET ${i+1}`,W/2,y+H*0.06);
+  });
+  // Gate surrounding all sheets
+  ctx.strokeStyle='rgba(255,200,0,0.6)'; ctx.lineWidth=3;
+  ctx.shadowBlur=10; ctx.shadowColor='rgba(255,200,0,0.4)';
+  ctx.strokeRect(W*0.2,H*0.2,W*0.6,H*0.44);
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,200,0,0.15)'; ctx.fillRect(W*0.2,H*0.2,W*0.6,H*0.44);
+  ctx.fillStyle='rgba(255,200,0,0.7)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('GATE ALL AROUND',W/2,H*0.17);
+  label(ctx,W,H,'GAAFET · NANOSHEET · 2nm NODE · SAMSUNG/TSMC');
+}
+
+// ── SILICON LATTICE ──
+function drawSiliconLattice(ctx,W,H){
+  bg(ctx,W,H,'#000a00','#001500');
+  // Diamond cubic lattice
+  const step=H*0.2, ox=W*0.1, oy=H*0.1;
+  const atoms=[];
+  for(let x=0;x<=4;x++) for(let y=0;y<=4;y++){
+    const ax=ox+x*step*0.8, ay=oy+y*step*0.7;
+    atoms.push([ax,ay]);
+    if(x<4&&y<4){
+      // Face center
+      atoms.push([ax+step*0.4,ay+step*0.35]);
+    }
+  }
+  // Bonds
+  atoms.forEach(([ax,ay])=>{
+    atoms.forEach(([bx,by])=>{
+      const d=Math.hypot(bx-ax,by-ay);
+      if(d>0&&d<step*0.7){
+        ctx.strokeStyle='rgba(0,200,100,0.3)'; ctx.lineWidth=0.8;
+        ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
+      }
+    });
+    ctx.fillStyle='rgba(0,255,100,0.8)'; ctx.shadowBlur=4; ctx.shadowColor='#00ff88';
+    ctx.beginPath(); ctx.arc(ax,ay,3,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  label(ctx,W,H,'Si DIAMOND CUBIC LATTICE · a=5.43Å · Eg=1.1eV','rgba(0,255,100,0.6)');
+}
+
+// ── QUANTUM TUNNELING ──
+function drawQuantumTunnel(ctx,W,H){
+  bg(ctx,W,H,'#050010','#0a0020');
+  // Potential barrier
+  ctx.fillStyle='rgba(50,0,100,0.6)'; ctx.fillRect(W*0.4,H*0.1,W*0.2,H*0.7);
+  ctx.strokeStyle='rgba(119,0,255,0.6)'; ctx.lineWidth=1.5; ctx.strokeRect(W*0.4,H*0.1,W*0.2,H*0.7);
+  ctx.fillStyle='rgba(119,0,255,0.5)'; ctx.font='7px monospace'; ctx.textAlign='center';
+  ctx.fillText('BARRIER',W/2,H*0.3); ctx.fillText('SiO₂',W/2,H*0.4); ctx.fillText('1-2nm',W/2,H*0.5);
+  // Incident wave
+  ctx.strokeStyle='rgba(0,200,255,0.7)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(let x=0;x<W*0.38;x+=2){
+    const y=H*0.45+Math.sin(x*0.15)*H*0.1;
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  // Tunneled wave (attenuated)
+  ctx.strokeStyle='rgba(0,245,255,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let x=W*0.62;x<W;x+=2){
+    const y=H*0.45+Math.sin(x*0.15)*H*0.04;
+    x===W*0.62?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  // Tunnel arrow
+  ctx.strokeStyle='rgba(255,100,0,0.7)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(W*0.38,H*0.45); ctx.lineTo(W*0.62,H*0.45); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,100,0,0.7)'; ctx.font='8px monospace'; ctx.textAlign='center';
+  ctx.fillText('TUNNELING',W/2,H*0.17);
+  label(ctx,W,H,'QUANTUM TUNNELING · GATE LEAKAGE < 2nm','rgba(119,0,255,0.6)');
+}
+
+// ── HBM STACK ──
+function drawHBMStack(ctx,W,H){
+  bg(ctx,W,H,'#000510','#001025');
+  // 3D perspective stack of dies
+  const layers=5, lh=H*0.1, lw=W*0.55, lx=(W-lw)/2;
+  for(let i=layers-1;i>=0;i--){
+    const ly=H*0.2+i*(lh+4);
+    // Side face (3D effect)
+    ctx.fillStyle=`rgba(0,${20+i*15},${80+i*20},0.8)`;
+    ctx.fillRect(lx+8,ly+lh,lw-8,8);
+    // Top face
+    const fc=ctx.createLinearGradient(lx,ly,lx+lw,ly+lh);
+    fc.addColorStop(0,`rgba(0,${40+i*20},${120+i*25},0.8)`);
+    fc.addColorStop(1,`rgba(0,${20+i*15},${80+i*20},0.6)`);
+    ctx.fillStyle=fc; ctx.fillRect(lx,ly,lw,lh);
+    ctx.strokeStyle=`rgba(0,${150+i*20},255,0.4)`; ctx.lineWidth=0.8; ctx.strokeRect(lx,ly,lw,lh);
+    // Label
+    ctx.fillStyle='rgba(0,200,255,0.6)'; ctx.font='7px monospace'; ctx.textAlign='center';
+    ctx.fillText(i===0?'LOGIC DIE':`DRAM ${layers-i}`,W/2,ly+lh*0.65);
+  }
+  // TSV vias (vertical connections)
+  for(let v=0;v<6;v++){
+    const vx=lx+lw*0.15+v*(lw*0.14);
+    ctx.strokeStyle='rgba(255,200,0,0.5)'; ctx.lineWidth=1.5;
+    ctx.shadowBlur=4; ctx.shadowColor='rgba(255,200,0,0.4)';
+    ctx.beginPath(); ctx.moveTo(vx,H*0.2); ctx.lineTo(vx,H*0.78); ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+  label(ctx,W,H,'HBM3 · 3D IC STACKING · TSV INTERCONNECTS · 921 GB/s','rgba(0,200,255,0.6)');
+}
+
+// ── IBM QUANTUM ──
+function drawQuantumComputer(ctx,W,H){
+  bg(ctx,W,H,'#000a10','#001525');
+  // Dilution refrigerator (cylindrical)
+  const cx=W/2;
+  // Outer cylinder
+  ctx.fillStyle='rgba(150,180,200,0.15)'; ctx.beginPath(); ctx.ellipse(cx,H*0.2,W*0.2,H*0.06,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(150,200,220,0.4)'; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(cx,H*0.2,W*0.2,H*0.06,0,0,Math.PI*2); ctx.stroke();
+  // Concentric thermal stages
+  [[W*0.18,H*0.62,'rgba(150,180,200,0.2)'],[W*0.14,H*0.58,'rgba(100,150,200,0.2)'],[W*0.10,H*0.52,'rgba(50,100,200,0.25)'],[W*0.07,H*0.45,'rgba(0,80,200,0.3)'],[W*0.04,H*0.38,'rgba(0,50,255,0.35)']].forEach(([r,h,c])=>{
+    ctx.fillStyle=c;
+    ctx.beginPath(); ctx.moveTo(cx-r,H*0.2); ctx.lineTo(cx-r,h); ctx.arc(cx,h,r,Math.PI,0); ctx.lineTo(cx+r,H*0.2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle=c.replace('0.','')+'.6)'; ctx.stroke();
+  });
+  // QPU chip at bottom (glowing)
+  glowCircle(ctx,cx,H*0.38,20,'rgba(0,200,255,0.6)');
+  ctx.fillStyle='rgba(0,200,255,0.9)'; ctx.beginPath(); ctx.arc(cx,H*0.38,8,0,Math.PI*2); ctx.fill();
+  // Temp labels
+  ctx.fillStyle='rgba(150,200,220,0.4)'; ctx.font='7px monospace'; ctx.textAlign='left';
+  ['77K','4K','1K','100mK','15mK'].forEach((t,i)=>ctx.fillText(t,W*0.74,H*0.28+i*(H*0.07)));
+  label(ctx,W,H,'IBM QUANTUM · DILUTION REFRIGERATOR · 15 mK','rgba(0,200,255,0.6)');
+}
+
+// ── PHOTONIC IC ──
+function drawPhotonic(ctx,W,H){
+  bg(ctx,W,H,'#050008','#0a0015');
+  circuitGrid(ctx,W,H,'rgba(200,50,255,0.04)',20);
+  // Waveguides
+  const wgColors=['#ff00ff','#aa00ff','#ff44ff','#dd00dd'];
+  [[H*0.2,0,0.15],[H*0.35,0.1,0.2],[H*0.5,0.2,0.15],[H*0.65,0.1,0.1]].forEach(([y,amp,freq],i)=>{
+    ctx.strokeStyle=wgColors[i]+'cc'; ctx.lineWidth=1.5;
+    ctx.shadowBlur=8; ctx.shadowColor=wgColors[i];
+    ctx.beginPath();
+    for(let x=0;x<W;x+=2){
+      const wy=y+Math.sin(x*freq)*H*amp;
+      x===0?ctx.moveTo(x,wy):ctx.lineTo(x,wy);
+    }
+    ctx.stroke(); ctx.shadowBlur=0;
+  });
+  // Optical components (rings, couplers)
+  [[W*0.2,H*0.35],[W*0.5,H*0.5],[W*0.75,H*0.3]].forEach(([px,py])=>{
+    glowCircle(ctx,px,py,18,'rgba(200,50,255,0.3)');
+    ctx.strokeStyle='rgba(220,100,255,0.6)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(px,py,10,0,Math.PI*2); ctx.stroke();
+  });
+  label(ctx,W,H,'PHOTONIC IC · SILICON PHOTONICS · LIGHT=DATA','rgba(200,100,255,0.7)');
+}
+
+// ── CARBON NANOTUBE ──
+function drawCNT(ctx,W,H){
+  bg(ctx,W,H,'#030005','#060010');
+  // CNT as rolled hexagonal lattice
+  const hexR=12, rows=4, cols=8;
+  const startX=W*0.1, startY=H*0.15;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const hx=startX+c*(hexR*1.73)+(r%2)*hexR*0.87;
+      const hy=startY+r*(hexR*1.5);
+      ctx.strokeStyle='rgba(0,245,255,0.5)'; ctx.lineWidth=1;
+      ctx.beginPath();
+      for(let v=0;v<6;v++){
+        const a=v*Math.PI/3;
+        v===0?ctx.moveTo(hx+hexR*Math.cos(a),hy+hexR*Math.sin(a)):ctx.lineTo(hx+hexR*Math.cos(a),hy+hexR*Math.sin(a));
+      }
+      ctx.closePath(); ctx.stroke();
+      // Carbon atom at each vertex
+      ctx.fillStyle='rgba(0,200,255,0.6)'; ctx.beginPath(); ctx.arc(hx,hy,2,0,Math.PI*2); ctx.fill();
+    }
+  }
+  // Arrow showing rolling
+  ctx.strokeStyle='rgba(200,100,255,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(W*0.2,H*0.78); ctx.lineTo(W*0.8,H*0.78); ctx.stroke();
+  ctx.font='7px monospace'; ctx.fillStyle='rgba(200,100,255,0.5)'; ctx.textAlign='center';
+  ctx.fillText('← ROLL INTO NANOTUBE →',W/2,H*0.88);
+  label(ctx,W,H,'CARBON NANOTUBE · 10× MOBILITY vs Si · (n,m) CHIRALITY','rgba(0,245,255,0.6)');
+}
+
+// ── NEUROMORPHIC ──
+function drawNeuromorphic(ctx,W,H){
+  bg(ctx,W,H,'#050010','#0a0020');
+  // Brain outline
+  ctx.strokeStyle='rgba(150,100,255,0.3)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(W*0.3,H*0.6); ctx.bezierCurveTo(W*0.1,H*0.6,W*0.05,H*0.2,W*0.3,H*0.15);
+  ctx.bezierCurveTo(W*0.4,H*0.08,W*0.6,H*0.08,W*0.7,H*0.15);
+  ctx.bezierCurveTo(W*0.95,H*0.2,W*0.9,H*0.6,W*0.7,H*0.6);
+  ctx.bezierCurveTo(W*0.6,H*0.68,W*0.4,H*0.68,W*0.3,H*0.6);
+  ctx.stroke();
+  // Neural connections as circuit-like paths
+  const nodes=[];
+  for(let i=0;i<20;i++) nodes.push([W*(0.2+Math.random()*0.6),H*(0.15+Math.random()*0.45)]);
+  nodes.forEach(([nx,ny])=>{
+    nodes.forEach(([mx,my])=>{
+      if(Math.hypot(mx-nx,my-ny)<W*0.2&&Math.random()>0.7){
+        ctx.strokeStyle=`rgba(${100+Math.floor(Math.random()*155)},${Math.floor(Math.random()*100)},255,${Math.random()*0.3+0.1})`;
+        ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(nx,ny); ctx.lineTo(mx,my); ctx.stroke();
+      }
+    });
+    ctx.fillStyle='rgba(180,120,255,0.8)'; ctx.shadowBlur=4; ctx.shadowColor='#b066ff';
+    ctx.beginPath(); ctx.arc(nx,ny,2.5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  });
+  label(ctx,W,H,'NEUROMORPHIC CHIP · SPIKING NEURAL NET · μW POWER','rgba(150,100,255,0.7)');
+}
+
+// ── GENERIC CHIP ──
+function drawChipGeneric(ctx,W,H){
+  bg(ctx,W,H,'#000510','#001025');
+  drawChipDie(ctx,W,H);
+}
+
+// ── INIT ALL CANVASES ──
+function initSceneCanvases() {
+  document.querySelectorAll('canvas.scene-canvas').forEach(cv => {
+    const frame = cv.closest('.photo-frame, .inv-portrait');
+    if (!frame) return;
+    // Size canvas to match container
+    const rect = frame.getBoundingClientRect();
+    const W = Math.max(rect.width || 300, 80);
+    const H = Math.max(rect.height || 180, 60);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = W * dpr;
+    cv.height = H * dpr;
+    cv.style.width = '100%';
+    cv.style.height = '100%';
+    cv.style.display = 'block';
+    cv.style.position = 'absolute';
+    cv.style.top = '0'; cv.style.left = '0';
+    cv.style.zIndex = '1';
+    const ctx2 = cv.getContext('2d');
+    ctx2.scale(dpr, dpr);
+    drawScene(ctx2, cv.dataset.scene || 'chip_generic', W, H);
+    // Mark as loaded so shimmer disappears
+    frame.classList.add('img-loaded');
+  });
+}
+
+// Animated ticker for canvases in view (subtle electron/pulse animations)
+let animTick = 0;
+function animateVisibleCanvases() {
+  animTick++;
+  document.querySelectorAll('canvas.scene-canvas').forEach(cv => {
+    const rect = cv.getBoundingClientRect();
+    const inView = rect.top < window.innerHeight + 100 && rect.bottom > -100;
+    if (!inView) return;
+    const scene = cv.dataset.scene;
+    // Only reanimate scenes that have movement
+    const animated = ['lightning','teslacoil','eniac','h100','datacenter','neuralnet','photonic','ibm_quantum','quantum_tunnel'];
+    if (!animated.includes(scene)) return;
+    if (animTick % 90 !== 0) return; // redraw every ~3s
+    const frame = cv.closest('.photo-frame, .inv-portrait');
+    const W = cv.width / (window.devicePixelRatio||1);
+    const H = cv.height / (window.devicePixelRatio||1);
+    const ctx2 = cv.getContext('2d');
+    ctx2.setTransform(1,0,0,1,0,0);
+    ctx2.scale(Math.min(window.devicePixelRatio||1,2), Math.min(window.devicePixelRatio||1,2));
+    drawScene(ctx2, scene, W, H);
+  });
+  requestAnimationFrame(animateVisibleCanvases);
+}
+
+// Run on DOM ready + after fonts/layout
+window.addEventListener('load', () => {
+  setTimeout(initSceneCanvases, 100);
+  setTimeout(initSceneCanvases, 600);
+  setTimeout(animateVisibleCanvases, 800);
+});
+setTimeout(initSceneCanvases, 300);
+setTimeout(initSceneCanvases, 1000);
+// Re-draw on resize
+window.addEventListener('resize', () => { setTimeout(initSceneCanvases, 200); });
+
+
+
+// ═══════════════════════════════════════════
+// INTERACTIVE ENERGY TRAILS (mouse)
+// ═══════════════════════════════════════════
+const trail=[];
+document.addEventListener('mousemove',e=>{
+  trail.push({x:e.clientX,y:e.clientY,t:Date.now()});
+  if(trail.length>20) trail.shift();
+  const now=Date.now();
+  trail.forEach((p,i)=>{
+    if(now-p.t>500) return;
+    const spark=document.createElement('div');
+    spark.style.cssText=`position:fixed;left:${p.x}px;top:${p.y}px;width:2px;height:2px;background:rgba(0,245,255,${(i/trail.length)*0.3});border-radius:50%;pointer-events:none;z-index:3;`;
+    document.body.appendChild(spark);
+    setTimeout(()=>spark.remove(),300);
+  });
+});
+</script>
+</body>
+</html>
