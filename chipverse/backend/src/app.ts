@@ -28,6 +28,12 @@ const app = express();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  // Pull dynamic origins from env so adding new frontends never needs a code change
+  const extraOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.GITHUB_PAGES_URL,
+  ].filter(Boolean);
+
   const isAllowed =
     !origin ||
     origin === 'https://chipverse-q341.vercel.app' ||
@@ -36,7 +42,8 @@ app.use((req, res, next) => {
     /^https:\/\/chipverse-q341-.*\.vercel\.app$/.test(origin) ||
     /^https:\/\/chipverse-q341-.*-devanshdj72s-projects\.vercel\.app$/.test(origin) ||
     origin === 'http://localhost:5173' ||
-    origin === 'http://localhost:4173';
+    origin === 'http://localhost:4173' ||
+    extraOrigins.includes(origin);
   if (isAllowed) res.setHeader('Access-Control-Allow-Origin', origin || '*'); 
   /* const isAllowed =
     !origin ||
