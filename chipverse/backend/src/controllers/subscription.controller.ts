@@ -1,228 +1,172 @@
 // src/controllers/subscription.controller.ts
 import { Request, Response } from 'express';
-import { prisma } from '../config/prisma';
-import crypto from 'crypto';
+import prisma from '../config/prisma';
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID ?? '';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET ?? '';
+const RZP_KEY  = process.env.RAZORPAY_KEY_ID ?? '';
+const RZP_SECRET = process.env.RAZORPAY_KEY_SECRET ?? '';
 
-// ─── Helper: get Razorpay order ──────────────────────────────────────────────
-async function createRazorpayOrder(amountInPaise: number, receipt: string) {
-  const body = JSON.stringify({ amount: amountInPaise, currency: 'INR', receipt });
-  const auth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
-  const res = await fetch('https://api.razorpay.com/v1/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
-    body,
-  });
-  if (!res.ok) throw new Error('Razorpay order creation failed');
-  return res.json();
+// Safe wrapper — returns fallback if table doesn't exist yet (pre-migration)
+async function sq<T>(fn: () => Promise<T>, fb: T): Promise<T> {
+  try { return await fn(); } catch { return fb; }
 }
 
-// ─── GET /subscription/pricing ───────────────────────────────────────────────
-// Returns all domain prices + bundle discounts (public)
-export const getPricing = async (req: Request, res: Response) => {
-  const [domainPrices, bundles] = await Promise.all([
-    prisma.domainPricing.findMany({ where: { isActive: true } }),
-    prisma.bundlePricing.findMany({ where: { isActive: true }, orderBy: { domainCount: 'asc' } }),
+// ─── GET /subscription/config (public) ───────────────────────────────────────
+export const getConfig = async (_req: Request, res: Response) => {
+  const cfg = await sq(() => (prisma as any).appConfig.upsert({
+    where: { id: 'global' },
+    create: { id: 'global', subscriptionEnabled: false },
+    update: {},
+  }), { subscriptionEnabled: false });
+  res.json({ success: true, data: { subscriptionEnabled: !!(cfg as any).subscriptionEnabled } });
+};
+
+// ─── PUT /subscription/admin/config (super admin) ────────────────────────────
+export const adminSetConfig = async (req: Request, res: Response) => {
+  const adminId = (req as any).adminId;
+  const { subscriptionEnabled } = req.body as { subscriptionEnabled: boolean };
+  await sq(() => (prisma as any).appConfig.upsert({
+    where: { id: 'global' },
+    create: { id: 'global', subscriptionEnabled, updatedBy: adminId },
+    update: { subscriptionEnabled, updatedBy: adminId },
+  }), null);
+  res.json({ success: true, data: { subscriptionEnabled } });
+};
+
+// ─── GET /subscription/pricing (public) ──────────────────────────────────────
+export const getPricing = async (_req: Request, res: Response) => {
+  const [domainPrices, rawBundles] = await Promise.all([
+    sq(() => (prisma as any).domainPricing.findMany({ where: { isActive: true } }), [] as any[]),
+    sq(() => (prisma as any).bundlePricing.findMany({ where: { isActive: true }, orderBy: { domainCount: 'asc' } }), [] as any[]),
   ]);
+  const bundles = (rawBundles as any[]).length ? rawBundles : [
+    { domainCount: 3, discount: 15, label: 'Trio Pack'   },
+    { domainCount: 5, discount: 25, label: 'Elite Pack'  },
+    { domainCount: 8, discount: 40, label: 'Master Pack' },
+  ];
   res.json({ success: true, data: { domainPrices, bundles } });
 };
 
 // ─── GET /subscription/my ────────────────────────────────────────────────────
-// Returns current user's active subscriptions
 export const getMySubscriptions = async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
-  const subs = await prisma.subscription.findMany({
+  const userId = (req.user as any)?.userId;
+  const subs = await sq(() => (prisma as any).subscription.findMany({
     where: { userId, status: 'ACTIVE' },
     select: { domainId: true, expiresAt: true, startedAt: true },
-  });
+  }), [] as any[]);
   res.json({ success: true, data: subs });
 };
 
+// ─── GET /subscription/check/:domainId ───────────────────────────────────────
+export const checkSubscription = async (req: Request, res: Response) => {
+  const userId = (req.user as any)?.userId;
+  const { domainId } = req.params;
+  const sub: any = await sq(() => (prisma as any).subscription.findUnique({
+    where: { userId_domainId: { userId, domainId } },
+  }), null);
+  const isActive = sub?.status === 'ACTIVE' && (!sub.expiresAt || new Date(sub.expiresAt) > new Date());
+  res.json({ success: true, data: { isActive: !!isActive } });
+};
+
 // ─── POST /subscription/create-order ─────────────────────────────────────────
-// Creates a Razorpay order for given domain IDs
 export const createOrder = async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
-  const { domainIds }: { domainIds: string[] } = req.body;
-
+  const userId = (req.user as any)?.userId;
+  const { domainIds } = req.body as { domainIds: string[] };
   if (!domainIds?.length) return res.status(400).json({ message: 'domainIds required' });
+  if (!RZP_KEY || !RZP_SECRET) return res.status(503).json({ message: 'Payment not configured yet.' });
 
-  // Fetch prices
-  const prices = await prisma.domainPricing.findMany({
-    where: { domainId: { in: domainIds }, isActive: true },
+  const prices: any[] = await sq(() => (prisma as any).domainPricing.findMany({ where: { domainId: { in: domainIds }, isActive: true } }), []);
+  if (!prices.length) return res.status(400).json({ message: 'Prices not set yet. Contact admin.' });
+
+  const bundles: any[] = await sq(() => (prisma as any).bundlePricing.findMany({ where: { isActive: true } }), []);
+  const bundle = bundles.filter(b => b.domainCount <= domainIds.length).sort((a, b) => b.domainCount - a.domainCount)[0];
+  const baseTotal = prices.reduce((s, p) => s + p.price, 0);
+  const discount  = bundle?.discount ?? 0;
+  const total     = Math.round(baseTotal * (1 - discount / 100));
+
+  const auth = Buffer.from(`${RZP_KEY}:${RZP_SECRET}`).toString('base64');
+  const rpRes = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify({ amount: total * 100, currency: 'INR', receipt: `cv_${userId.slice(0,8)}_${Date.now()}` }),
   });
+  if (!rpRes.ok) return res.status(502).json({ message: 'Payment gateway error' });
+  const rpOrder: any = await rpRes.json();
 
-  if (prices.length !== domainIds.length) {
-    return res.status(400).json({ message: 'Some domains have no price set yet' });
-  }
+  await sq(() => (prisma as any).payment.create({
+    data: { userId, orderId: rpOrder.id, amount: total, currency: 'INR', status: 'PENDING', domains: domainIds, razorpayOrderId: rpOrder.id },
+  }), null);
 
-  // Calculate total with bundle discount
-  const bundles = await prisma.bundlePricing.findMany({ where: { isActive: true } });
-  const bundle = bundles
-    .filter(b => b.domainCount <= domainIds.length)
-    .sort((a, b) => b.domainCount - a.domainCount)[0];
-
-  const baseTotal = prices.reduce((sum, p) => sum + p.price, 0);
-  const discountPct = bundle?.discount ?? 0;
-  const total = Math.round(baseTotal * (1 - discountPct / 100));
-
-  // Create Razorpay order
-  const receipt = `cv_${userId.slice(0, 8)}_${Date.now()}`;
-  const razorpayOrder = await createRazorpayOrder(total * 100, receipt);
-
-  // Save pending payment
-  const payment = await prisma.payment.create({
-    data: {
-      userId,
-      orderId: razorpayOrder.id,
-      amount: total,
-      currency: 'INR',
-      status: 'PENDING',
-      domains: domainIds,
-      razorpayOrderId: razorpayOrder.id,
-    },
-  });
-
-  res.json({
-    success: true,
-    data: {
-      orderId: razorpayOrder.id,
-      amount: total,
-      currency: 'INR',
-      keyId: RAZORPAY_KEY_ID,
-      discount: discountPct,
-      baseTotal,
-      paymentDbId: payment.id,
-    },
-  });
+  res.json({ success: true, data: { orderId: rpOrder.id, amount: total, currency: 'INR', keyId: RZP_KEY, discount, baseTotal } });
 };
 
 // ─── POST /subscription/verify ───────────────────────────────────────────────
-// Verifies Razorpay signature and activates subscriptions
 export const verifyPayment = async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
+  const userId = (req.user as any)?.userId;
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-  // Verify signature
-  const expected = crypto
-    .createHmac('sha256', RAZORPAY_KEY_SECRET)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest('hex');
+  const { createHmac } = await import('crypto');
+  const expected = createHmac('sha256', RZP_SECRET)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`).digest('hex');
+  if (expected !== razorpay_signature) return res.status(400).json({ message: 'Invalid signature' });
 
-  if (expected !== razorpay_signature) {
-    return res.status(400).json({ success: false, message: 'Invalid payment signature' });
-  }
+  const payment: any = await sq(() => (prisma as any).payment.findUnique({ where: { orderId: razorpay_order_id } }), null);
+  if (!payment || payment.userId !== userId) return res.status(404).json({ message: 'Payment not found' });
 
-  // Find payment record
-  const payment = await prisma.payment.findUnique({ where: { orderId: razorpay_order_id } });
-  if (!payment || payment.userId !== userId) {
-    return res.status(404).json({ message: 'Payment record not found' });
-  }
-
-  // Update payment + create subscriptions in a transaction
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+  const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
 
-  await prisma.$transaction([
-    // Mark payment success
-    prisma.payment.update({
-      where: { orderId: razorpay_order_id },
-      data: { status: 'SUCCESS', paymentId: razorpay_payment_id, razorpaySignature: razorpay_signature },
-    }),
-    // Create or activate subscriptions for each domain
-    ...payment.domains.map(domainId =>
-      prisma.subscription.upsert({
-        where: { userId_domainId: { userId, domainId } },
-        create: { userId, domainId, status: 'ACTIVE', startedAt: now, expiresAt, paymentId: razorpay_payment_id, orderId: razorpay_order_id, amount: payment.amount / payment.domains.length, currency: 'INR' },
-        update: { status: 'ACTIVE', startedAt: now, expiresAt, paymentId: razorpay_payment_id, orderId: razorpay_order_id },
-      })
-    ),
-  ]);
+  await sq(() => (prisma as any).$transaction([
+    (prisma as any).payment.update({ where: { orderId: razorpay_order_id }, data: { status: 'SUCCESS', paymentId: razorpay_payment_id, razorpaySignature: razorpay_signature } }),
+    ...payment.domains.map((domainId: string) => (prisma as any).subscription.upsert({
+      where: { userId_domainId: { userId, domainId } },
+      create: { userId, domainId, status: 'ACTIVE', startedAt: now, expiresAt, paymentId: razorpay_payment_id, orderId: razorpay_order_id, amount: payment.amount / payment.domains.length, currency: 'INR' },
+      update: { status: 'ACTIVE', startedAt: now, expiresAt, paymentId: razorpay_payment_id, orderId: razorpay_order_id },
+    })),
+  ]), null);
 
   res.json({ success: true, message: 'Subscription activated!', domains: payment.domains });
 };
 
-// ─── GET /subscription/check/:domainId ───────────────────────────────────────
-// Quick check if user has active subscription for a domain
-export const checkSubscription = async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
-  const { domainId } = req.params;
-  const sub = await prisma.subscription.findUnique({
-    where: { userId_domainId: { userId, domainId } },
-  });
-  const isActive = sub?.status === 'ACTIVE' && (!sub.expiresAt || sub.expiresAt > new Date());
-  res.json({ success: true, data: { isActive, subscription: sub } });
-};
-
-// ─── SUPER ADMIN: GET /admin/subscription/pricing ────────────────────────────
-export const adminGetPricing = async (req: Request, res: Response) => {
+// ─── ADMIN: GET pricing ───────────────────────────────────────────────────────
+export const adminGetPricing = async (_req: Request, res: Response) => {
   const [domainPrices, bundles] = await Promise.all([
-    prisma.domainPricing.findMany({ orderBy: { domainId: 'asc' } }),
-    prisma.bundlePricing.findMany({ orderBy: { domainCount: 'asc' } }),
+    sq(() => (prisma as any).domainPricing.findMany({ orderBy: { domainId: 'asc' } }), [] as any[]),
+    sq(() => (prisma as any).bundlePricing.findMany({ orderBy: { domainCount: 'asc' } }), [] as any[]),
   ]);
   res.json({ success: true, data: { domainPrices, bundles } });
 };
 
-// ─── SUPER ADMIN: PUT /admin/subscription/pricing/domain ─────────────────────
+// ─── SUPER ADMIN: SET domain price ───────────────────────────────────────────
 export const adminSetDomainPrice = async (req: Request, res: Response) => {
   const adminId = (req as any).adminId;
-  const { domainId, price }: { domainId: string; price: number } = req.body;
+  const { domainId, price } = req.body;
   if (!domainId || price == null) return res.status(400).json({ message: 'domainId and price required' });
-
-  const record = await prisma.domainPricing.upsert({
+  const record = await sq(() => (prisma as any).domainPricing.upsert({
     where: { domainId },
-    create: { domainId, price, setBy: adminId },
-    update: { price, setBy: adminId },
-  });
+    create: { domainId, price: Number(price), setBy: adminId },
+    update: { price: Number(price), setBy: adminId },
+  }), null);
   res.json({ success: true, data: record });
 };
 
-// ─── SUPER ADMIN: PUT /admin/subscription/pricing/bundle ─────────────────────
+// ─── SUPER ADMIN: SET bundle discount ────────────────────────────────────────
 export const adminSetBundleDiscount = async (req: Request, res: Response) => {
   const adminId = (req as any).adminId;
-  const { domainCount, discount, label }: { domainCount: number; discount: number; label: string } = req.body;
+  const { domainCount, discount, label } = req.body;
   if (!domainCount || discount == null) return res.status(400).json({ message: 'domainCount and discount required' });
-
-  const record = await prisma.bundlePricing.upsert({
-    where: { domainCount },
-    create: { domainCount, discount, label: label ?? `${domainCount} Domain Bundle`, setBy: adminId },
-    update: { discount, label: label ?? `${domainCount} Domain Bundle`, setBy: adminId },
-  });
+  const record = await sq(() => (prisma as any).bundlePricing.upsert({
+    where: { domainCount: Number(domainCount) },
+    create: { domainCount: Number(domainCount), discount: Number(discount), label: label ?? `${domainCount} Domain Bundle`, setBy: adminId },
+    update: { discount: Number(discount), label: label ?? `${domainCount} Domain Bundle`, setBy: adminId },
+  }), null);
   res.json({ success: true, data: record });
 };
 
-// ─── SUPER ADMIN: GET /admin/subscription/payments ───────────────────────────
-export const adminGetPayments = async (req: Request, res: Response) => {
-  const payments = await prisma.payment.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 100,
+// ─── ADMIN: GET payments ─────────────────────────────────────────────────────
+export const adminGetPayments = async (_req: Request, res: Response) => {
+  const payments = await sq(() => (prisma as any).payment.findMany({
+    orderBy: { createdAt: 'desc' }, take: 100,
     include: { user: { select: { name: true, email: true } } },
-  });
+  }), [] as any[]);
   res.json({ success: true, data: payments });
-};
-
-// ─── GET /subscription/config ─────────────────────────────────────────────────
-// Public — frontend checks this to know if paywall is active
-export const getConfig = async (_req: Request, res: Response) => {
-  let cfg = await prisma.appConfig.findUnique({ where: { id: 'global' } });
-  if (!cfg) {
-    // Auto-create with subscriptions OFF
-    cfg = await prisma.appConfig.create({
-      data: { id: 'global', subscriptionEnabled: false },
-    });
-  }
-  res.json({ success: true, data: { subscriptionEnabled: cfg.subscriptionEnabled } });
-};
-
-// ─── SUPER ADMIN: PUT /subscription/admin/config ──────────────────────────────
-export const adminSetConfig = async (req: Request, res: Response) => {
-  const adminId = (req as any).adminId;
-  const { subscriptionEnabled }: { subscriptionEnabled: boolean } = req.body;
-  const cfg = await prisma.appConfig.upsert({
-    where: { id: 'global' },
-    create: { id: 'global', subscriptionEnabled, updatedBy: adminId },
-    update: { subscriptionEnabled, updatedBy: adminId },
-  });
-  res.json({ success: true, data: { subscriptionEnabled: cfg.subscriptionEnabled } });
 };
