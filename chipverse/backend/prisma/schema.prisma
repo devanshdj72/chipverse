@@ -465,3 +465,11 @@ model Payment {
   @@index([userId])
   @@index([orderId])
 }
+
+// ─── App Configuration ────────────────────────────────────────────────────────
+model AppConfig {
+  id        String   @id @default("global")  // singleton row
+  subscriptionEnabled Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // adminId who last changed it
+}

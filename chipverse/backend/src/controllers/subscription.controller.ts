@@ -201,3 +201,28 @@ export const adminGetPayments = async (req: Request, res: Response) => {
   });
   res.json({ success: true, data: payments });
 };
+
+// ─── GET /subscription/config ─────────────────────────────────────────────────
+// Public — frontend checks this to know if paywall is active
+export const getConfig = async (_req: Request, res: Response) => {
+  let cfg = await prisma.appConfig.findUnique({ where: { id: 'global' } });
+  if (!cfg) {
+    // Auto-create with subscriptions OFF
+    cfg = await prisma.appConfig.create({
+      data: { id: 'global', subscriptionEnabled: false },
+    });
+  }
+  res.json({ success: true, data: { subscriptionEnabled: cfg.subscriptionEnabled } });
+};
+
+// ─── SUPER ADMIN: PUT /subscription/admin/config ──────────────────────────────
+export const adminSetConfig = async (req: Request, res: Response) => {
+  const adminId = (req as any).adminId;
+  const { subscriptionEnabled }: { subscriptionEnabled: boolean } = req.body;
+  const cfg = await prisma.appConfig.upsert({
+    where: { id: 'global' },
+    create: { id: 'global', subscriptionEnabled, updatedBy: adminId },
+    update: { subscriptionEnabled, updatedBy: adminId },
+  });
+  res.json({ success: true, data: { subscriptionEnabled: cfg.subscriptionEnabled } });
+};

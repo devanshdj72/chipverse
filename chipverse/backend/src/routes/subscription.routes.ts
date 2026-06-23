@@ -6,6 +6,7 @@ import {
   getPricing, getMySubscriptions, createOrder,
   verifyPayment, checkSubscription,
   adminGetPricing, adminSetDomainPrice, adminSetBundleDiscount, adminGetPayments,
+  getConfig, adminSetConfig,
 } from '../controllers/subscription.controller';
 
 const router = Router();
@@ -16,6 +17,10 @@ router.get('/my',                   requireAuth, getMySubscriptions);
 router.post('/create-order',        requireAuth, createOrder);
 router.post('/verify',              requireAuth, verifyPayment);
 router.get('/check/:domainId',      requireAuth, checkSubscription);
+
+// ── Config (public read, super admin write) ──────────────────────────────────
+router.get('/config',               getConfig);
+router.put('/admin/config',         requireSuperAdmin, adminSetConfig);
 
 // ── Super Admin only ──────────────────────────────────────────────────────────
 router.get('/admin/pricing',        requireAdmin, adminGetPricing);
