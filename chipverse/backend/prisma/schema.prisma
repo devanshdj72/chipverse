@@ -99,6 +99,8 @@ model User {
   conversationMembers ConversationMember[]
   messages            Message[]
   domainReports       DomainReport[]
+  subscriptions       Subscription[]
+  payments            Payment[]
 
   @@index([email])
   @@index([phone])
@@ -381,4 +383,85 @@ model DomainReport {
   @@unique([userId, domainId])
   @@index([userId])
   @@index([shareToken])
+}
+
+// ─── Subscription / Payments ──────────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model DomainPricing {
+  id        String   @id @default(uuid())
+  domainId  String   @unique
+  price     Float
+  currency  String   @default("INR")
+  isActive  Boolean  @default(true)
+  setBy     String   // adminId of super admin who set this
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BundlePricing {
+  id          String   @id @default(uuid())
+  domainCount Int      @unique  // 3, 5, 8
+  discount    Float    // percentage e.g. 15, 25, 40
+  label       String   // "Trio Pack", "Elite Pack", "Master Pack"
+  isActive    Boolean  @default(true)
+  setBy       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subscription {
+  id          String             @id @default(uuid())
+  userId      String
+  domainId    String
+  status      SubscriptionStatus @default(PENDING)
+  startedAt   DateTime?
+  expiresAt   DateTime?
+  paymentId   String?
+  orderId     String?
+  amount      Float
+  currency    String             @default("INR")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domainId])
+  @@index([userId])
+  @@index([domainId])
+  @@index([status])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  userId          String
+  orderId         String        @unique
+  paymentId       String?       @unique
+  amount          Float
+  currency        String        @default("INR")
+  status          PaymentStatus @default(PENDING)
+  domains         String[]      // array of domainIds purchased
+  razorpayOrderId String?
+  razorpaySignature String?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([orderId])
 }

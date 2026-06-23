@@ -23,6 +23,7 @@ import { apiLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
 import avatarRoutes from './routes/avatar.routes';
 import progressRoutes from './routes/progress.routes';
+import subscriptionRoutes from './routes/subscription.routes';
 
 const app = express();
 
@@ -88,6 +89,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/placement', placementRoutes);
 app.use('/api/lab', labRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/user/avatar', avatarRoutes);
 
