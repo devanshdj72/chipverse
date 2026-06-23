@@ -31,7 +31,8 @@ app.use((req, res, next) => {
   const isAllowed =
     !origin ||
     origin === 'https://chipverse-q341.vercel.app' ||
-    origin === 'https://chipverse-frontend.onrender.com' || // ◄── ADD THIS EXACT LINE
+    origin === 'https://chipverse-frontend.onrender.com' ||
+    origin === 'https://devanshdj72.github.io' ||
     /^https:\/\/chipverse-q341-.*\.vercel\.app$/.test(origin) ||
     /^https:\/\/chipverse-q341-.*-devanshdj72s-projects\.vercel\.app$/.test(origin) ||
     origin === 'http://localhost:5173' ||
