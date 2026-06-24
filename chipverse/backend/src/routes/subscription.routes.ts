@@ -23,7 +23,7 @@ router.get('/config',               getConfig);
 router.put('/admin/config',         requireSuperAdmin, adminSetConfig);
 
 // ── Super Admin only ──────────────────────────────────────────────────────────
-router.get('/admin/pricing',        requireAdmin, adminGetPricing);
+router.get('/admin/pricing',        adminGetPricing);  // pricing data is not sensitive
 router.put('/admin/pricing/domain', requireSuperAdmin, adminSetDomainPrice);
 router.put('/admin/pricing/bundle', requireSuperAdmin, adminSetBundleDiscount);
 router.get('/admin/payments',       requireAdmin, adminGetPayments);
