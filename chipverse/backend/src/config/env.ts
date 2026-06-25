@@ -31,13 +31,13 @@ export const config = {
   google: {
     clientId: optional('GOOGLE_CLIENT_ID'),
     clientSecret: optional('GOOGLE_CLIENT_SECRET'),
-    callbackUrl: optional('GOOGLE_CALLBACK_URL', 'http://localhost:5000/api/auth/google/callback'),
+    callbackUrl: optional('GOOGLE_CALLBACK_URL', 'https://chipverse-backend.onrender.com/api/auth/google/callback'),
   },
 
   linkedin: {
     clientId: optional('LINKEDIN_CLIENT_ID'),
     clientSecret: optional('LINKEDIN_CLIENT_SECRET'),
-    callbackUrl: optional('LINKEDIN_CALLBACK_URL', 'http://localhost:5000/api/auth/linkedin/callback'),
+    callbackUrl: optional('LINKEDIN_CALLBACK_URL', 'https://chipverse-backend.onrender.com/api/auth/linkedin/callback'),
   },
 
   twilio: {
