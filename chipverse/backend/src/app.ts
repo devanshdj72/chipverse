@@ -26,6 +26,7 @@ import progressRoutes from './routes/progress.routes';
 import subscriptionRoutes from './routes/subscription.routes';
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render's proxy for accurate IP in rate limiting
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
