@@ -38,7 +38,7 @@ router.get(
 );
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login?error=google', session: false }),
+  passport.authenticate('google', { failureRedirect: 'https://devanshdj72.github.io/chipverse-pwa/auth/callback?error=google_failed', session: false }),
   googleCallback
 );
 
@@ -49,7 +49,7 @@ router.get(
 );
 router.get(
   '/linkedin/callback',
-  passport.authenticate('linkedin', { failureRedirect: '/login?error=linkedin', session: false }),
+  passport.authenticate('linkedin', { failureRedirect: 'https://devanshdj72.github.io/chipverse-pwa/auth/callback?error=linkedin_failed', session: false }),
   linkedinCallback
 );
 
