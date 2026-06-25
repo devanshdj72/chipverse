@@ -158,7 +158,7 @@ export const googleCallback = async (req: Request, res: Response) => {
     );
   } catch (err) {
     logger.error('Google callback error', err);
-    return res.redirect(`${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/login?error=google_failed`);
+    return res.redirect(`${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/auth/callback?error=google_failed`);
   }
 };
 
@@ -172,6 +172,6 @@ export const linkedinCallback = async (req: Request, res: Response) => {
     );
   } catch (err) {
     logger.error('LinkedIn callback error', err);
-    return res.redirect(`${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/login?error=linkedin_failed`);
+    return res.redirect(`${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/auth/callback?error=linkedin_failed`);
   }
 };
