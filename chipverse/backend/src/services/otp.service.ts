@@ -1,71 +1,100 @@
-import twilio from 'twilio';
-import { config } from '../config/env';
+// OTP service — free implementation using nodemailer + Gmail
+// No Twilio required. Uses in-memory store for OTP codes.
+import nodemailer from 'nodemailer';
 import logger from '../utils/logger';
 
-let client: ReturnType<typeof twilio> | null = null;
+// ─── In-memory OTP store (phone → { code, expiresAt }) ───────────────────────
+const otpStore = new Map<string, { code: string; expiresAt: number; attempts: number }>();
+const OTP_TTL_MS = 5 * 60 * 1000;   // 5 minutes
+const MAX_ATTEMPTS = 3;
 
-const getClient = () => {
-  if (!client) {
-    if (!config.twilio.accountSid || !config.twilio.authToken) {
-      throw new Error('Twilio credentials not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in .env');
+// ─── Nodemailer transporter (Gmail free SMTP) ─────────────────────────────────
+let transporter: nodemailer.Transporter | null = null;
+
+function getTransporter() {
+  if (!transporter) {
+    const user = process.env.GMAIL_USER;
+    const pass = process.env.GMAIL_APP_PASSWORD;
+    if (!user || !pass) {
+      // Fallback: use Ethereal (test SMTP, no real emails sent)
+      logger.warn('GMAIL_USER/GMAIL_APP_PASSWORD not set — OTPs will be logged to console only');
+      return null;
     }
-    client = twilio(config.twilio.accountSid, config.twilio.authToken);
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    });
   }
-  return client;
-};
+  return transporter;
+}
 
-/**
- * Send OTP to a phone number using Twilio Verify
- * @param phone - E.164 format e.g. +919876543210
- */
+function generateCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+// ─── Send OTP ─────────────────────────────────────────────────────────────────
+// We accept phone but actually send via email since Twilio is paid
+// The frontend sends phone — we look up the user's email from DB and send there
+// If no email found, we fall back to logging the OTP (dev mode)
 export const sendOtp = async (phone: string): Promise<void> => {
-  if (!config.twilio.verifyServiceSid) {
-    throw new Error('Twilio Verify Service SID not configured. Set TWILIO_VERIFY_SERVICE_SID in .env');
+  const code = generateCode();
+  otpStore.set(phone, { code, expiresAt: Date.now() + OTP_TTL_MS, attempts: 0 });
+
+  const t = getTransporter();
+  if (!t) {
+    // Dev fallback — log OTP to console
+    logger.info(`[DEV] OTP for ${phone}: ${code} (valid 5 mins)`);
+    console.log(`\n🔐 OTP for ${phone}: ${code}\n`);
+    return;
   }
 
-  try {
-    const verification = await getClient().verify.v2
-      .services(config.twilio.verifyServiceSid)
-      .verifications.create({ to: phone, channel: 'sms' });
+  // Try to find user email from DB by phone
+  const { default: prisma } = await import('../config/prisma');
+  const user = await prisma.user.findFirst({
+    where: { phone },
+    select: { email: true, name: true },
+  }).catch(() => null);
 
-    logger.info(`OTP sent to ${phone}, status: ${verification.status}`);
-  } catch (err: any) {
-    logger.error(`Failed to send OTP to ${phone}:`, err.message);
-    throw new Error(`Failed to send OTP: ${err.message}`);
+  if (user?.email) {
+    await t.sendMail({
+      from: `"ChipVerse" <${process.env.GMAIL_USER}>`,
+      to: user.email,
+      subject: 'Your ChipVerse OTP',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:24px;background:#0a0a0f;border-radius:12px;color:#fff">
+          <h2 style="color:#FF3C00;margin-bottom:8px">ChipVerse</h2>
+          <p style="color:#aaa;margin-bottom:24px">Your one-time login code:</p>
+          <div style="font-size:40px;font-weight:bold;letter-spacing:8px;color:#00f5ff;text-align:center;padding:16px;background:#1a1a2e;border-radius:8px;margin-bottom:24px">${code}</div>
+          <p style="color:#aaa;font-size:13px">Valid for 5 minutes. Don't share this code with anyone.</p>
+        </div>
+      `,
+    });
+    logger.info(`OTP sent to email: ${user.email} for phone: ${phone}`);
+  } else {
+    // Phone not registered yet — log code for dev
+    logger.info(`[DEV] OTP for unregistered ${phone}: ${code}`);
+    console.log(`\n🔐 OTP for ${phone}: ${code}\n`);
   }
 };
 
-/**
- * Verify OTP entered by user
- * @param phone - E.164 format
- * @param code - 6-digit OTP
- * @returns true if valid, false if invalid/expired
- */
+// ─── Verify OTP ───────────────────────────────────────────────────────────────
 export const verifyOtp = async (phone: string, code: string): Promise<boolean> => {
-  if (!config.twilio.verifyServiceSid) {
-    throw new Error('Twilio Verify Service SID not configured.');
-  }
+  const entry = otpStore.get(phone);
+  if (!entry) return false;
+  if (Date.now() > entry.expiresAt) { otpStore.delete(phone); return false; }
 
-  try {
-    const result = await getClient().verify.v2
-      .services(config.twilio.verifyServiceSid)
-      .verificationChecks.create({ to: phone, code });
+  entry.attempts += 1;
+  if (entry.attempts > MAX_ATTEMPTS) { otpStore.delete(phone); return false; }
+  if (entry.code !== code) return false;
 
-    logger.info(`OTP verification for ${phone}: ${result.status}`);
-    return result.status === 'approved';
-  } catch (err: any) {
-    logger.error(`OTP verification failed for ${phone}:`, err.message);
-    return false;
-  }
+  otpStore.delete(phone); // Single use
+  return true;
 };
 
-/**
- * Normalize phone number to E.164 (adds +91 if Indian 10-digit number)
- */
+// ─── Normalize phone ──────────────────────────────────────────────────────────
 export const normalizePhone = (raw: string): string => {
   const cleaned = raw.replace(/\s+/g, '').replace(/-/g, '');
   if (cleaned.startsWith('+')) return cleaned;
-  // Assume India (+91) for 10-digit numbers
   if (cleaned.length === 10 && /^\d+$/.test(cleaned)) return `+91${cleaned}`;
   return cleaned;
 };
