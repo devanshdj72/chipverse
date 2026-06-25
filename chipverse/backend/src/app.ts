@@ -6,6 +6,7 @@ import reportRoutes from './routes/report.routes';
 
 import { config } from './config/env';
 import './config/passport';
+import passport from 'passport';
 import chipbotRoutes from './routes/chipbot';
 
 import authRoutes from './routes/auth.routes';
@@ -67,6 +68,7 @@ app.use(helmet({ crossOriginEmbedderPolicy: false, contentSecurityPolicy: false 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(config.cookie.secret));
+app.use(passport.initialize()); // Required for OAuth strategies to work
 app.use(morgan(config.isDev ? 'dev' : 'combined', {
   stream: { write: (msg) => logger.http(msg.trim()) },
 }));
