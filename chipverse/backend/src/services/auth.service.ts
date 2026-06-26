@@ -128,6 +128,7 @@ export const loginWithEmail = async (input: LoginEmailInput) => {
 
 export const findOrCreateOAuthUser = async (input: OAuthInput) => {
   const { provider, providerId, email, name, avatarUrl } = input;
+  console.log('[OAuth] findOrCreateOAuthUser called:', { provider, providerId, email, name });
 
   // Check if auth provider record already exists
   const existingProvider = await prisma.userAuthProvider.findUnique({
