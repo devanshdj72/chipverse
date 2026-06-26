@@ -155,7 +155,7 @@ export const googleCallback = async (req: Request, res: Response) => {
     const tokens = await issueTokensForOAuthUser(userId, user.email, user.role ?? 'USER');
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return res.redirect(
-      `${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/?oauth_token=${tokens.accessToken}&provider=google`
+      `${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/?oauth_token=${tokens.accessToken}&oauth_refresh=${tokens.refreshToken}&provider=google`
     );
   } catch (err) {
     logger.error('Google callback error', err);
@@ -170,7 +170,7 @@ export const linkedinCallback = async (req: Request, res: Response) => {
     const tokens = await issueTokensForOAuthUser(userId, user.email, user.role ?? 'USER');
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return res.redirect(
-      `${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/?oauth_token=${tokens.accessToken}&provider=linkedin`
+      `${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/?oauth_token=${tokens.accessToken}&oauth_refresh=${tokens.refreshToken}&provider=linkedin`
     );
   } catch (err) {
     logger.error('LinkedIn callback error', err);
