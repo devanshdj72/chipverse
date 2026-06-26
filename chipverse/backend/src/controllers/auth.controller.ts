@@ -151,7 +151,8 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 export const googleCallback = async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tokens = await issueTokensForOAuthUser(user.id, user.email, user.role ?? 'USER');
+    const userId = user.userId ?? user.id; // passport returns userId, fallback to id
+    const tokens = await issueTokensForOAuthUser(userId, user.email, user.role ?? 'USER');
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return res.redirect(
       `${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/?oauth_token=${tokens.accessToken}&provider=google`
@@ -165,7 +166,8 @@ export const googleCallback = async (req: Request, res: Response) => {
 export const linkedinCallback = async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tokens = await issueTokensForOAuthUser(user.id, user.email, user.role ?? 'USER');
+    const userId = user.userId ?? user.id;
+    const tokens = await issueTokensForOAuthUser(userId, user.email, user.role ?? 'USER');
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return res.redirect(
       `${process.env.GITHUB_PAGES_URL ?? config.frontendUrl}/chipverse-pwa/?oauth_token=${tokens.accessToken}&provider=linkedin`
