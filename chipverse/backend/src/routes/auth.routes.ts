@@ -38,7 +38,20 @@ router.get(
 );
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: 'https://devanshdj72.github.io/chipverse-pwa/auth/callback?error=google_failed', session: false }),
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('[Google OAuth Error]', err?.message || err);
+        return res.redirect('https://devanshdj72.github.io/chipverse-pwa/?oauth_error=google_failed');
+      }
+      if (!user) {
+        console.error('[Google OAuth No User]', info?.message || info || 'unknown');
+        return res.redirect('https://devanshdj72.github.io/chipverse-pwa/?oauth_error=google_failed');
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   googleCallback
 );
 
@@ -49,7 +62,20 @@ router.get(
 );
 router.get(
   '/linkedin/callback',
-  passport.authenticate('linkedin', { failureRedirect: 'https://devanshdj72.github.io/chipverse-pwa/auth/callback?error=linkedin_failed', session: false }),
+  (req, res, next) => {
+    passport.authenticate('linkedin', { session: false }, (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('[LinkedIn OAuth Error]', err?.message || err);
+        return res.redirect('https://devanshdj72.github.io/chipverse-pwa/?oauth_error=linkedin_failed');
+      }
+      if (!user) {
+        console.error('[LinkedIn OAuth No User]', info?.message || info);
+        return res.redirect('https://devanshdj72.github.io/chipverse-pwa/?oauth_error=linkedin_failed');
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   linkedinCallback
 );
 
