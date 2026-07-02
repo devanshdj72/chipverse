@@ -96,10 +96,10 @@ router.post('/chat', async (req: Request, res: Response) => {
       method:  'POST',
       headers: {
         'Content-Type':  'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model:       'llama-3.3-70b-versatile',
+        model:       'llama3-8b-8192',
         messages,
         max_tokens:  1024,
         temperature: 0.7,
@@ -118,7 +118,8 @@ router.post('/chat', async (req: Request, res: Response) => {
 
     if (!groqRes.ok) {
       refundCredit(userId);
-      console.error('[ChipBot] Groq error:', groqRes.status);
+      const errBody = await groqRes.text().catch(() => '');
+      console.error('[ChipBot] Groq error:', groqRes.status, errBody);
       return res.status(502).json({
         error:   'GROQ_ERROR',
         message: 'AI service error. Your credit was not used. Please try again.',
